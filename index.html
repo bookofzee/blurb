@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0d12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Blurb" />
+  <title>Blurb — books worth talking about</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css?v=5" />
+</head>
+<body>
+  <main id="app" class="app-shell">
+    <section id="feedView" class="view view-active" aria-label="Home feed">
+      <header class="feed-header glass-header">
+        <button id="feedFollowing" class="feed-tab">Following</button>
+        <button id="feedForYou" class="feed-tab active">For You</button>
+        <button id="openNotifications" class="icon-button header-action" aria-label="Notifications">
+          <span class="icon">♡</span><span class="notification-dot" hidden></span>
+        </button>
+      </header>
+      <div id="feed" class="feed"></div>
+    </section>
+
+    <section id="discoverView" class="view" aria-label="Discover">
+      <div class="page-scroll">
+        <header class="page-header">
+          <p class="eyebrow">Find your next obsession</p>
+          <h1>Discover</h1>
+          <div class="search-wrap">
+            <span>⌕</span>
+            <input id="discoverSearch" type="search" placeholder="Search books, authors or tropes" autocomplete="off" />
+          </div>
+        </header>
+        <div class="section-block">
+          <div class="section-title-row"><h2>Trending tropes</h2><span>This week</span></div>
+          <div id="tropeRail" class="pill-rail"></div>
+        </div>
+        <div class="section-block">
+          <div class="section-title-row"><h2>Books on Blurb</h2><span id="bookCount"></span></div>
+          <div id="bookGrid" class="book-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="createView" class="view" aria-label="Create post">
+      <div class="page-scroll create-page">
+        <header class="page-header compact">
+          <p class="eyebrow">Say it in your own words</p>
+          <h1>Create a Blurb</h1>
+        </header>
+        <form id="createForm" class="editor-card">
+          <label class="field-label">Book</label>
+          <button id="bookPickerButton" type="button" class="picker-button"><span id="selectedBookLabel">Choose a book</span><span>›</span></button>
+          <input id="selectedBookId" type="hidden" />
+
+          <label class="field-label">Your rating <span class="optional">optional</span></label>
+          <div id="ratingPicker" class="rating-picker" role="radiogroup" aria-label="Rating"></div>
+          <input id="ratingValue" type="hidden" />
+
+          <label class="field-label" for="caption">What did you think?</label>
+          <textarea id="caption" maxlength="1200" placeholder="The review, the rant, the reason everyone needs to read it..."></textarea>
+          <div class="char-count"><span id="captionCount">0</span>/1200</div>
+
+          <label class="field-label" for="mediaFile">Photo or video <span class="optional">optional</span></label>
+          <label class="upload-zone" for="mediaFile">
+            <input id="mediaFile" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" />
+            <div id="uploadPrompt"><strong>＋ Add media</strong><span>Image or video up to 50 MB</span></div>
+            <div id="mediaPreview" class="media-preview" hidden></div>
+          </label>
+
+          <label class="field-label" for="tags">Tropes & tags <span class="optional">optional</span></label>
+          <input id="tags" class="text-input" placeholder="slow burn, found family, dragons" />
+
+          <label class="toggle-row"><span><strong>Spoiler warning</strong><small>Hide the post until someone chooses to reveal it.</small></span><input id="spoilerToggle" type="checkbox" /><i></i></label>
+
+          <button id="publishButton" class="primary-button" type="submit">Post to Blurb</button>
+          <p id="createStatus" class="form-status"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="libraryView" class="view" aria-label="Library">
+      <div class="page-scroll">
+        <header class="page-header">
+          <p class="eyebrow">Your reading life</p>
+          <h1>Library</h1>
+          <div id="libraryTabs" class="segmented">
+            <button data-library="tbr" class="active">TBR</button>
+            <button data-library="reading">Reading</button>
+            <button data-library="read">Read</button>
+            <button data-library="dnf">DNF</button>
+            <button data-library="favourites">♥</button>
+          </div>
+        </header>
+        <div id="libraryContent" class="library-list"></div>
+      </div>
+    </section>
+
+    <section id="profileView" class="view" aria-label="Profile">
+      <div class="page-scroll">
+        <div id="profileContent"></div>
+      </div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button data-view="feed" class="nav-item active" aria-label="Home"><span class="nav-icon">⌂</span><span>Home</span></button>
+      <button data-view="discover" class="nav-item" aria-label="Discover"><span class="nav-icon">⌕</span><span>Discover</span></button>
+      <button data-view="create" class="nav-item create-nav" aria-label="Create"><span class="create-plus">＋</span><span>Create</span></button>
+      <button data-view="library" class="nav-item" aria-label="Library"><span class="nav-icon">▤</span><span>Library</span></button>
+      <button data-view="profile" class="nav-item" aria-label="Profile"><span class="nav-icon">◉</span><span>Profile</span></button>
+    </nav>
+  </main>
+
+  <div id="sheetBackdrop" class="sheet-backdrop" hidden></div>
+
+  <section id="authSheet" class="sheet" aria-label="Sign in" hidden>
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" data-close-sheet aria-label="Close">×</button>
+    <p class="eyebrow">Welcome to</p>
+    <h2 class="brand-word">Blurb<span>.</span></h2>
+    <p class="sheet-copy">Your feed for books, reviews and the people who can’t stop talking about them.</p>
+    <div class="auth-mode segmented two"><button id="signInMode" class="active" type="button">Sign in</button><button id="signUpMode" type="button">Create account</button></div>
+    <form id="authForm">
+      <input id="authEmail" class="text-input" type="email" placeholder="Email" required />
+      <input id="authPassword" class="text-input" type="password" minlength="6" placeholder="Password" required />
+      <button id="authSubmit" class="primary-button" type="submit">Sign in</button>
+      <p id="authStatus" class="form-status"></p>
+    </form>
+  </section>
+
+  <section id="bookSheet" class="sheet tall" aria-label="Choose a book" hidden>
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" data-close-sheet aria-label="Close">×</button>
+    <h2>Choose a book</h2>
+    <input id="bookSheetSearch" class="text-input" type="search" placeholder="Search title or author" />
+    <div id="bookSheetList" class="sheet-list"></div>
+  </section>
+
+  <section id="commentsSheet" class="sheet tall" aria-label="Comments" hidden>
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" data-close-sheet aria-label="Close">×</button>
+    <h2>Comments</h2>
+    <div id="commentsList" class="comments-list"></div>
+    <form id="commentForm" class="comment-form">
+      <input id="commentInput" class="text-input" maxlength="500" placeholder="Add a comment…" />
+      <button type="submit">Post</button>
+    </form>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="/app.js?v=5"></script>
+</body>
+</html>
