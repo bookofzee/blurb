@@ -1,0 +1,10 @@
+{
+  "name": "Blurb — Book Reviews",
+  "short_name": "Blurb",
+  "description": "A social feed for books, reviews and recommendations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f0e5",
+  "theme_color": "#c96832",
+  "icons": [{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
