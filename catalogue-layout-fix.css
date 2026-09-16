@@ -26,6 +26,26 @@
   background-position:center!important;
   background-repeat:no-repeat!important;
 }
+.book-cover.has-live-cover{
+  position:relative!important;
+  padding:0!important;
+}
+.book-cover.has-live-cover:before{
+  display:none!important;
+}
+.book-cover img[data-live-cover]{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  z-index:2!important;
+}
+.book-cover.has-live-cover > span{
+  opacity:0!important;
+}
 .book-meta{
   width:100%!important;
   min-width:0!important;
