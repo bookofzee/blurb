@@ -1,0 +1,44 @@
+/* Keep live catalogue cards constrained to thumbnail-sized grid cells. */
+.book-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:14px!important;
+  width:100%!important;
+  min-width:0!important;
+  align-items:start!important;
+}
+.book-card{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+.book-cover{
+  display:flex!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:auto!important;
+  aspect-ratio:2/3!important;
+  overflow:hidden!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+.book-meta{
+  width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+.book-meta strong,.book-meta small{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+@media (max-width:380px){
+  .book-grid{gap:10px!important;}
+}
