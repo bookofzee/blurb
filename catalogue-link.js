@@ -8,6 +8,9 @@ let books=[];
 let bySource=new Map();
 let byKey=new Map();
 let ready=false;
+let discoverLimit=10;
+let discoverQuery='';
+let scrollTick=false;
 
 function toast(message){
   const el=document.querySelector('#toast');
@@ -80,16 +83,24 @@ async function addLiveBookToTbr(book){
   toast(error?'Couldn’t update your library':'Added to your TBR');
 }
 
+function getDiscoverMatches(){
+  const q=norm(document.querySelector('#discoverSearch')?.value||'');
+  return {q,matches:books.filter(b=>!q||norm(b.title).includes(q)||norm(b.author).includes(q))};
+}
+
 function renderDiscover(){
   if(!ready)return;
   const grid=document.querySelector('#bookGrid');
-  const search=document.querySelector('#discoverSearch');
-  if(!grid||!search)return;
-  const q=norm(search.value);
-  const matches=books.filter(b=>!q||norm(b.title).includes(q)||norm(b.author).includes(q));
+  if(!grid)return;
+  const {q,matches}=getDiscoverMatches();
+  if(q!==discoverQuery){
+    discoverQuery=q;
+    discoverLimit=10;
+  }
+  const visible=matches.slice(0,discoverLimit);
   const count=document.querySelector('#bookCount');
   if(count)count.textContent=`${matches.length} ${matches.length===1?'book':'books'}`;
-  grid.innerHTML=matches.map(book=>`
+  grid.innerHTML=visible.map(book=>`
     <button class="book-card" data-live-book="${escapeHtml(book.id)}">
       <div class="book-cover" style="${coverStyle(book)}">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</div>
       <div class="book-meta">
@@ -105,6 +116,22 @@ function renderDiscover(){
   }));
 }
 
+function maybeLoadMoreDiscover(){
+  if(!ready||scrollTick)return;
+  scrollTick=true;
+  requestAnimationFrame(()=>{
+    scrollTick=false;
+    const scroller=document.querySelector('#discoverView .page-scroll');
+    if(!scroller)return;
+    const nearBottom=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<450;
+    if(!nearBottom)return;
+    const {matches}=getDiscoverMatches();
+    if(discoverLimit>=matches.length)return;
+    discoverLimit=Math.min(discoverLimit+10,matches.length);
+    renderDiscover();
+  });
+}
+
 function closeBookSheet(){
   const sheet=document.querySelector('#bookSheet');
   const backdrop=document.querySelector('#sheetBackdrop');
@@ -118,7 +145,7 @@ function renderPicker(){
   const search=document.querySelector('#bookSheetSearch');
   if(!list||!search)return;
   const q=norm(search.value);
-  const matches=books.filter(b=>!q||norm(b.title).includes(q)||norm(b.author).includes(q));
+  const matches=books.filter(b=>!q||norm(b.title).includes(q)||norm(b.author).includes(q)).slice(0,20);
   list.innerHTML=matches.map(book=>`
     <button class="sheet-book" data-live-pick="${escapeHtml(book.id)}">
       <i class="mini-cover" style="${coverStyle(book)}"></i>
@@ -177,13 +204,16 @@ async function loadCatalogue(){
     byKey=new Map(books.map(b=>[`${norm(b.title)}|${norm(b.author)}`,b]));
     ready=true;
     renderDiscover();
-    renderPicker();
     paintExistingCovers();
   }catch(err){console.warn('Live Book of Zee catalogue unavailable',err);}
 }
 
 function start(){
-  document.querySelector('#discoverSearch')?.addEventListener('input',()=>queueMicrotask(renderDiscover));
+  document.querySelector('#discoverSearch')?.addEventListener('input',()=>{
+    discoverLimit=10;
+    queueMicrotask(renderDiscover);
+  });
+  document.querySelector('#discoverView .page-scroll')?.addEventListener('scroll',maybeLoadMoreDiscover,{passive:true});
   document.querySelector('#bookSheetSearch')?.addEventListener('input',()=>queueMicrotask(renderPicker));
   document.querySelector('#bookPickerButton')?.addEventListener('click',()=>setTimeout(renderPicker,0));
   document.querySelector('[data-view="discover"]')?.addEventListener('click',()=>setTimeout(renderDiscover,0));
