@@ -8,9 +8,7 @@ let books=[];
 let bySource=new Map();
 let byKey=new Map();
 let ready=false;
-let discoverLimit=10;
-let discoverQuery='';
-let scrollTick=false;
+let trendingBooks=[];
 
 function toast(message){
   const el=document.querySelector('#toast');
@@ -28,6 +26,25 @@ function coverStyle(book){
 
 function findBook(sourceId,title,author){
   return bySource.get(String(sourceId||''))||byKey.get(`${norm(title)}|${norm(author)}`)||null;
+}
+
+function withCovers(list){
+  return list.filter(book=>book?.cover_url);
+}
+
+function dailySpotlight(){
+  const pool=withCovers(books);
+  if(!pool.length)return books.slice(0,6);
+  const day=Math.floor(Date.now()/86400000);
+  const picks=[];
+  const used=new Set();
+  for(let i=0;i<6&&used.size<pool.length;i++){
+    let index=Math.abs((day*97+i*331+17)%pool.length);
+    while(used.has(index))index=(index+1)%pool.length;
+    used.add(index);
+    picks.push(pool[index]);
+  }
+  return picks;
 }
 
 async function ensureLocalBook(book){
@@ -73,34 +90,50 @@ async function addLiveBookToTbr(book){
   if(!local)return;
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user)return;
+  const {data:existing}=await supabase.from('blurb_library')
+    .select('is_favourite')
+    .eq('user_id',session.user.id)
+    .eq('book_id',local.id)
+    .maybeSingle();
   const {error}=await supabase.from('blurb_library').upsert({
     user_id:session.user.id,
     book_id:local.id,
     reading_status:'tbr',
-    is_favourite:false,
+    is_favourite:existing?.is_favourite||false,
     updated_at:new Date().toISOString()
   },{onConflict:'user_id,book_id'});
   toast(error?'Couldn’t update your library':'Added to your TBR');
 }
 
-function getDiscoverMatches(){
-  const q=norm(document.querySelector('#discoverSearch')?.value||'');
-  return {q,matches:books.filter(b=>!q||norm(b.title).includes(q)||norm(b.author).includes(q))};
+function bindTbrActions(root){
+  root?.querySelectorAll('[data-live-tbr]').forEach(el=>el.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    addLiveBookToTbr(bySource.get(el.dataset.liveTbr));
+  }));
 }
 
-function renderDiscover(){
-  if(!ready)return;
+function compactBookCard(book,variant='standard'){
+  return `<article class="discover-book ${variant}">
+    <div class="discover-cover" style="${coverStyle(book)}">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</div>
+    <div class="discover-book-copy">
+      <strong>${escapeHtml(book.title)}</strong>
+      <small>${escapeHtml(book.author)}</small>
+      <button type="button" class="discover-tbr" data-live-tbr="${escapeHtml(book.id)}">＋ TBR</button>
+    </div>
+  </article>`;
+}
+
+function renderSearchResults(query){
   const grid=document.querySelector('#bookGrid');
   if(!grid)return;
-  const {q,matches}=getDiscoverMatches();
-  if(q!==discoverQuery){
-    discoverQuery=q;
-    discoverLimit=10;
-  }
-  const visible=matches.slice(0,discoverLimit);
+  const matches=books.filter(b=>norm(b.title).includes(query)||norm(b.author).includes(query)).slice(0,20);
+  const heading=document.querySelector('#bookGrid')?.previousElementSibling?.querySelector('h2');
   const count=document.querySelector('#bookCount');
-  if(count)count.textContent=`${matches.length} ${matches.length===1?'book':'books'}`;
-  grid.innerHTML=visible.map(book=>`
+  if(heading)heading.textContent='Search results';
+  if(count)count.textContent=`${matches.length}${matches.length===20?'+' : ''} found`;
+  grid.className='book-grid';
+  grid.innerHTML=matches.map(book=>`
     <button class="book-card" data-live-book="${escapeHtml(book.id)}">
       <div class="book-cover" style="${coverStyle(book)}">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</div>
       <div class="book-meta">
@@ -109,27 +142,70 @@ function renderDiscover(){
         <div class="book-actions-inline"><span class="tiny-button" data-live-tbr="${escapeHtml(book.id)}">＋ TBR</span></div>
       </div>
     </button>`).join('')||'<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⌕</div><h3>No books found</h3><p>Try another title or author.</p></div>';
-
-  grid.querySelectorAll('[data-live-tbr]').forEach(el=>el.addEventListener('click',e=>{
-    e.preventDefault();e.stopPropagation();
-    addLiveBookToTbr(bySource.get(el.dataset.liveTbr));
-  }));
+  bindTbrActions(grid);
 }
 
-function maybeLoadMoreDiscover(){
-  if(!ready||scrollTick)return;
-  scrollTick=true;
-  requestAnimationFrame(()=>{
-    scrollTick=false;
-    const scroller=document.querySelector('#discoverView .page-scroll');
-    if(!scroller)return;
-    const nearBottom=scroller.scrollHeight-scroller.scrollTop-scroller.clientHeight<450;
-    if(!nearBottom)return;
-    const {matches}=getDiscoverMatches();
-    if(discoverLimit>=matches.length)return;
-    discoverLimit=Math.min(discoverLimit+10,matches.length);
-    renderDiscover();
-  });
+function renderDiscoverHome(){
+  const grid=document.querySelector('#bookGrid');
+  if(!grid)return;
+  const heading=grid.previousElementSibling?.querySelector('h2');
+  const count=document.querySelector('#bookCount');
+  if(heading)heading.textContent='Books in the Spotlight';
+  if(count)count.textContent='';
+
+  const spotlight=dailySpotlight();
+  let trending=trendingBooks.filter(book=>book&&book.cover_url).slice(0,8);
+  if(trending.length<6){
+    const used=new Set([...spotlight,...trending].map(b=>b.id));
+    for(const book of withCovers(books)){
+      if(trending.length>=8)break;
+      if(!used.has(book.id)){trending.push(book);used.add(book.id);}
+    }
+  }
+
+  grid.className='discover-home';
+  grid.innerHTML=`
+    <div class="spotlight-rail" aria-label="Books in the Spotlight">
+      ${spotlight.map(book=>compactBookCard(book,'spotlight')).join('')}
+    </div>
+    <div class="discover-subsection">
+      <div class="discover-subtitle"><h2>Trending on Blurb</h2><span>Popular now</span></div>
+      <div class="trending-rail" aria-label="Trending on Blurb">
+        ${trending.map(book=>compactBookCard(book,'trending')).join('')}
+      </div>
+    </div>`;
+  bindTbrActions(grid);
+}
+
+function renderDiscover(){
+  if(!ready)return;
+  const q=norm(document.querySelector('#discoverSearch')?.value||'');
+  if(q)renderSearchResults(q);
+  else renderDiscoverHome();
+}
+
+async function loadTrendingBooks(){
+  try{
+    const {data,error}=await supabase.from('blurb_posts')
+      .select('book_id,blurb_books(title,author)')
+      .eq('status','published')
+      .limit(200);
+    if(error||!data?.length)return;
+    const scores=new Map();
+    for(const post of data){
+      const title=post.blurb_books?.title||'';
+      const author=post.blurb_books?.author||'';
+      const match=findBook('',title,author);
+      if(match)scores.set(match.id,(scores.get(match.id)||0)+1);
+    }
+    trendingBooks=[...scores.entries()]
+      .sort((a,b)=>b[1]-a[1])
+      .map(([id])=>bySource.get(String(id)))
+      .filter(Boolean);
+    if(!norm(document.querySelector('#discoverSearch')?.value||''))renderDiscoverHome();
+  }catch(err){
+    console.warn('Could not load Blurb trending books',err);
+  }
 }
 
 function closeBookSheet(){
@@ -194,6 +270,32 @@ function paintExistingCovers(root=document){
   });
 }
 
+function installDiscoverStyles(){
+  if(document.querySelector('#discover-redesign-styles'))return;
+  const style=document.createElement('style');
+  style.id='discover-redesign-styles';
+  style.textContent=`
+    .discover-home{display:block!important;width:100%!important;min-width:0!important}
+    .spotlight-rail,.trending-rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(138px,42%);gap:13px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;padding:2px 1px 10px;scrollbar-width:none}
+    .spotlight-rail::-webkit-scrollbar,.trending-rail::-webkit-scrollbar{display:none}
+    .discover-book{scroll-snap-align:start;min-width:0}
+    .discover-cover{width:100%;aspect-ratio:2/3;border-radius:10px;background:linear-gradient(145deg,#70432d,#2f211b);background-size:cover;background-position:center;box-shadow:0 12px 24px rgba(80,46,27,.18);overflow:hidden;display:grid;place-items:center;padding:12px;color:#fff8ed;text-align:center;font-family:Georgia,serif}
+    .discover-book-copy{padding:8px 2px 0;min-width:0}
+    .discover-book-copy strong,.discover-book-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .discover-book-copy strong{font-size:12px}
+    .discover-book-copy small{font-size:10px;color:var(--muted);margin-top:3px}
+    .discover-tbr{margin-top:7px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 9px;font-size:9px;color:#6f4d3d}
+    .discover-subsection{margin-top:25px}
+    .discover-subtitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+    .discover-subtitle h2{margin:0;font-family:Georgia,serif;font-size:20px;font-weight:500}
+    .discover-subtitle span{font-size:11px;color:var(--muted)}
+    .trending-rail{grid-auto-columns:minmax(116px,34%)}
+    .trending-rail .discover-cover{border-radius:8px}
+    @media(max-width:380px){.spotlight-rail{grid-auto-columns:minmax(128px,46%)}.trending-rail{grid-auto-columns:minmax(108px,38%)}}
+  `;
+  document.head.appendChild(style);
+}
+
 async function loadCatalogue(){
   try{
     const response=await fetch(CATALOGUE_URL,{headers:{Accept:'application/json'}});
@@ -205,15 +307,13 @@ async function loadCatalogue(){
     ready=true;
     renderDiscover();
     paintExistingCovers();
+    loadTrendingBooks();
   }catch(err){console.warn('Live Book of Zee catalogue unavailable',err);}
 }
 
 function start(){
-  document.querySelector('#discoverSearch')?.addEventListener('input',()=>{
-    discoverLimit=10;
-    queueMicrotask(renderDiscover);
-  });
-  document.querySelector('#discoverView .page-scroll')?.addEventListener('scroll',maybeLoadMoreDiscover,{passive:true});
+  installDiscoverStyles();
+  document.querySelector('#discoverSearch')?.addEventListener('input',()=>queueMicrotask(renderDiscover));
   document.querySelector('#bookSheetSearch')?.addEventListener('input',()=>queueMicrotask(renderPicker));
   document.querySelector('#bookPickerButton')?.addEventListener('click',()=>setTimeout(renderPicker,0));
   document.querySelector('[data-view="discover"]')?.addEventListener('click',()=>setTimeout(renderDiscover,0));
