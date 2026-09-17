@@ -40,11 +40,11 @@ function buildCreateUI(){
   form.classList.add('create-flow');
 
   const ratingLabel=$('#ratingPicker')?.previousElementSibling;
-  if(ratingLabel)ratingLabel.innerHTML='Your rating';
+  if(ratingLabel)ratingLabel.innerHTML='Your rating <span class="optional">optional</span>';
   const picker=$('#ratingPicker');
   if(picker){
     picker.className='rating-drag-wrap';
-    picker.innerHTML=`<div class="rating-drag" id="ratingDrag" role="slider" tabindex="0" aria-label="Rating" aria-valuemin="0.5" aria-valuemax="5" aria-valuenow="0"><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span></div><span class="rating-value" id="ratingDisplay">—</span>`;
+    picker.innerHTML=`<div class="rating-drag" id="ratingDrag" role="slider" tabindex="0" aria-label="Rating" aria-valuemin="0.5" aria-valuemax="5" aria-valuenow="0"><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span><span class="rating-star"><i></i></span></div><span class="rating-value" id="ratingDisplay">—</span><button type="button" class="rating-none active" id="ratingNone" aria-pressed="true">No rating</button>`;
   }
 
   const caption=$('#caption');
@@ -88,6 +88,7 @@ function buildCreateUI(){
   }
 
   bindCreateUI();
+  clearRating();
   updateReviewCardPreview();
 }
 
@@ -106,6 +107,7 @@ function bindCreateUI(){
   drag?.addEventListener('pointercancel',()=>draggingRating=false);
   drag?.addEventListener('click',applyPoint);
   drag?.addEventListener('keydown',e=>{let v=Number($('#ratingValue')?.value||0);if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();setRating(Math.min(5,(v||0)+.5));}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();setRating(Math.max(.5,(v||1)-.5));}});
+  $('#ratingNone')?.addEventListener('click',clearRating);
 
   $('#caption')?.addEventListener('input',e=>{const c=$('#captionCount');if(c)c.textContent=e.target.value.length;});
   $('#reviewText')?.addEventListener('input',e=>{const c=$('#reviewCount');if(c)c.textContent=e.target.value.length;updateReviewCardPreview();});
@@ -122,7 +124,16 @@ function setRating(value){
   const hidden=$('#ratingValue');if(hidden)hidden.value=String(value);
   const display=$('#ratingDisplay');if(display)display.textContent=`${value.toFixed(1)}★`;
   $('#ratingDrag')?.setAttribute('aria-valuenow',String(value));
+  const noRating=$('#ratingNone');if(noRating){noRating.classList.remove('active');noRating.setAttribute('aria-pressed','false');}
   document.querySelectorAll('.rating-star').forEach((star,i)=>{const fill=star.querySelector('i');const portion=Math.max(0,Math.min(1,value-i));fill.style.width=`${portion*100}%`;});
+}
+
+function clearRating(){
+  const hidden=$('#ratingValue');if(hidden)hidden.value='';
+  const display=$('#ratingDisplay');if(display)display.textContent='—';
+  $('#ratingDrag')?.setAttribute('aria-valuenow','0');
+  const noRating=$('#ratingNone');if(noRating){noRating.classList.add('active');noRating.setAttribute('aria-pressed','true');}
+  document.querySelectorAll('.rating-star i').forEach(fill=>fill.style.width='0%');
 }
 
 function setStyle(style){
@@ -193,9 +204,8 @@ async function publishNewFlow(e){
   e.preventDefault();e.stopImmediatePropagation();
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){$('#sheetBackdrop').hidden=false;$('#authSheet').hidden=false;return;}
-  const bookId=$('#selectedBookId')?.value;const rating=Number($('#ratingValue')?.value||0);const hook=$('#caption')?.value?.trim();const review=$('#reviewText')?.value?.trim();const file=$('#mediaFile')?.files?.[0];
+  const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim();const review=$('#reviewText')?.value?.trim();const file=$('#mediaFile')?.files?.[0];
   if(!bookId){setStatus('Choose a book first.',true);return;}
-  if(!rating){setStatus('Set your star rating first.',true);return;}
   if(!hook){setStatus('Add a short “what did you think?” hook.',true);return;}
   if(!review){setStatus('Write your review first.',true);return;}
   if(selectedStyle!=='review-card'&&!file){setStatus(`Add a ${selectedStyle} first.`,true);return;}
