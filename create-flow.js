@@ -49,7 +49,7 @@ function buildCreateUI(){
 
   const caption=$('#caption');
   const captionLabel=caption?.previousElementSibling;
-  if(captionLabel)captionLabel.innerHTML='What did you think? <span class="optional">short hook</span>';
+  if(captionLabel)captionLabel.innerHTML='What did you think? <span class="optional">optional short hook</span>';
   if(caption){caption.maxLength=180;caption.classList.add('hook-field');caption.placeholder='Give people the one-line reason they should stop scrolling…';}
   const captionCount=caption?.nextElementSibling;
   if(captionCount)captionCount.innerHTML='<span id="captionCount">0</span>/180';
@@ -60,9 +60,11 @@ function buildCreateUI(){
 
   const reviewWrap=document.createElement('div');
   reviewWrap.innerHTML=`
-    <label class="field-label required" for="reviewText">Review</label>
-    <textarea id="reviewText" class="review-field" maxlength="1800" placeholder="Write your full review here…"></textarea>
-    <div class="char-count"><span id="reviewCount">0</span>/1800</div>
+    <div id="reviewOnlyFields">
+      <label class="field-label required" for="reviewText">Review</label>
+      <textarea id="reviewText" class="review-field" maxlength="1800" placeholder="Write your full review here…"></textarea>
+      <div class="char-count"><span id="reviewCount">0</span>/1800</div>
+    </div>
     <label class="field-label">Choose your post style</label>
     <div class="post-style-picker" role="group" aria-label="Post style">
       <button type="button" class="post-style-option" data-post-style="photo"><span>▧</span><span>Photo</span></button>
@@ -88,6 +90,7 @@ function buildCreateUI(){
   }
 
   bindCreateUI();
+  setStyle(selectedStyle);
   clearRating();
   updateReviewCardPreview();
 }
@@ -141,7 +144,9 @@ function setStyle(style){
   document.querySelectorAll('[data-post-style]').forEach(b=>b.classList.toggle('active',b.dataset.postStyle===style));
   const upload=$('#mediaFile')?.closest('.upload-zone');
   const builder=$('#reviewCardBuilder');
+  const reviewFields=$('#reviewOnlyFields');
   if(upload)upload.style.display=style==='review-card'?'none':'block';
+  if(reviewFields)reviewFields.style.display=style==='review-card'?'block':'none';
   builder?.classList.toggle('active',style==='review-card');
   const file=$('#mediaFile');
   if(file)file.accept=style==='photo'?'image/jpeg,image/png,image/webp':'video/mp4,video/webm,video/quicktime';
@@ -204,19 +209,18 @@ async function publishNewFlow(e){
   e.preventDefault();e.stopImmediatePropagation();
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){$('#sheetBackdrop').hidden=false;$('#authSheet').hidden=false;return;}
-  const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim();const review=$('#reviewText')?.value?.trim();const file=$('#mediaFile')?.files?.[0];
+  const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim()||'';const review=$('#reviewText')?.value?.trim()||'';const file=$('#mediaFile')?.files?.[0];
   if(!bookId){setStatus('Choose a book first.',true);return;}
-  if(!hook){setStatus('Add a short “what did you think?” hook.',true);return;}
-  if(!review){setStatus('Write your review first.',true);return;}
+  if(selectedStyle==='review-card'&&!review){setStatus('Write your review first.',true);return;}
   if(selectedStyle!=='review-card'&&!file){setStatus(`Add a ${selectedStyle} first.`,true);return;}
   const button=$('#publishButton');button.disabled=true;setStatus('Creating your Blurb…');
   try{
     let mediaUrl=null;let postType='image';
     if(selectedStyle==='review-card'){const blob=await reviewCardBlob();mediaUrl=await uploadBlob(blob,session.user.id);postType='image';}
     else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle;}
-    const caption=`${hook}\n\n${review}`;
+    const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
     const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published'}).select().single();if(error)throw error;
-    const tags=($('#tags')?.value||'').split(',').map(x=>x.trim().replace(/^#/,'')).filter(Boolean).slice(0,10);if(tags.length)await supabase.from('blurb_post_tags').insert(tags.map(tag=>({post_id:post.id,tag})));
+    const tags=($('#tags')?.value||'').split(',').map(x=>x.trim().replace(/^#/,'' )).filter(Boolean).slice(0,10);if(tags.length)await supabase.from('blurb_post_tags').insert(tags.map(tag=>({post_id:post.id,tag})));
     toast('Your Blurb is live');setStatus('Posted!');setTimeout(()=>location.reload(),650);
   }catch(err){console.error(err);setStatus(err?.message||'Couldn’t publish that Blurb.',true);}finally{button.disabled=false;}
 }
