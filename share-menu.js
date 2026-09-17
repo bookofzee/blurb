@@ -20,23 +20,24 @@ function injectStyles(){
     .feed-card.share-menu-active:after{content:"";position:absolute;inset:0;z-index:6;background:rgba(27,18,14,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:auto;animation:shareShadeIn .16s ease both}
     @keyframes shareShadeIn{from{opacity:0}to{opacity:1}}
     .feed-card.share-menu-active .feed-actions{z-index:7}
-    .feed-card.share-menu-active .feed-actions>*:not(.share-pop-wrap){opacity:.28;filter:blur(2px);pointer-events:none}
+    .feed-card.share-menu-active .feed-actions>*{opacity:.24;filter:blur(2px);pointer-events:none}
+    .feed-card.share-menu-active .share-pop-wrap{opacity:1!important;filter:none!important;pointer-events:auto!important;z-index:15!important}
 
-    .share-pop-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:15}
-    .share-pop-main{position:relative;z-index:16;border:0;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px;padding:0}
-    .share-pop-main .action-icon{width:40px!important;height:38px!important;display:grid!important;place-items:center!important;background:transparent!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
+    .share-pop-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:12}
+    .share-pop-main{position:relative;z-index:16;border:0!important;background:transparent!important;color:#fff;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:50px;padding:0!important;box-shadow:none!important}
+    .share-pop-main .action-icon{width:40px!important;height:38px!important;display:grid!important;place-items:center!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;text-shadow:none!important;filter:none!important}
     .share-pop-main .action-icon svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
     .share-pop-main>span:last-child{display:block!important;position:static!important;margin-top:1px!important;font-size:10px!important;font-weight:900!important;color:#fff!important;line-height:1.05!important;text-shadow:none!important;transform:none!important}
 
-    /* Start at the Share button and fan left. */
-    .share-pop-menu{position:absolute;right:36px;top:-2px;width:190px;height:62px;z-index:17;pointer-events:none}
-    .share-pop-option{position:absolute;top:0;right:0;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.42);background:#C96832;color:#fff;display:grid;place-items:center;opacity:0;transform:translateX(0) scale(.55);transform-origin:right center;transition:opacity .16s ease,transform .22s cubic-bezier(.2,.85,.32,1.22);pointer-events:none;box-shadow:none}
-    .share-pop-option:nth-child(1){--share-x:-144px}
-    .share-pop-option:nth-child(2){--share-x:-84px}
-    .share-pop-option:nth-child(3){--share-x:-24px}
+    /* Final row sits to the left of Share; each option starts at the Share button and travels left. */
+    .share-pop-menu{position:absolute;right:54px;top:-5px;width:176px;height:62px;z-index:17;pointer-events:none}
+    .share-pop-option{position:absolute;top:0;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,.42);background:#C96832;color:#fff;display:grid;place-items:center;opacity:0;pointer-events:none;box-shadow:none;transition:opacity .16s ease,transform .22s cubic-bezier(.2,.85,.32,1.22)}
+    .share-pop-option:nth-child(1){left:0;transform:translateX(144px) scale(.62)}
+    .share-pop-option:nth-child(2){left:64px;transform:translateX(96px) scale(.62)}
+    .share-pop-option:nth-child(3){left:128px;transform:translateX(48px) scale(.62)}
     .share-pop-option svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-    .share-pop-option>span{position:absolute;top:53px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;color:#fff;line-height:1}
-    .share-pop-wrap.open .share-pop-option{opacity:1;transform:translateX(var(--share-x)) scale(1);pointer-events:auto}
+    .share-pop-option>span{position:absolute;top:53px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;color:#fff;line-height:1;text-shadow:none}
+    .share-pop-wrap.open .share-pop-option{opacity:1;transform:translateX(0) scale(1);pointer-events:auto}
     .share-pop-wrap.open .share-pop-option:nth-child(2){transition-delay:.035s}
     .share-pop-wrap.open .share-pop-option:nth-child(1){transition-delay:.07s}
   `;
@@ -50,6 +51,15 @@ function shareDetails(card){
   return {title,url,text:`Check out this Blurb about ${title}`};
 }
 
+function closeAddMenus(){
+  document.querySelectorAll('.add-action-wrap.open').forEach(wrap=>{
+    wrap.classList.remove('open');
+    wrap.querySelector('.add-main')?.setAttribute('aria-expanded','false');
+    wrap.querySelector('.add-status-menu')?.setAttribute('aria-hidden','true');
+    wrap.closest('.feed-card')?.classList.remove('add-menu-active');
+  });
+}
+
 function closeShareWrap(wrap){
   if(!wrap)return;
   wrap.classList.remove('open');
@@ -59,8 +69,7 @@ function closeShareWrap(wrap){
 
 function closeShareMenus(except=null){
   document.querySelectorAll('.share-pop-wrap.open').forEach(wrap=>{
-    if(wrap===except)return;
-    closeShareWrap(wrap);
+    if(wrap!==except)closeShareWrap(wrap);
   });
 }
 
@@ -101,16 +110,21 @@ function enhanceCard(card){
     <button type="button" class="share-pop-option" data-share-pop="copy" aria-label="Copy link">${linkIcon}<span>Copy</span></button>`;
   wrap.append(main,menu);
   original.replaceWith(wrap);
+
   main.addEventListener('click',e=>{
-    e.preventDefault();e.stopPropagation();
+    e.preventDefault();
+    e.stopImmediatePropagation();
     const opening=!wrap.classList.contains('open');
+    closeAddMenus();
     closeShareMenus(wrap);
     wrap.classList.toggle('open',opening);
     card.classList.toggle('share-menu-active',opening);
     main.setAttribute('aria-expanded',String(opening));
-  });
+  },true);
+
   menu.querySelectorAll('[data-share-pop]').forEach(btn=>btn.addEventListener('click',async e=>{
-    e.preventDefault();e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     await act(btn.dataset.sharePop,card);
     closeShareWrap(wrap);
   }));
@@ -127,7 +141,9 @@ function start(){
   if(feed)new MutationObserver(mutations=>{
     for(const mutation of mutations)for(const node of mutation.addedNodes)if(node instanceof HTMLElement)scan(node);
   }).observe(feed,{childList:true,subtree:true});
-  document.addEventListener('click',e=>{if(!e.target.closest('.share-pop-wrap'))closeShareMenus();});
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.share-pop-wrap'))closeShareMenus();
+  });
 }
 
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',start,{once:true}):start();
