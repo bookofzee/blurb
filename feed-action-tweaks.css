@@ -4,24 +4,27 @@
 .action-button[data-comments] .action-icon svg{width:25px;height:25px}
 .action-button[data-share] .action-icon svg{width:23px;height:23px}
 
-/* When Add is open, soften the whole Blurb behind the library choices. */
+/* Ghost the feed behind the Add chooser, but keep the chooser itself crisp. */
 .feed-card.add-menu-active:after{content:"";position:absolute;inset:0;z-index:6;background:rgba(27,18,14,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:auto;animation:addShadeIn .16s ease both}
 @keyframes addShadeIn{from{opacity:0}to{opacity:1}}
+.feed-card.add-menu-active .feed-actions{z-index:7}
+.feed-card.add-menu-active .feed-actions>.action-button{opacity:.28;filter:blur(2px);pointer-events:none}
 
-.add-action-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:8}
-.add-main{position:relative;z-index:10;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
+.add-action-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:10}
+.add-main{position:relative;z-index:12;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
 .add-main .action-icon{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(58,32,22,.52);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:27px;line-height:1;text-shadow:0 1px 4px #000;transition:transform .18s ease,background .18s ease,box-shadow .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .add-main>span:last-child{font-size:10px;font-weight:800}
-.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:rgba(93,48,31,.96);box-shadow:0 8px 28px rgba(0,0,0,.34)}
+.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:rgba(93,48,31,.98);box-shadow:0 8px 28px rgba(0,0,0,.38)}
 
-/* Tight, tidy three-button fan opening inward from Add. */
-.add-status-menu{position:absolute;right:34px;top:-48px;width:96px;height:142px;z-index:11;pointer-events:none}
-.add-status-option{position:absolute;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(83,44,31,.96);color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:translate(18px,20px) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.3);pointer-events:none}
+/* Compact three-button fan tucked close to Add. */
+.add-status-menu{position:absolute;right:38px;top:-42px;width:88px;height:126px;z-index:13;pointer-events:none}
+.add-status-option{position:absolute;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(83,44,31,.98);color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:translate(14px,16px) scale(.62);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.32);pointer-events:none}
 .add-status-option .status-symbol{font-size:17px;line-height:1}
 .add-status-option .status-label{position:absolute;top:44px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;text-shadow:0 1px 5px #000}
 .add-status-option[data-status="read"]{right:0;top:0}
-.add-status-option[data-status="tbr"]{left:0;top:49px}
-.add-status-option[data-status="reading"]{right:0;top:98px}
+.add-status-option[data-status="read"] .status-label{top:-16px}
+.add-status-option[data-status="tbr"]{left:0;top:42px}
+.add-status-option[data-status="reading"]{right:0;top:84px}
 .add-action-wrap.open .add-status-option{opacity:1;transform:translate(0,0) scale(1);pointer-events:auto}
 .add-action-wrap.open .add-status-option:nth-child(2){transition-delay:.035s}
 .add-action-wrap.open .add-status-option:nth-child(3){transition-delay:.07s}
