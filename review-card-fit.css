@@ -1,2 +1,3 @@
 .feed-card.review-card-post{background:transparent}
+.feed-card.review-card-post:before{background:transparent!important}
 .feed-card .feed-media.review-card-media{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center center!important;background:transparent!important;display:block}
