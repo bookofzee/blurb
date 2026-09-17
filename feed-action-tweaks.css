@@ -25,16 +25,30 @@
 .action-button[data-like] .action-icon{font-size:34px!important}
 .action-button>span:last-child,.add-main>span:last-child{font-weight:900!important;text-shadow:none!important;filter:none!important}
 
-.rating-line{display:flex;align-items:center;gap:6px;color:#f6d892;letter-spacing:0}
-.single-rating-star{display:inline-grid;place-items:center;width:18px;height:18px}
-.single-rating-star svg{width:18px;height:18px;display:block;fill:currentColor;stroke:none}
-.single-rating-value{font-size:13px;font-weight:800;line-height:1}
+.rating-line{display:flex;align-items:center;gap:5px;color:#f6d892;letter-spacing:0}
+.single-rating-star{display:inline-grid;place-items:center;width:16px;height:16px}
+.single-rating-star svg{width:16px;height:16px;display:block;fill:currentColor;stroke:none}
+.single-rating-value{font-size:12px;font-weight:800;line-height:1}
+
+/* Creator identity now lives above the heart action. */
+.feed-profile-avatar{position:relative;width:50px;display:flex;justify-content:center;align-items:center;margin-bottom:2px}
+.feed-profile-avatar .avatar{width:42px;height:42px;margin:0;border:2px solid rgba(255,255,255,.78);box-shadow:0 7px 18px rgba(0,0,0,.28)}
+.creator-follow-only{margin-bottom:8px}
+.creator-follow-only .follow-mini{margin:0}
+
+/* Rating lives inside the book chip instead of above the caption. */
+.book-chip{display:inline-grid!important;grid-template-columns:27px minmax(0,1fr) auto;align-items:center;column-gap:9px;row-gap:2px}
+.book-chip .mini-cover{grid-column:1;grid-row:1 / span 2}
+.book-chip>span:not(.chip-rating){grid-column:2;min-width:0}
+.book-chip .chip-rating{grid-column:3;grid-row:1 / span 2;display:flex;align-items:center;justify-content:flex-end;padding-left:6px}
+.book-chip .rating-line{margin:0;color:#9b471f}
 
 /* Ghost the feed behind the Add chooser, but keep the chooser itself crisp. */
 .feed-card.add-menu-active:after{content:"";position:absolute;inset:0;z-index:6;background:rgba(27,18,14,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:auto;animation:addShadeIn .16s ease both}
 @keyframes addShadeIn{from{opacity:0}to{opacity:1}}
 .feed-card.add-menu-active .feed-actions{z-index:7}
 .feed-card.add-menu-active .feed-actions>.action-button{opacity:.28;filter:blur(2px);pointer-events:none}
+.feed-card.add-menu-active .feed-actions>.feed-profile-avatar{opacity:.28;filter:blur(2px);pointer-events:none}
 /* Share is wrapped by share-menu.js, so it must also get out of the way while Add is open. */
 .feed-card.add-menu-active .feed-actions>.share-pop-wrap{opacity:0!important;filter:none!important;pointer-events:none!important}
 
