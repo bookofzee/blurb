@@ -4,6 +4,11 @@
 .action-button[data-comments] .action-icon svg{width:25px;height:25px}
 .action-button[data-share] .action-icon svg{width:23px;height:23px}
 
+.rating-line{display:flex;align-items:center;gap:6px;color:#f6d892;letter-spacing:0}
+.single-rating-star{display:inline-grid;place-items:center;width:18px;height:18px}
+.single-rating-star svg{width:18px;height:18px;display:block;fill:currentColor;stroke:none}
+.single-rating-value{font-size:13px;font-weight:800;line-height:1}
+
 /* Ghost the feed behind the Add chooser, but keep the chooser itself crisp. */
 .feed-card.add-menu-active:after{content:"";position:absolute;inset:0;z-index:6;background:rgba(27,18,14,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:auto;animation:addShadeIn .16s ease both}
 @keyframes addShadeIn{from{opacity:0}to{opacity:1}}
@@ -17,17 +22,20 @@
 .add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:rgba(93,48,31,.98);box-shadow:0 8px 28px rgba(0,0,0,.38)}
 .add-action-wrap.open .add-main>span:last-child{opacity:0}
 
-/* Equal-distance cross around the central Add button. */
+/* Four evenly spaced reading statuses around the central Add button. */
 .add-status-menu{position:absolute;left:50%;top:23px;width:0;height:0;z-index:13;pointer-events:none}
 .add-status-option{--x:0px;--y:0px;position:absolute;left:-21px;top:-21px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(83,44,31,.98);color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:translate(0,0) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.32);pointer-events:none}
 .add-status-option .status-symbol{font-size:17px;line-height:1}
 .add-status-option .status-label{position:absolute;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;text-shadow:0 1px 5px #000}
-.add-status-option[data-status="read"]{--x:0px;--y:-70px}
+.add-status-option[data-status="read"]{--x:0px;--y:-72px}
 .add-status-option[data-status="read"] .status-label{bottom:47px}
-.add-status-option[data-status="tbr"]{--x:-70px;--y:0px}
-.add-status-option[data-status="tbr"] .status-label{top:47px}
-.add-status-option[data-status="reading"]{--x:0px;--y:70px}
+.add-status-option[data-status="reading"]{--x:0px;--y:72px}
 .add-status-option[data-status="reading"] .status-label{top:47px}
+.add-status-option[data-status="tbr"]{--x:-72px;--y:0px}
+.add-status-option[data-status="tbr"] .status-label{top:47px}
+.add-status-option[data-status="dnf"]{--x:72px;--y:0px}
+.add-status-option[data-status="dnf"] .status-label{top:47px}
 .add-action-wrap.open .add-status-option{opacity:1;transform:translate(var(--x),var(--y)) scale(1);pointer-events:auto}
-.add-action-wrap.open .add-status-option:nth-child(2){transition-delay:.035s}
-.add-action-wrap.open .add-status-option:nth-child(3){transition-delay:.07s}
+.add-action-wrap.open .add-status-option:nth-child(2){transition-delay:.025s}
+.add-action-wrap.open .add-status-option:nth-child(3){transition-delay:.05s}
+.add-action-wrap.open .add-status-option:nth-child(4){transition-delay:.075s}
