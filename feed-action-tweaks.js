@@ -4,6 +4,7 @@ const supabase=createClient('https://ndinulaqwixbmgjhrhdo.supabase.co','sb_publi
 
 const bookIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.9-.8 5.5-.4 8 1.3v11.5c-2.5-1.7-5.1-2.1-8-1.3z"/><path d="M20.5 5.5c-2.9-.8-5.5-.4-8 1.3v11.5c2.5-1.7 5.1-2.1 8-1.3z"/><path d="M12 6.8v11.5"/></svg>`;
 const shareIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M10 7h7v7"/></svg>`;
+const starIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.67 6.26.91-4.53 4.42 1.07 6.24L12 17.1l-5.6 2.94 1.07-6.24-4.53-4.42 6.26-.91L12 2.8Z"/></svg>`;
 
 function toast(message){
   const el=document.querySelector('#toast');
@@ -48,7 +49,7 @@ async function saveReadingStatus(bookId,status){
     updated_at:new Date().toISOString()
   },{onConflict:'user_id,book_id'});
   if(error){toast('Couldn’t update your library');return;}
-  const label=status==='read'?'Finished':status==='reading'?'Reading':'TBR';
+  const label=status==='read'?'Finished':status==='reading'?'Reading':status==='dnf'?'DNF':'TBR';
   toast(`Added to ${label}`);
 }
 
@@ -62,6 +63,16 @@ function enhanceShare(card){
   const button=card.querySelector('[data-share]');
   const icon=button?.querySelector('.action-icon');
   if(icon&&!icon.dataset.shareIcon){icon.innerHTML=shareIcon;icon.dataset.shareIcon='1';}
+}
+
+function enhanceRating(card){
+  const line=card.querySelector('.rating-line');
+  if(!line||line.dataset.simpleRating)return;
+  const match=line.textContent.match(/(\d+(?:\.\d+)?)/g);
+  const value=match?.at(-1);
+  if(!value)return;
+  line.innerHTML=`<span class="single-rating-star">${starIcon}</span><span class="single-rating-value">${Number(value).toFixed(1)}</span>`;
+  line.dataset.simpleRating='1';
 }
 
 function enhanceAdd(card){
@@ -78,6 +89,7 @@ function enhanceAdd(card){
       <button type="button" class="add-status-option" data-status="read"><span class="status-symbol">✓</span><span class="status-label">Finished</span></button>
       <button type="button" class="add-status-option" data-status="tbr"><span class="status-symbol">＋</span><span class="status-label">TBR</span></button>
       <button type="button" class="add-status-option" data-status="reading"><span class="status-symbol">◫</span><span class="status-label">Reading</span></button>
+      <button type="button" class="add-status-option" data-status="dnf"><span class="status-symbol">×</span><span class="status-label">DNF</span></button>
     </div>`;
   existing.replaceWith(wrap);
   const main=wrap.querySelector('.add-main');
@@ -102,7 +114,7 @@ function enhanceAdd(card){
 
 function enhance(root=document){
   const cards=root.matches?.('.feed-card')?[root]:[...root.querySelectorAll?.('.feed-card')||[]];
-  for(const card of cards){enhanceComments(card);enhanceShare(card);enhanceAdd(card);}
+  for(const card of cards){enhanceComments(card);enhanceShare(card);enhanceRating(card);enhanceAdd(card);}
 }
 
 function start(){
