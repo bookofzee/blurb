@@ -1,1 +1,20 @@
-/* Local feed action UI tweaks. */
+.feed-actions{gap:14px}
+.action-button{position:relative}
+.action-button .action-icon svg{width:24px;height:24px;display:block;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.action-button[data-comments] .action-icon svg{width:25px;height:25px}
+.action-button[data-share] .action-icon svg{width:23px;height:23px}
+.add-action-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:8}
+.add-main{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
+.add-main .action-icon{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(58,32,22,.42);backdrop-filter:blur(10px);font-size:27px;line-height:1;text-shadow:0 1px 4px #000;transition:transform .18s ease,background .18s ease}
+.add-main>span:last-child{font-size:10px;font-weight:800}
+.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:rgba(58,32,22,.62)}
+.add-status-menu{position:absolute;right:48px;top:-39px;width:118px;height:128px;pointer-events:none}
+.add-status-option{position:absolute;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(58,32,22,.82);color:#fff;backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:scale(.55);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none}
+.add-status-option .status-symbol{font-size:17px;line-height:1}
+.add-status-option .status-label{position:absolute;top:46px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;text-shadow:0 1px 4px #000}
+.add-status-option[data-status="read"]{right:0;top:0}
+.add-status-option[data-status="tbr"]{left:0;top:37px}
+.add-status-option[data-status="reading"]{right:8px;bottom:0}
+.add-action-wrap.open .add-status-option{opacity:1;transform:scale(1);pointer-events:auto}
+.add-action-wrap.open .add-status-option:nth-child(2){transition-delay:.035s}
+.add-action-wrap.open .add-status-option:nth-child(3){transition-delay:.07s}
