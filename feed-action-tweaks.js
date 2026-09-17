@@ -3,7 +3,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabase=createClient('https://ndinulaqwixbmgjhrhdo.supabase.co','sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1');
 
 const bookIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.9-.8 5.5-.4 8 1.3v11.5c-2.5-1.7-5.1-2.1-8-1.3z"/><path d="M20.5 5.5c-2.9-.8-5.5-.4-8 1.3v11.5c2.5-1.7 5.1-2.1 8-1.3z"/><path d="M12 6.8v11.5"/></svg>`;
-const shareIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M10 7h7v7"/></svg>`;
+const shareIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18c1.4-5.2 5.1-8.1 11-8.1h2"/><path d="m14.5 6.5 3.7 3.4-3.7 3.4"/></svg>`;
 const starIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.67 6.26.91-4.53 4.42 1.07 6.24L12 17.1l-5.6 2.94 1.07-6.24-4.53-4.42 6.26-.91L12 2.8Z"/></svg>`;
 
 function toast(message){
