@@ -1,0 +1,113 @@
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
+
+const supabase=createClient('https://ndinulaqwixbmgjhrhdo.supabase.co','sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1');
+
+const bookIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.9-.8 5.5-.4 8 1.3v11.5c-2.5-1.7-5.1-2.1-8-1.3z"/><path d="M20.5 5.5c-2.9-.8-5.5-.4-8 1.3v11.5c2.5-1.7 5.1-2.1 8-1.3z"/><path d="M12 6.8v11.5"/></svg>`;
+const shareIcon=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7"/><path d="M10 7h7v7"/></svg>`;
+
+function toast(message){
+  const el=document.querySelector('#toast');
+  if(!el)return;
+  el.textContent=message;
+  el.classList.add('show');
+  clearTimeout(toast.t);
+  toast.t=setTimeout(()=>el.classList.remove('show'),1900);
+}
+
+async function saveReadingStatus(bookId,status){
+  if(!bookId){toast('Book link unavailable');return;}
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.user){
+    document.querySelector('#openNotifications')?.click();
+    return;
+  }
+  const {data:existing}=await supabase.from('blurb_library')
+    .select('is_favourite')
+    .eq('user_id',session.user.id)
+    .eq('book_id',bookId)
+    .maybeSingle();
+  const {error}=await supabase.from('blurb_library').upsert({
+    user_id:session.user.id,
+    book_id:bookId,
+    reading_status:status,
+    is_favourite:existing?.is_favourite||false,
+    updated_at:new Date().toISOString()
+  },{onConflict:'user_id,book_id'});
+  if(error){toast('Couldn’t update your library');return;}
+  const label=status==='read'?'Finished':status==='reading'?'Reading':'TBR';
+  toast(`Added to ${label}`);
+}
+
+function enhanceComments(card){
+  const button=card.querySelector('[data-comments]');
+  const icon=button?.querySelector('.action-icon');
+  if(icon&&!icon.dataset.bookIcon){icon.innerHTML=bookIcon;icon.dataset.bookIcon='1';}
+}
+
+function enhanceShare(card){
+  const button=card.querySelector('[data-share]');
+  const icon=button?.querySelector('.action-icon');
+  if(icon&&!icon.dataset.shareIcon){icon.innerHTML=shareIcon;icon.dataset.shareIcon='1';}
+}
+
+function enhanceAdd(card){
+  const existing=card.querySelector('[data-tbr]');
+  if(!existing||card.querySelector('.add-action-wrap'))return;
+  const bookId=existing.dataset.tbr||'';
+  const wrap=document.createElement('div');
+  wrap.className='add-action-wrap';
+  wrap.innerHTML=`
+    <button type="button" class="add-main" aria-expanded="false" aria-label="Add book to library">
+      <span class="action-icon">＋</span><span>Add</span>
+    </button>
+    <div class="add-status-menu" aria-hidden="true">
+      <button type="button" class="add-status-option" data-status="read"><span class="status-symbol">✓</span><span class="status-label">Finished</span></button>
+      <button type="button" class="add-status-option" data-status="tbr"><span class="status-symbol">＋</span><span class="status-label">TBR</span></button>
+      <button type="button" class="add-status-option" data-status="reading"><span class="status-symbol">◫</span><span class="status-label">Reading</span></button>
+    </div>`;
+  existing.replaceWith(wrap);
+  const main=wrap.querySelector('.add-main');
+  const menu=wrap.querySelector('.add-status-menu');
+  main.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    document.querySelectorAll('.add-action-wrap.open').forEach(other=>{if(other!==wrap){other.classList.remove('open');other.querySelector('.add-main')?.setAttribute('aria-expanded','false');}});
+    const open=wrap.classList.toggle('open');
+    main.setAttribute('aria-expanded',String(open));
+    menu.setAttribute('aria-hidden',String(!open));
+  });
+  wrap.querySelectorAll('.add-status-option').forEach(button=>button.addEventListener('click',async e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    await saveReadingStatus(bookId,button.dataset.status);
+    wrap.classList.remove('open');
+    main.setAttribute('aria-expanded','false');
+    menu.setAttribute('aria-hidden','true');
+  }));
+}
+
+function enhance(root=document){
+  const cards=root.matches?.('.feed-card')?[root]:[...root.querySelectorAll?.('.feed-card')||[]];
+  for(const card of cards){enhanceComments(card);enhanceShare(card);enhanceAdd(card);}
+}
+
+function start(){
+  enhance();
+  const feed=document.querySelector('#feed');
+  if(feed){
+    new MutationObserver(mutations=>{
+      for(const mutation of mutations){for(const node of mutation.addedNodes){if(node instanceof HTMLElement)enhance(node);}}
+    }).observe(feed,{childList:true,subtree:true});
+  }
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.add-action-wrap')){
+      document.querySelectorAll('.add-action-wrap.open').forEach(wrap=>{
+        wrap.classList.remove('open');
+        wrap.querySelector('.add-main')?.setAttribute('aria-expanded','false');
+        wrap.querySelector('.add-status-menu')?.setAttribute('aria-hidden','true');
+      });
+    }
+  });
+}
+
+document.readyState==='loading'?document.addEventListener('DOMContentLoaded',start,{once:true}):start();
