@@ -16,10 +16,18 @@ let selectedText=bgThemes.parchment.text;
 let draggingRating=false;
 
 const $=s=>document.querySelector(s);
-const escapeHtml=(value='')=>String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 
 function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900);}
 function setStatus(message,error=false){const el=$('#createStatus');if(!el)return;el.textContent=message;el.className=`form-status${error?' error':''}`;}
+
+function feedCardSize(){
+  const feed=$('#feed');
+  const feedWidth=feed?.clientWidth||540;
+  const feedHeight=feed?.clientHeight||960;
+  const width=1080;
+  const height=Math.round(width*(feedHeight/feedWidth));
+  return {width,height,ratio:feedWidth/feedHeight};
+}
 
 function buildCreateUI(){
   const form=$('#createForm');
@@ -136,6 +144,8 @@ function updateReviewCardPreview(){
   const preview=$('#reviewCardPreview');if(!preview)return;
   const theme=bgThemes[selectedBg];
   const {title,author}=selectedBookParts();
+  const {ratio}=feedCardSize();
+  preview.style.aspectRatio=String(ratio);
   preview.style.background=`linear-gradient(145deg,${theme.bg[0]},${theme.bg[1]})`;
   preview.style.color=selectedText;
   const review=$('#reviewText')?.value?.trim()||'Your review will appear here.';
@@ -152,19 +162,20 @@ function wrapText(ctx,text,maxWidth){
 }
 
 async function reviewCardBlob(){
-  const width=1080,height=1920;
+  const {width,height}=feedCardSize();
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d');const theme=bgThemes[selectedBg];
   const grad=ctx.createLinearGradient(0,0,width,height);grad.addColorStop(0,theme.bg[0]);grad.addColorStop(1,theme.bg[1]);ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);
-  ctx.strokeStyle='rgba(255,255,255,.38)';ctx.lineWidth=3;ctx.strokeRect(50,50,width-100,height-100);ctx.strokeRect(76,76,width-152,height-152);
+  const outer=Math.round(width*.046),inner=Math.round(width*.07);
+  ctx.strokeStyle='rgba(255,255,255,.38)';ctx.lineWidth=3;ctx.strokeRect(outer,outer,width-outer*2,height-outer*2);ctx.strokeRect(inner,inner,width-inner*2,height-inner*2);
   ctx.fillStyle=selectedText;ctx.textAlign='center';
   const {title,author}=selectedBookParts();
-  ctx.font='700 30px Arial';ctx.globalAlpha=.76;wrapText(ctx,title.toUpperCase(),820).slice(0,2).forEach((line,i)=>ctx.fillText(line,width/2,210+i*42));
+  ctx.font='700 30px Arial';ctx.globalAlpha=.76;wrapText(ctx,title.toUpperCase(),width*.76).slice(0,2).forEach((line,i)=>ctx.fillText(line,width/2,height*.105+i*42));
   ctx.globalAlpha=1;ctx.font='46px Georgia';
-  const review=$('#reviewText')?.value?.trim()||'';const lines=wrapText(ctx,review,820).slice(0,18);const lineHeight=64;const start=(height/2)-((lines.length-1)*lineHeight)/2;
+  const review=$('#reviewText')?.value?.trim()||'';const lines=wrapText(ctx,review,width*.76).slice(0,20);const lineHeight=64;const start=(height*.5)-((lines.length-1)*lineHeight)/2;
   lines.forEach((line,i)=>ctx.fillText(line,width/2,start+i*lineHeight));
-  ctx.globalAlpha=.72;ctx.font='700 25px Arial';if(author)ctx.fillText(author.toUpperCase(),width/2,1660);
-  ctx.globalAlpha=.5;ctx.font='34px Georgia';ctx.fillText(theme.ornament,width/2,1770);
+  ctx.globalAlpha=.72;ctx.font='700 25px Arial';if(author)ctx.fillText(author.toUpperCase(),width/2,height*.865);
+  ctx.globalAlpha=.5;ctx.font='34px Georgia';ctx.fillText(theme.ornament,width/2,height*.925);
   return await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));
 }
 
