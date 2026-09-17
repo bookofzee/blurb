@@ -1,3 +1,23 @@
 .feed-card.review-card-post{background:transparent}
 .feed-card.review-card-post:before{background:transparent!important}
 .feed-card .feed-media.review-card-media{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center center!important;background:transparent!important;display:block}
+
+/* Review-card posts already have designed backgrounds, so keep the overlay clean. */
+.feed-card.review-card-post .follow-mini{display:none!important}
+.feed-card.review-card-post .creator-row strong,
+.feed-card.review-card-post .caption,
+.feed-card.review-card-post .tags,
+.feed-card.review-card-post .tag,
+.feed-card.review-card-post .rating-line,
+.feed-card.review-card-post .single-rating-value,
+.feed-card.review-card-post .single-rating-star{color:#fff!important}
+.feed-card.review-card-post .book-chip{
+  background:rgba(255,250,243,.9)!important;
+  border-color:rgba(255,255,255,.9)!important;
+  color:#2f211b!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px)
+}
+.feed-card.review-card-post .book-chip strong,
+.feed-card.review-card-post .book-chip small{color:#2f211b!important}
