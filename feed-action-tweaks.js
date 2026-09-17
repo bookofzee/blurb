@@ -83,6 +83,36 @@ function enhanceRating(card){
   line.dataset.simpleRating='1';
 }
 
+function enhanceMetaLayout(card){
+  if(card.dataset.feedMetaLayout==='1')return;
+
+  const creatorRow=card.querySelector('.creator-row');
+  const feedActions=card.querySelector('.feed-actions');
+  const avatar=creatorRow?.querySelector('.avatar');
+
+  if(feedActions&&avatar&&!feedActions.querySelector('.feed-profile-avatar')){
+    const profile=document.createElement('div');
+    profile.className='feed-profile-avatar';
+    profile.appendChild(avatar);
+    feedActions.prepend(profile);
+  }
+
+  creatorRow?.querySelector('strong')?.remove();
+  if(creatorRow&&!creatorRow.children.length)creatorRow.remove();
+  else creatorRow?.classList.add('creator-follow-only');
+
+  const rating=card.querySelector('.rating-line');
+  const bookChip=card.querySelector('.book-chip');
+  if(rating&&bookChip&&!bookChip.querySelector('.chip-rating')){
+    const chipRating=document.createElement('span');
+    chipRating.className='chip-rating';
+    chipRating.appendChild(rating);
+    bookChip.appendChild(chipRating);
+  }
+
+  card.dataset.feedMetaLayout='1';
+}
+
 function enhanceAdd(card){
   const existing=card.querySelector('[data-tbr]');
   if(!existing||card.querySelector('.add-action-wrap'))return;
@@ -123,7 +153,13 @@ function enhanceAdd(card){
 
 function enhance(root=document){
   const cards=root.matches?.('.feed-card')?[root]:[...root.querySelectorAll?.('.feed-card')||[]];
-  for(const card of cards){enhanceComments(card);enhanceShare(card);enhanceRating(card);enhanceAdd(card);}
+  for(const card of cards){
+    enhanceComments(card);
+    enhanceShare(card);
+    enhanceRating(card);
+    enhanceMetaLayout(card);
+    enhanceAdd(card);
+  }
 }
 
 function start(){
