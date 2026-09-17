@@ -19,12 +19,12 @@
 .add-main{position:relative;z-index:12;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
 .add-main .action-icon{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(58,32,22,.52);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:27px;line-height:1;text-shadow:0 1px 4px #000;transition:transform .18s ease,background .18s ease,box-shadow .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .add-main>span:last-child{font-size:10px;font-weight:800;transition:opacity .14s ease}
-.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:rgba(93,48,31,.98);box-shadow:0 8px 28px rgba(0,0,0,.38)}
+.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:#9f4f27;box-shadow:0 8px 28px rgba(0,0,0,.38)}
 .add-action-wrap.open .add-main>span:last-child{opacity:0}
 
 /* Neat left-side arch around the central Add button. */
 .add-status-menu{position:absolute;left:50%;top:23px;width:0;height:0;z-index:13;pointer-events:none}
-.add-status-option{--x:0px;--y:0px;position:absolute;left:-21px;top:-21px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(83,44,31,.98);color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:translate(0,0) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.32);pointer-events:none}
+.add-status-option{--x:0px;--y:0px;position:absolute;left:-21px;top:-21px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.38);background:#C96832;color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:translate(0,0) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none}
 .add-status-option .status-symbol{font-size:17px;line-height:1}
 .add-status-option .status-label{position:absolute;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;text-shadow:0 1px 5px #000}
 
