@@ -21,9 +21,13 @@ function toast(message){const el=$('#toast');if(!el)return;el.textContent=messag
 function setStatus(message,error=false){const el=$('#createStatus');if(!el)return;el.textContent=message;el.className=`form-status${error?' error':''}`;}
 
 function feedCardSize(){
-  const feed=$('#feed');
-  const feedWidth=feed?.clientWidth||540;
-  const feedHeight=feed?.clientHeight||960;
+  const shell=$('#app');
+  const nav=document.querySelector('.bottom-nav');
+  const shellWidth=shell?.clientWidth||Math.min(window.innerWidth||540,540);
+  const shellHeight=shell?.clientHeight||window.innerHeight||960;
+  const navHeight=nav?.getBoundingClientRect().height||72;
+  const feedWidth=Math.max(1,Math.round(shellWidth));
+  const feedHeight=Math.max(1,Math.round(shellHeight-navHeight));
   const width=1080;
   const height=Math.round(width*(feedHeight/feedWidth));
   return {width,height,ratio:feedWidth/feedHeight};
