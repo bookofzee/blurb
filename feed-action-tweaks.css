@@ -35,6 +35,8 @@
 @keyframes addShadeIn{from{opacity:0}to{opacity:1}}
 .feed-card.add-menu-active .feed-actions{z-index:7}
 .feed-card.add-menu-active .feed-actions>.action-button{opacity:.28;filter:blur(2px);pointer-events:none}
+/* Share is wrapped by share-menu.js, so it must also get out of the way while Add is open. */
+.feed-card.add-menu-active .feed-actions>.share-pop-wrap{opacity:0!important;filter:none!important;pointer-events:none!important}
 
 .add-action-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:10}
 .add-main{position:relative;z-index:12;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
