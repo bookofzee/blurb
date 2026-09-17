@@ -95,6 +95,20 @@
 }
 .book-chip .single-rating-star svg{fill:currentColor!important}
 
+/* Force both the star and the numeric rating to use the same coffee colour. */
+.book-chip .chip-rating,
+.book-chip .chip-rating .rating-line,
+.book-chip .chip-rating .rating-line span,
+.book-chip .chip-rating .single-rating-value,
+.book-chip .chip-rating .single-rating-star{
+  color:#7a4b36!important;
+  -webkit-text-fill-color:#7a4b36!important;
+}
+.book-chip .chip-rating .single-rating-star svg{
+  fill:#7a4b36!important;
+  color:#7a4b36!important;
+}
+
 /* Ghost the feed behind the Add chooser, but keep the chooser itself crisp. */
 .feed-card.add-menu-active:after{content:"";position:absolute;inset:0;z-index:6;background:rgba(27,18,14,.58);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:auto;animation:addShadeIn .16s ease both}
 @keyframes addShadeIn{from{opacity:0}to{opacity:1}}
