@@ -29,6 +29,14 @@ function closeAllAddMenus(except=null){
   });
 }
 
+function closeShareMenusForAdd(){
+  document.querySelectorAll('.share-pop-wrap.open').forEach(wrap=>{
+    wrap.classList.remove('open');
+    wrap.querySelector('.share-pop-main')?.setAttribute('aria-expanded','false');
+    wrap.closest('.feed-card')?.classList.remove('share-menu-active');
+  });
+}
+
 async function saveReadingStatus(bookId,status){
   if(!bookId){toast('Book link unavailable');return;}
   const {data:{session}}=await supabase.auth.getSession();
@@ -98,6 +106,7 @@ function enhanceAdd(card){
     e.preventDefault();
     e.stopPropagation();
     const opening=!wrap.classList.contains('open');
+    closeShareMenusForAdd();
     closeAllAddMenus(wrap);
     wrap.classList.toggle('open',opening);
     card.classList.toggle('add-menu-active',opening);
