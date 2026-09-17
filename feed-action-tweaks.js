@@ -14,6 +14,20 @@ function toast(message){
   toast.t=setTimeout(()=>el.classList.remove('show'),1900);
 }
 
+function closeAddMenu(wrap){
+  if(!wrap)return;
+  wrap.classList.remove('open');
+  wrap.closest('.feed-card')?.classList.remove('add-menu-active');
+  wrap.querySelector('.add-main')?.setAttribute('aria-expanded','false');
+  wrap.querySelector('.add-status-menu')?.setAttribute('aria-hidden','true');
+}
+
+function closeAllAddMenus(except=null){
+  document.querySelectorAll('.add-action-wrap.open').forEach(wrap=>{
+    if(wrap!==except) closeAddMenu(wrap);
+  });
+}
+
 async function saveReadingStatus(bookId,status){
   if(!bookId){toast('Book link unavailable');return;}
   const {data:{session}}=await supabase.auth.getSession();
@@ -71,18 +85,18 @@ function enhanceAdd(card){
   main.addEventListener('click',e=>{
     e.preventDefault();
     e.stopPropagation();
-    document.querySelectorAll('.add-action-wrap.open').forEach(other=>{if(other!==wrap){other.classList.remove('open');other.querySelector('.add-main')?.setAttribute('aria-expanded','false');}});
-    const open=wrap.classList.toggle('open');
-    main.setAttribute('aria-expanded',String(open));
-    menu.setAttribute('aria-hidden',String(!open));
+    const opening=!wrap.classList.contains('open');
+    closeAllAddMenus(wrap);
+    wrap.classList.toggle('open',opening);
+    card.classList.toggle('add-menu-active',opening);
+    main.setAttribute('aria-expanded',String(opening));
+    menu.setAttribute('aria-hidden',String(!opening));
   });
   wrap.querySelectorAll('.add-status-option').forEach(button=>button.addEventListener('click',async e=>{
     e.preventDefault();
     e.stopPropagation();
     await saveReadingStatus(bookId,button.dataset.status);
-    wrap.classList.remove('open');
-    main.setAttribute('aria-expanded','false');
-    menu.setAttribute('aria-hidden','true');
+    closeAddMenu(wrap);
   }));
 }
 
@@ -100,13 +114,7 @@ function start(){
     }).observe(feed,{childList:true,subtree:true});
   }
   document.addEventListener('click',e=>{
-    if(!e.target.closest('.add-action-wrap')){
-      document.querySelectorAll('.add-action-wrap.open').forEach(wrap=>{
-        wrap.classList.remove('open');
-        wrap.querySelector('.add-main')?.setAttribute('aria-expanded','false');
-        wrap.querySelector('.add-status-menu')?.setAttribute('aria-hidden','true');
-      });
-    }
+    if(!e.target.closest('.add-action-wrap')) closeAllAddMenus();
   });
 }
 
