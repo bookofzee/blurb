@@ -1,8 +1,28 @@
-.feed-actions{gap:14px}
+.feed-actions{gap:18px}
 .action-button{position:relative}
-.action-button .action-icon svg{width:24px;height:24px;display:block;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.action-button[data-comments] .action-icon svg{width:25px;height:25px}
-.action-button[data-share] .action-icon svg{width:23px;height:23px}
+
+/* Main feed actions are bold standalone icons, not bubbles. */
+.action-button .action-icon,
+.add-main .action-icon{
+  width:40px!important;
+  height:38px!important;
+  border-radius:0!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:none!important;
+  text-shadow:0 2px 8px rgba(0,0,0,.72)!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#fff;
+}
+.action-button .action-icon{font-size:31px!important}
+.add-main .action-icon{font-size:34px!important}
+.action-button .action-icon svg{width:29px;height:29px;display:block;stroke:currentColor;fill:none;stroke-width:2.45;stroke-linecap:round;stroke-linejoin:round}
+.action-button[data-comments] .action-icon svg{width:31px;height:31px;stroke-width:2.3}
+.action-button[data-share] .action-icon svg{width:29px;height:29px;stroke-width:2.5}
+.action-button[data-like] .action-icon{font-size:34px!important}
+.action-button>span:last-child,.add-main>span:last-child{font-weight:900!important;text-shadow:0 2px 6px rgba(0,0,0,.72)}
 
 .rating-line{display:flex;align-items:center;gap:6px;color:#f6d892;letter-spacing:0}
 .single-rating-star{display:inline-grid;place-items:center;width:18px;height:18px}
@@ -17,12 +37,12 @@
 
 .add-action-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px;z-index:10}
 .add-main{position:relative;z-index:12;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
-.add-main .action-icon{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(58,32,22,.52);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font-size:27px;line-height:1;text-shadow:0 1px 4px #000;transition:transform .18s ease,background .18s ease,box-shadow .18s ease;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.add-main .action-icon{line-height:1;transition:transform .18s ease,color .18s ease}
 .add-main>span:last-child{font-size:10px;font-weight:800;transition:opacity .14s ease}
-.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);background:#9f4f27;box-shadow:0 8px 28px rgba(0,0,0,.38)}
+.add-action-wrap.open .add-main .action-icon{transform:rotate(45deg);color:#fff}
 .add-action-wrap.open .add-main>span:last-child{opacity:0}
 
-/* Neat left-side arch around the central Add button. */
+/* The expanded reading statuses stay as burnt-orange choices. */
 .add-status-menu{position:absolute;left:50%;top:23px;width:0;height:0;z-index:13;pointer-events:none}
 .add-status-option{--x:0px;--y:0px;position:absolute;left:-21px;top:-21px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.38);background:#C96832;color:#fff;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:grid;place-items:center;opacity:0;transform:translate(0,0) scale(.6);transition:opacity .16s ease,transform .2s cubic-bezier(.2,.85,.32,1.22);box-shadow:0 8px 24px rgba(0,0,0,.28);pointer-events:none}
 .add-status-option .status-symbol{font-size:17px;line-height:1}
