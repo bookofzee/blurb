@@ -1,4 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
+import('/share-menu.js?v=1').catch(console.error);
 const supabase=createClient('https://ndinulaqwixbmgjhrhdo.supabase.co','sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1');
 const escapeHtml=(value='')=>String(value).replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[c]||c));
 const palettes=[['#6f324c','#15101b'],['#263d5b','#10131d'],['#69532c','#18140d'],['#24463e','#0d1715'],['#5b2a2a','#160d0d'],['#47345f','#120f1a'],['#273c53','#0c1118'],['#684639','#17100d']];
