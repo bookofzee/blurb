@@ -256,7 +256,7 @@ async function renderProfile(){
   root.innerHTML=`<div class="profile-shell">
     <div class="profile-settings-wrap">
       <button class="profile-settings-button" id="profileSettingsButton" type="button" aria-label="Profile settings" aria-expanded="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="M19.1 13.4c.1-.5.1-.9 0-1.4l2-1.5-2-3.5-2.5 1a7.5 7.5 0 0 0-1.2-.7L15 4.7h-4l-.4 2.6c-.4.2-.8.4-1.2.7L6.9 7l-2 3.5 2 1.5a6.5 6.5 0 0 0 0 1.4l-2 1.5 2 3.5 2.5-1c.4.3.8.5 1.2.7l.4 2.6h4l.4-2.6c.4-.2.8-.4 1.2-.7l2.5 1 2-3.5-2-1.5Z"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.25"/><path d="M12 2.75v2.1M12 19.15v2.1M21.25 12h-2.1M4.85 12h-2.1M18.54 5.46l-1.49 1.49M6.95 17.05l-1.49 1.49M18.54 18.54l-1.49-1.49M6.95 6.95 5.46 5.46"/></svg>
       </button>
       <div class="profile-settings-menu" id="profileSettingsMenu" hidden>
         <button type="button" id="editProfileButton">Edit profile</button>
