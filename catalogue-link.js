@@ -9,6 +9,7 @@ let bySource=new Map();
 let byKey=new Map();
 let ready=false;
 let trendingBooks=[];
+let popularityScores=new Map();
 
 function toast(message){
   const el=document.querySelector('#toast');
@@ -198,11 +199,13 @@ async function loadTrendingBooks(){
       const match=findBook('',title,author);
       if(match)scores.set(match.id,(scores.get(match.id)||0)+1);
     }
+    popularityScores=scores;
     trendingBooks=[...scores.entries()]
       .sort((a,b)=>b[1]-a[1])
       .map(([id])=>bySource.get(String(id)))
       .filter(Boolean);
     if(!norm(document.querySelector('#discoverSearch')?.value||''))renderDiscoverHome();
+    if(!document.querySelector('#bookSheet')?.hidden)renderPicker();
   }catch(err){
     console.warn('Could not load Blurb trending books',err);
   }
@@ -243,17 +246,30 @@ function bindAddBookUI(){
   if(!toggle||!form||form.dataset.bound==='1')return;
   form.dataset.bound='1';
 
-  toggle.addEventListener('click',()=>{
-    form.hidden=!form.hidden;
-    toggle.textContent=form.hidden?'＋ Book not listed? Add it':'− Hide add book form';
-    if(!form.hidden)setTimeout(()=>document.querySelector('#newBookTitle')?.focus(),60);
-  });
+  const search=document.querySelector('#bookSheetSearch');
+  const list=document.querySelector('#bookSheetList');
+  const heading=document.querySelector('#bookSheet h2');
 
-  cancel?.addEventListener('click',()=>{
+  const showAddBook=()=>{
+    form.hidden=false;
+    if(search)search.hidden=true;
+    if(list)list.hidden=true;
+    if(heading)heading.textContent='Add a book';
+    toggle.textContent='← Back to book list';
+    setTimeout(()=>document.querySelector('#newBookTitle')?.focus(),60);
+  };
+
+  const showBookList=()=>{
     form.hidden=true;
+    if(search)search.hidden=false;
+    if(list)list.hidden=false;
+    if(heading)heading.textContent='Choose a book';
     toggle.textContent='＋ Book not listed? Add it';
     resetAddBookForm();
-  });
+  };
+
+  toggle.addEventListener('click',()=>form.hidden?showAddBook():showBookList());
+  cancel?.addEventListener('click',showBookList);
 
   cover?.addEventListener('change',()=>{
     const file=cover.files?.[0];
@@ -298,6 +314,9 @@ function bindAddBookUI(){
 
       resetAddBookForm();
       form.hidden=true;
+      if(search)search.hidden=false;
+      if(list)list.hidden=false;
+      if(heading)heading.textContent='Choose a book';
       toggle.textContent='＋ Book not listed? Add it';
       closeBookSheet();
       toast('Book added');
@@ -317,7 +336,12 @@ function renderPicker(){
   const search=document.querySelector('#bookSheetSearch');
   if(!list||!search)return;
   const q=norm(search.value);
-  const matches=books.filter(b=>!q||norm(b.title).includes(q)||norm(b.author).includes(q)).slice(0,20);
+  const matches=books
+    .map((book,index)=>({book,index,score:popularityScores.get(book.id)||0}))
+    .filter(x=>!q||norm(x.book.title).includes(q)||norm(x.book.author).includes(q))
+    .sort((a,b)=>(b.score-a.score)||(a.index-b.index))
+    .slice(0,20)
+    .map(x=>x.book);
   list.innerHTML=matches.map(book=>`
     <button class="sheet-book" data-live-pick="${escapeHtml(book.id)}">
       <i class="mini-cover" style="${coverStyle(book)}"></i>
