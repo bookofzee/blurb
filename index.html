@@ -10,7 +10,7 @@
   <title>Blurb — books worth talking about</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=12" />
+  <link rel="stylesheet" href="/styles.css?v=13" />
   <link rel="stylesheet" href="/spoiler-upgrade.css?v=1" />
   <link rel="stylesheet" href="/catalogue-layout-fix.css?v=1" />
   <link rel="stylesheet" href="/feed-action-tweaks.css?v=6" />
@@ -136,12 +136,37 @@
     </form>
   </section>
 
-  <section id="bookSheet" class="sheet tall" aria-label="Choose a book" hidden>
-    <div class="sheet-handle"></div>
+  <section id="bookSheet" class="sheet book-modal" aria-label="Choose a book" hidden>
     <button class="sheet-close" data-close-sheet aria-label="Close">×</button>
     <h2>Choose a book</h2>
     <input id="bookSheetSearch" class="text-input" type="search" placeholder="Search title or author" />
     <div id="bookSheetList" class="sheet-list"></div>
+
+    <div class="add-book-panel">
+      <button type="button" class="add-book-toggle" id="addBookToggle">＋ Book not listed? Add it</button>
+      <form id="addBookForm" class="add-book-form" hidden>
+        <div class="add-book-grid">
+          <label>
+            <span>Title</span>
+            <input id="newBookTitle" class="text-input" maxlength="160" placeholder="Book title" required />
+          </label>
+          <label>
+            <span>Author</span>
+            <input id="newBookAuthor" class="text-input" maxlength="120" placeholder="Author name" required />
+          </label>
+        </div>
+        <label class="new-book-cover-upload" for="newBookCover">
+          <input id="newBookCover" type="file" accept="image/jpeg,image/png,image/webp" />
+          <span class="new-book-cover-preview" id="newBookCoverPreview">＋</span>
+          <span><strong>Add cover</strong><small>Optional · JPEG, PNG or WebP</small></span>
+        </label>
+        <div class="add-book-actions">
+          <button type="button" class="secondary-button" id="cancelAddBook">Cancel</button>
+          <button type="submit" class="primary-button" id="saveNewBook">Add book</button>
+        </div>
+        <p class="form-status" id="addBookStatus"></p>
+      </form>
+    </div>
   </section>
 
   <section id="commentsSheet" class="sheet tall" aria-label="Comments" hidden>
@@ -159,7 +184,7 @@
 
   <script type="module" src="/app.js?v=12"></script>
   <script type="module" src="/spoiler-upgrade.js?v=1"></script>
-  <script type="module" src="/catalogue-link.js?v=3"></script>
+  <script type="module" src="/catalogue-link.js?v=4"></script>
   <script type="module" src="/cover-inline-fix.js?v=1"></script>
   <script type="module" src="/admin-controls.js?v=1"></script>
   <script type="module" src="/feed-action-tweaks.js?v=7"></script>
