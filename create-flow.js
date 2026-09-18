@@ -60,16 +60,16 @@ function buildCreateUI(){
 
   const reviewWrap=document.createElement('div');
   reviewWrap.innerHTML=`
-    <div id="reviewOnlyFields">
-      <label class="field-label required" for="reviewText">Review</label>
-      <textarea id="reviewText" class="review-field" maxlength="1800" placeholder="Write your full review here…"></textarea>
-      <div class="char-count"><span id="reviewCount">0</span>/1800</div>
-    </div>
     <label class="field-label">Choose your post style</label>
     <div class="post-style-picker" role="group" aria-label="Post style">
       <button type="button" class="post-style-option" data-post-style="photo"><span>▧</span><span>Photo</span></button>
       <button type="button" class="post-style-option" data-post-style="video"><span>▷</span><span>Video</span></button>
       <button type="button" class="post-style-option active" data-post-style="review-card"><span>✦</span><span>Review card</span></button>
+    </div>
+    <div id="reviewOnlyFields">
+      <label class="field-label required" for="reviewText">Review</label>
+      <textarea id="reviewText" class="review-field" maxlength="1800" placeholder="Write your full review here…"></textarea>
+      <div class="char-count"><span id="reviewCount">0</span>/1800</div>
     </div>
     <div class="review-card-builder active" id="reviewCardBuilder">
       <div class="review-card-preview" id="reviewCardPreview"><div class="card-book">Choose a book</div><div class="card-review">Your review will appear here.</div><div class="card-author">BLURB</div><div class="ornament">✦  ❦  ✦</div></div>
@@ -103,10 +103,99 @@ function buildCreateUI(){
     tags.insertAdjacentHTML('afterend','<div class="tag-help">Add a few searchable tropes, separated by commas.</div>');
   }
 
+  buildCreateSteps(form,reviewWrap,uploadZone,coverWrap);
   bindCreateUI();
   setStyle(selectedStyle);
   clearRating();
   updateReviewCardPreview();
+  showCreateStep(1);
+}
+
+function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap){
+  if(form.querySelector('.create-step'))return;
+
+  const bookButton=$('#bookPickerButton');
+  const bookLabel=bookButton?.previousElementSibling;
+  const bookId=$('#selectedBookId');
+  const ratingPicker=$('#ratingPicker');
+  const ratingLabel=ratingPicker?.previousElementSibling;
+  const ratingValue=$('#ratingValue');
+
+  const caption=$('#caption');
+  const captionLabel=caption?.previousElementSibling;
+  const captionCount=caption?.nextElementSibling;
+
+  const tags=$('#tags');
+  const tagsLabel=tags?.previousElementSibling;
+  const tagHelp=tags?.nextElementSibling?.classList?.contains('tag-help')?tags.nextElementSibling:null;
+  const spoiler=$('#spoilerToggle')?.closest('.toggle-row');
+  const publish=$('#publishButton');
+  const status=$('#createStatus');
+
+  const stepper=document.createElement('div');
+  stepper.className='create-stepper';
+  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Details</span>';
+  form.prepend(stepper);
+
+  const step1=document.createElement('section');
+  step1.className='create-step active';
+  step1.dataset.createStep='1';
+
+  [bookLabel,bookButton,bookId,ratingLabel,ratingPicker,ratingValue].forEach(node=>node&&step1.appendChild(node));
+  while(reviewWrap.firstChild)step1.appendChild(reviewWrap.firstChild);
+  reviewWrap.remove();
+  if(uploadZone)step1.appendChild(uploadZone);
+
+  const next=document.createElement('button');
+  next.type='button';
+  next.id='createNextButton';
+  next.className='primary-button create-next-button';
+  next.textContent='Next';
+  step1.appendChild(next);
+
+  const stepError=document.createElement('p');
+  stepError.id='createStepStatus';
+  stepError.className='form-status';
+  step1.appendChild(stepError);
+
+  const step2=document.createElement('section');
+  step2.className='create-step';
+  step2.dataset.createStep='2';
+
+  [captionLabel,caption,captionCount,coverWrap,tagsLabel,tags,tagHelp,spoiler].forEach(node=>node&&step2.appendChild(node));
+
+  const finalActions=document.createElement('div');
+  finalActions.className='create-final-actions';
+  finalActions.innerHTML='<button type="button" class="secondary-button" id="createBackButton">Back</button>';
+  if(publish)finalActions.appendChild(publish);
+  step2.appendChild(finalActions);
+  if(status)step2.appendChild(status);
+
+  form.append(step1,step2);
+}
+
+function setStepStatus(message='',error=false){
+  const el=$('#createStepStatus');
+  if(!el)return;
+  el.textContent=message;
+  el.className=`form-status${error?' error':''}`;
+}
+
+function showCreateStep(step){
+  document.querySelectorAll('[data-create-step]').forEach(el=>el.classList.toggle('active',Number(el.dataset.createStep)===step));
+  document.querySelectorAll('[data-step-dot]').forEach(el=>el.classList.toggle('active',Number(el.dataset.stepDot)===step));
+  const scroller=document.querySelector('#createView .page-scroll');
+  scroller?.scrollTo({top:0,behavior:'smooth'});
+  setStepStatus('');
+}
+
+function validateCreateStepOne(){
+  if(!$('#selectedBookId')?.value)return 'Choose a book first.';
+  const file=$('#mediaFile')?.files?.[0];
+  const review=$('#reviewText')?.value?.trim()||'';
+  if(selectedStyle==='review-card'&&!review)return 'Write your review first.';
+  if(selectedStyle!=='review-card'&&!file)return `Add a ${selectedStyle} first.`;
+  return '';
 }
 
 function bindCreateUI(){
@@ -151,6 +240,13 @@ function bindCreateUI(){
   document.querySelectorAll('[data-post-style]').forEach(btn=>btn.addEventListener('click',()=>setStyle(btn.dataset.postStyle)));
   document.querySelectorAll('[data-bg]').forEach(btn=>btn.addEventListener('click',()=>{selectedBg=btn.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('active',x===btn));selectedText=bgThemes[selectedBg].text;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x.dataset.colour===selectedText));updateReviewCardPreview();}));
   document.querySelectorAll('[data-colour]').forEach(btn=>btn.addEventListener('click',()=>{selectedText=btn.dataset.colour;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x===btn));updateReviewCardPreview();}));
+
+  $('#createNextButton')?.addEventListener('click',()=>{
+    const problem=validateCreateStepOne();
+    if(problem){setStepStatus(problem,true);return;}
+    showCreateStep(2);
+  });
+  $('#createBackButton')?.addEventListener('click',()=>showCreateStep(1));
 
   $('#createForm')?.addEventListener('submit',publishNewFlow,true);
 }
@@ -242,9 +338,9 @@ async function publishNewFlow(e){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){$('#sheetBackdrop').hidden=false;$('#authSheet').hidden=false;return;}
   const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim()||'';const review=$('#reviewText')?.value?.trim()||'';const file=$('#mediaFile')?.files?.[0];const coverFile=$('#profileCoverFile')?.files?.[0];
-  if(!bookId){setStatus('Choose a book first.',true);return;}
-  if(selectedStyle==='review-card'&&!review){setStatus('Write your review first.',true);return;}
-  if(selectedStyle!=='review-card'&&!file){setStatus(`Add a ${selectedStyle} first.`,true);return;}
+  if(!bookId){showCreateStep(1);setStepStatus('Choose a book first.',true);return;}
+  if(selectedStyle==='review-card'&&!review){showCreateStep(1);setStepStatus('Write your review first.',true);return;}
+  if(selectedStyle!=='review-card'&&!file){showCreateStep(1);setStepStatus(`Add a ${selectedStyle} first.`,true);return;}
   const button=$('#publishButton');button.disabled=true;setStatus('Creating your Blurb…');
   try{
     let mediaUrl=null;let thumbnailUrl=null;let postType='image';
