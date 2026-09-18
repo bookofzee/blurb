@@ -265,21 +265,12 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
     <div class="review-step-heading">
       <span>Final check</span>
       <h2>Review your Blurb</h2>
-      <p>This is how your post will look before it goes live.</p>
+      <p>A mini version of how it will appear in the feed.</p>
     </div>
-    <article class="final-post-preview" id="finalPostPreview">
-      <div class="final-preview-media" id="finalPreviewMedia"></div>
-      <div class="final-preview-body">
-        <div class="final-preview-book">
-          <span class="final-preview-cover" id="finalPreviewCover"><b>B</b></span>
-          <span><strong id="finalPreviewBook">Choose a book</strong><small id="finalPreviewAuthor"></small></span>
-          <em id="finalPreviewRating"></em>
-        </div>
-        <p class="final-preview-caption" id="finalPreviewCaption" hidden></p>
-        <div class="final-preview-tags" id="finalPreviewTags"></div>
-        <div class="final-preview-spoiler" id="finalPreviewSpoiler" hidden>⚠ Contains spoilers · viewers will need to reveal this post</div>
-      </div>
-    </article>
+    <div class="mini-feed-preview-shell" id="miniFeedPreviewShell">
+      <div class="mini-feed-preview-stage" id="miniFeedPreviewStage"></div>
+    </div>
+    <div class="review-spoiler-note" id="reviewSpoilerNote" hidden>⚠ This post will be covered by the spoiler reveal screen when it goes live.</div>
     <div class="review-profile-cover" id="reviewProfileCover" hidden></div>`;
 
   const finalActions=document.createElement('div');
@@ -349,71 +340,96 @@ function toggleTrope(trope){
   document.querySelectorAll('[data-trope]').forEach(btn=>btn.classList.toggle('active',selectedTropes.includes(btn.dataset.trope)));
 }
 
-function buildFinalReviewPreview(){
+async function buildFinalReviewPreview(){
+  const stage=$('#miniFeedPreviewStage');
+  const shell=$('#miniFeedPreviewShell');
+  if(!stage||!shell)return;
+
   const {title,author}=selectedBookParts();
-  const titleEl=$('#finalPreviewBook');
-  const authorEl=$('#finalPreviewAuthor');
-  const coverEl=$('#finalPreviewCover');
-  if(titleEl)titleEl.textContent=title;
-  if(authorEl)authorEl.textContent=author||'';
-  const selectedCover=$('#selectedBookCover img');
-  if(coverEl){
-    coverEl.innerHTML=selectedCover?'<img src="'+selectedCover.src+'" alt="" />':'<b>'+((title||'B').charAt(0).toUpperCase())+'</b>';
-  }
-
+  const selectedCover=$('#selectedBookCover img')?.src||'';
   const rating=Number($('#ratingValue')?.value||0);
-  const ratingEl=$('#finalPreviewRating');
-  if(ratingEl){
-    ratingEl.textContent=rating?`★ ${rating.toFixed(1)}`:'';
-    ratingEl.hidden=!rating;
-  }
-
   const caption=$('#caption')?.value?.trim()||'';
-  const captionEl=$('#finalPreviewCaption');
-  if(captionEl){
-    captionEl.textContent=caption;
-    captionEl.hidden=!caption;
-  }
-
-  const tagHost=$('#finalPreviewTags');
-  if(tagHost){
-    const hashtagHtml=selectedHashtags.map(t=>`<span class="final-tag hashtag">#${t}</span>`).join('');
-    const tropeHtml=selectedTropes.map(t=>`<span class="final-tag">${t}</span>`).join('');
-    tagHost.innerHTML=hashtagHtml+tropeHtml;
-    tagHost.hidden=!(selectedHashtags.length||selectedTropes.length);
-  }
-
   const spoiler=$('#spoilerToggle')?.checked||false;
-  const spoilerEl=$('#finalPreviewSpoiler');
-  if(spoilerEl)spoilerEl.hidden=!spoiler;
+  const tags=[...selectedHashtags.slice(0,5).map(t=>'#'+t),...selectedTropes].slice(0,8);
 
-  const mediaHost=$('#finalPreviewMedia');
-  if(mediaHost){
-    mediaHost.innerHTML='';
-    if(selectedStyle==='review-card'){
-      const source=$('#reviewCardPreview');
-      if(source){
-        const clone=source.cloneNode(true);
-        clone.removeAttribute('id');
-        clone.classList.add('final-review-card');
-        mediaHost.appendChild(clone);
-      }
-    }else{
-      const file=$('#mediaFile')?.files?.[0];
-      if(file){
-        const url=URL.createObjectURL(file);
-        if(selectedStyle==='video'){
-          const video=document.createElement('video');
-          video.src=url;video.muted=true;video.loop=true;video.playsInline=true;video.controls=true;
-          mediaHost.appendChild(video);
-        }else{
-          const img=document.createElement('img');
-          img.src=url;img.alt='Post preview';
-          mediaHost.appendChild(img);
-        }
-      }
+  const app=$('#app');
+  const nav=document.querySelector('.bottom-nav');
+  const fullWidth=Math.max(320,Math.round(app?.clientWidth||540));
+  const fullHeight=Math.max(520,Math.round((app?.clientHeight||900)-(nav?.getBoundingClientRect().height||72)));
+
+  shell.style.setProperty('--feed-preview-width',fullWidth+'px');
+  shell.style.setProperty('--feed-preview-height',fullHeight+'px');
+  stage.style.width=fullWidth+'px';
+  stage.style.height=fullHeight+'px';
+
+  const safe=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
+  let mediaHtml='';
+  if(selectedStyle==='review-card'){
+    const blob=await reviewCardBlob();
+    const url=blob?URL.createObjectURL(blob):'';
+    mediaHtml=url?'<img class="feed-media" src="'+url+'" alt="">':'';
+  }else{
+    const file=$('#mediaFile')?.files?.[0];
+    if(file){
+      const url=URL.createObjectURL(file);
+      mediaHtml=selectedStyle==='video'
+        ? '<video class="feed-media" src="'+url+'" muted loop playsinline autoplay></video>'
+        : '<img class="feed-media" src="'+url+'" alt="">';
     }
   }
+
+  const starSvg='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.67 6.26.91-4.53 4.42 1.07 6.24L12 17.1l-5.6 2.94 1.07-6.24-4.53-4.42 6.26-.91L12 2.8Z"/></svg>';
+  const bookSvg='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c2.9-.8 5.5-.4 8 1.3v11.5c-2.5-1.7-5.1-2.1-8-1.3z"/><path d="M20.5 5.5c-2.9-.8-5.5-.4-8 1.3v11.5c2.5-1.7 5.1-2.1 8-1.3z"/><path d="M12 6.8v11.5"/></svg>';
+  const shareSvg='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18c1.4-5.2 5.1-8.1 11-8.1h2"/><path d="m14.5 6.5 3.7 3.4-3.7 3.4"/></svg>';
+
+  let avatarHtml='<div class="avatar mini-preview-avatar">B</div>';
+  try{
+    const {data:{session}}=await supabase.auth.getSession();
+    if(session?.user){
+      const {data:profile}=await supabase.from('blurb_profiles').select('display_name,username,avatar_url').eq('id',session.user.id).maybeSingle();
+      const initial=(profile?.display_name||profile?.username||session.user.email||'B').trim().charAt(0).toUpperCase();
+      avatarHtml=profile?.avatar_url
+        ? '<div class="avatar mini-preview-avatar"><img src="'+safe(profile.avatar_url)+'" alt=""></div>'
+        : '<div class="avatar mini-preview-avatar">'+safe(initial||'B')+'</div>';
+    }
+  }catch(err){console.warn('Could not load profile for post preview',err);}
+
+  const coverStyle=selectedCover?'background-image:url(&quot;'+safe(selectedCover)+'&quot;);background-size:cover;background-position:center;':'';
+  const ratingHtml=rating
+    ? '<span class="chip-rating"><span class="rating-line" data-simple-rating="1"><span class="single-rating-star">'+starSvg+'</span><span class="single-rating-value">'+rating.toFixed(1)+'</span></span></span>'
+    : '';
+
+  stage.innerHTML=`
+    <article class="feed-card mini-live-feed-card">
+      ${mediaHtml}
+      <div class="feed-copy">
+        ${caption?'<p class="caption">'+safe(caption)+'</p>':''}
+        ${tags.length?'<div class="tags">'+tags.map(t=>'<span class="tag">'+safe(String(t).replace(/^#/,''))+'</span>').join('')+'</div>':''}
+        <button type="button" class="book-chip" tabindex="-1">
+          <i class="mini-cover" style="${coverStyle}"></i>
+          <span><strong>${safe(title||'Untitled')}</strong><small>${safe(author||'')}</small></span>
+          ${ratingHtml}
+        </button>
+      </div>
+      <div class="feed-actions">
+        <div class="feed-profile-avatar">${avatarHtml}</div>
+        <button type="button" class="action-button" tabindex="-1"><span class="action-icon">♥</span><span>0</span></button>
+        <button type="button" class="action-button" tabindex="-1"><span class="action-icon mini-svg-icon">${bookSvg}</span><span>0</span></button>
+        <div class="add-action-wrap"><button type="button" class="add-main" tabindex="-1"><span class="action-icon">＋</span><span>Add</span></button></div>
+        <button type="button" class="action-button" tabindex="-1"><span class="action-icon mini-svg-icon">${shareSvg}</span><span>Share</span></button>
+      </div>
+    </article>`;
+
+  const fitPreview=()=>{
+    const scale=Math.min(1,shell.clientWidth/fullWidth);
+    shell.style.height=Math.round(fullHeight*scale)+'px';
+    stage.style.transform='scale('+scale+')';
+  };
+  requestAnimationFrame(fitPreview);
+
+  const spoilerNote=$('#reviewSpoilerNote');
+  if(spoilerNote)spoilerNote.hidden=!spoiler;
 
   const coverFile=$('#profileCoverFile')?.files?.[0];
   const coverNote=$('#reviewProfileCover');
@@ -498,11 +514,17 @@ function bindCreateUI(){
     showCreateStep(2);
   });
   $('#createBackButton')?.addEventListener('click',()=>showCreateStep(1));
-  $('#createReviewButton')?.addEventListener('click',()=>{
+  $('#createReviewButton')?.addEventListener('click',async()=>{
     const pending=$('#hashtagInput')?.value?.trim();
     if(pending)addHashtags(pending);
-    buildFinalReviewPreview();
-    showCreateStep(3);
+    const button=$('#createReviewButton');
+    if(button)button.disabled=true;
+    try{
+      await buildFinalReviewPreview();
+      showCreateStep(3);
+    }finally{
+      if(button)button.disabled=false;
+    }
   });
   $('#reviewBackButton')?.addEventListener('click',()=>showCreateStep(2));
 
