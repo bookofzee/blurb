@@ -237,6 +237,15 @@ function resetAddBookForm(){
   if(status){status.textContent='';status.className='form-status';}
 }
 
+function classifyBookIdentifier(raw=''){
+  const clean=String(raw||'').trim().replace(/[\s-]+/g,'').toUpperCase();
+  if(!clean)return {isbn10:null,isbn13:null,asin:null};
+  if(/^\d{13}$/.test(clean))return {isbn10:null,isbn13:clean,asin:null};
+  if(/^\d{9}[\dX]$/.test(clean))return {isbn10:clean,isbn13:null,asin:null};
+  if(/^[A-Z0-9]{10}$/.test(clean))return {isbn10:null,isbn13:null,asin:clean};
+  return null;
+}
+
 function bindAddBookUI(){
   const toggle=document.querySelector('#addBookToggle');
   const form=document.querySelector('#addBookForm');
@@ -281,8 +290,14 @@ function bindAddBookUI(){
     const button=document.querySelector('#saveNewBook');
     const title=document.querySelector('#newBookTitle')?.value?.trim()||'';
     const author=document.querySelector('#newBookAuthor')?.value?.trim()||'';
+    const identifierRaw=document.querySelector('#newBookIdentifier')?.value?.trim()||'';
+    const identifier=classifyBookIdentifier(identifierRaw);
     const file=cover?.files?.[0]||null;
     if(!title||!author)return;
+    if(identifierRaw&&!identifier){
+      if(status){status.textContent='Enter a valid ISBN-10, ISBN-13 or 10-character ASIN.';status.className='form-status error';}
+      return;
+    }
     const {data:{session}}=await supabase.auth.getSession();
     if(!session?.user){
       if(status){status.textContent='Sign in before adding a new book.';status.className='form-status error';}
@@ -298,9 +313,12 @@ function bindAddBookUI(){
         source_id:sourceId,
         title,
         author,
+        isbn10:identifier?.isbn10||null,
+        isbn13:identifier?.isbn13||null,
+        asin:identifier?.asin||null,
         cover_url:coverUrl,
         genres:[]
-      }).select('id,title,author,cover_url').single();
+      }).select('id,title,author,cover_url,isbn10,isbn13,asin').single();
       if(error)throw error;
 
       const hidden=document.querySelector('#selectedBookId');
