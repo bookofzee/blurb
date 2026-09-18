@@ -217,3 +217,38 @@
 .review-spoiler-note[hidden]{display:none}
 .create-step[data-create-step="3"] .review-profile-cover{width:min(100%,300px);margin-left:auto;margin-right:auto}
 .create-step[data-create-step="3"] .create-final-actions{width:min(100%,420px);margin-left:auto;margin-right:auto}
+
+/* Photo positioning editor: a miniature replica of the feed viewport. */
+.create-flow .upload-zone.photo-editor-open{border:0;background:transparent;overflow:visible;min-height:0;cursor:default}
+.create-flow .upload-zone.photo-editor-open #uploadPrompt{display:none!important}
+.create-flow .upload-zone.photo-editor-open .media-preview{height:auto;background:transparent;overflow:visible}
+.media-editor-preview{display:block}
+.media-editor-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 10px}
+.media-editor-heading>span{display:flex;flex-direction:column;gap:2px}
+.media-editor-heading strong{font-size:11px;color:#5d4134}
+.media-editor-heading small{font-size:8px;color:#9a7e6d}
+.media-editor-heading button{flex:0 0 auto;border:1px solid rgba(111,77,61,.16);background:#fffdf8;color:#8d4a27;border-radius:999px;padding:7px 10px;font-size:8px;font-weight:850}
+.media-editor-screen{position:relative;width:min(100%,300px);margin:0 auto;overflow:hidden;border-radius:18px;background:#161012;touch-action:none;cursor:grab;box-shadow:0 14px 34px rgba(55,33,23,.2),0 0 0 1px rgba(111,77,61,.13)}
+.media-editor-screen.dragging{cursor:grabbing}
+.media-editor-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:center center;will-change:transform;user-select:none;pointer-events:none}
+.media-editor-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,.02) 45%,rgba(0,0,0,.74) 100%)}
+.media-editor-book-chip{position:absolute;z-index:3;left:10px;right:53px;bottom:12px;min-height:44px;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:rgba(255,250,243,.97);box-shadow:0 6px 16px rgba(0,0,0,.16);pointer-events:none}
+.media-editor-book-chip i{width:28px;height:40px;border-radius:3px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,#d8b88c,#7a523d);background-size:cover;background-position:center;color:#fff8ed;font:700 12px Georgia,serif}
+.media-editor-book-chip>span{min-width:0;display:flex;flex-direction:column;gap:2px}
+.media-editor-book-chip strong,.media-editor-book-chip small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.media-editor-book-chip strong{font:600 9px Georgia,serif;color:#38271f}
+.media-editor-book-chip small{font-size:7px;color:#8f7466}
+.media-editor-book-chip em{font-style:normal;font-size:8px;font-weight:900;color:#7a4b36;white-space:nowrap}
+.media-editor-action-rail{position:absolute;z-index:3;right:8px;bottom:13px;display:flex;flex-direction:column;align-items:center;gap:10px;color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.65);pointer-events:none}
+.media-editor-action-rail span{font-size:20px;line-height:1}
+.media-editor-drag-hint{position:absolute;z-index:4;top:10px;left:50%;transform:translateX(-50%);padding:5px 8px;border-radius:999px;background:rgba(30,20,17,.55);backdrop-filter:blur(8px);color:#fff;font-size:7px;font-weight:800;letter-spacing:.2px;pointer-events:none}
+.media-editor-tools{width:min(100%,360px);margin:12px auto 0;display:grid;gap:9px}
+.media-zoom-row{display:grid;grid-template-columns:auto minmax(0,1fr) 38px;align-items:center;gap:9px}
+.media-zoom-row>span{font-size:9px;font-weight:850;color:#6d4f40}
+.media-zoom-row input{width:100%;accent-color:#c96832}
+.media-zoom-row b{font-size:8px;color:#9a7e6d;text-align:right}
+.media-fit-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:3px;border-radius:12px;background:#efe2d6}
+.media-fit-row button{border:0;min-height:36px;border-radius:9px;background:transparent;color:#7d5e4e;font-size:8px;font-weight:850}
+.media-fit-row button.active{background:#fffaf3;color:#a9532c;box-shadow:0 3px 10px rgba(75,42,25,.08)}
+.media-tool-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.media-tool-actions button{border:1px solid rgba(111,77,61,.14);min-height:38px;border-radius:10px;background:#fffdf8;color:#735345;font-size:8px;font-weight:850}
