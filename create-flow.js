@@ -436,7 +436,7 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
 
   const stepper=document.createElement('div');
   stepper.className='create-stepper';
-  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Edit</span><i></i><span data-step-dot="3">3 · Details</span><i></i><span data-step-dot="4">4 · Review</span>';
+  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Edit</span><i></i><span data-step-dot="3">3 · Details</span><i></i><span data-step-dot="4">4 · Preview</span>';
   form.prepend(stepper);
 
   const step1=document.createElement('section');
@@ -491,8 +491,8 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   step4.dataset.createStep='4';
   step4.innerHTML=`
     <div class="review-step-heading">
-      <span>Final check</span>
-      <h2>Review your Blurb</h2>
+      <span>Ready to post?</span>
+      <h2>Preview your Blurb</h2>
       <p>A mini version of how it will appear in the feed.</p>
     </div>
     <div class="mini-feed-preview-shell" id="miniFeedPreviewShell">
