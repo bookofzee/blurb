@@ -27,6 +27,7 @@ let mediaEditorStart={x:0,y:0,offsetX:0,offsetY:0};
 let mediaEdit={file:null,url:'',scale:1,offsetX:0,offsetY:0,fit:'cover',rotation:0};
 let selectedHashtags=[];
 let selectedTropes=[];
+let profileCoverMode='none';
 const quickTropes=[
   'Slow burn','Enemies to lovers','Found family','Forced proximity',
   'Friends to lovers','Grumpy / sunshine','Second chance','Forbidden romance',
@@ -39,6 +40,38 @@ function toast(message){const el=$('#toast');if(!el)return;el.textContent=messag
 function setStatus(message,error=false){const el=$('#createStatus');if(!el)return;el.textContent=message;el.className=`form-status${error?' error':''}`;}
 
 let selectedBookSyncTimer=null;
+
+function selectedBookCoverUrl(){
+  return $('#selectedBookCover img')?.src||'';
+}
+
+function syncProfileCoverBookOption(){
+  const button=$('#profileCoverUseBook');
+  const thumb=$('#profileCoverBookThumb');
+  const url=selectedBookCoverUrl();
+  if(button){
+    button.disabled=!url;
+    button.classList.toggle('active',profileCoverMode==='book'&&Boolean(url));
+    button.setAttribute('aria-pressed',profileCoverMode==='book'&&Boolean(url)?'true':'false');
+  }
+  if(thumb){
+    thumb.innerHTML=url?'<img src="'+url.replace(/"/g,'&quot;')+'" alt="" />':'<span>Book</span>';
+  }
+
+  if(profileCoverMode==='book'){
+    const preview=$('#profileCoverPreview');
+    const clear=$('#profileCoverClear');
+    if(!url){
+      profileCoverMode='none';
+      if(preview)preview.innerHTML='<b>＋</b>';
+      if(clear)clear.hidden=true;
+    }else{
+      if(preview)preview.innerHTML='<img src="'+url.replace(/"/g,'&quot;')+'" alt="Book cover profile preview" />';
+      if(clear)clear.hidden=false;
+    }
+  }
+}
+
 async function syncSelectedBookPreview(){
   clearTimeout(selectedBookSyncTimer);
   selectedBookSyncTimer=setTimeout(async()=>{
@@ -75,6 +108,7 @@ async function syncSelectedBookPreview(){
     }
     updateReviewCardPreview();
     updateMediaEditorMeta();
+    syncProfileCoverBookOption();
   },60);
 }
 
@@ -361,7 +395,12 @@ function buildCreateUI(){
         <span class="profile-cover-copy"><strong>Choose a cover image</strong><small>Used on your profile grid instead of the post itself.</small></span>
       </label>
       <button type="button" class="profile-cover-clear" id="profileCoverClear" hidden>Remove</button>
-    </div>`;
+    </div>
+    <button type="button" class="profile-cover-book-option" id="profileCoverUseBook" aria-pressed="false" disabled>
+      <span class="profile-cover-book-thumb" id="profileCoverBookThumb"><span>Book</span></span>
+      <span><strong>Use the book cover</strong><small>Use the selected book’s cover on your profile grid.</small></span>
+      <i>✓</i>
+    </button>`;
   if(uploadZone)uploadZone.after(coverWrap);
 
   const tags=$('#tags');
@@ -726,11 +765,15 @@ async function buildFinalReviewPreview(){
   if(spoilerNote)spoilerNote.hidden=!spoiler;
 
   const coverFile=$('#profileCoverFile')?.files?.[0];
+  const bookProfileCover=profileCoverMode==='book'?selectedBookCoverUrl():'';
   const coverNote=$('#reviewProfileCover');
   if(coverNote){
-    if(coverFile){
+    if(coverFile&&profileCoverMode==='custom'){
       coverNote.hidden=false;
       coverNote.innerHTML='<span>Profile grid cover</span><img src="'+URL.createObjectURL(coverFile)+'" alt="" /><strong>Custom cover selected</strong>';
+    }else if(bookProfileCover){
+      coverNote.hidden=false;
+      coverNote.innerHTML='<span>Profile grid cover</span><img src="'+bookProfileCover.replace(/"/g,'&quot;')+'" alt="" /><strong>Using book cover</strong>';
     }else{
       coverNote.hidden=true;
       coverNote.innerHTML='';
@@ -768,19 +811,42 @@ function bindCreateUI(){
     const file=e.target.files?.[0];
     const preview=$('#profileCoverPreview');
     const clear=$('#profileCoverClear');
-    if(!file){if(preview)preview.innerHTML='<b>＋</b>';if(clear)clear.hidden=true;return;}
+    if(!file){
+      if(profileCoverMode==='custom')profileCoverMode='none';
+      if(preview)preview.innerHTML='<b>＋</b>';
+      if(clear)clear.hidden=true;
+      syncProfileCoverBookOption();
+      return;
+    }
     if(file.size>15*1024*1024){toast('Cover image must be under 15 MB');e.target.value='';return;}
+    profileCoverMode='custom';
     const url=URL.createObjectURL(file);
     if(preview)preview.innerHTML='<img src="'+url+'" alt="Selected cover preview" />';
     if(clear)clear.hidden=false;
+    syncProfileCoverBookOption();
   });
+  $('#profileCoverUseBook')?.addEventListener('click',()=>{
+    const url=selectedBookCoverUrl();
+    if(!url){toast('This book does not have a cover image yet');return;}
+    profileCoverMode='book';
+    const input=$('#profileCoverFile');
+    const preview=$('#profileCoverPreview');
+    if(input)input.value='';
+    if(preview)preview.innerHTML='<img src="'+url.replace(/"/g,'&quot;')+'" alt="Book cover profile preview" />';
+    $('#profileCoverClear').hidden=false;
+    syncProfileCoverBookOption();
+  });
+
   $('#profileCoverClear')?.addEventListener('click',()=>{
+    profileCoverMode='none';
     const input=$('#profileCoverFile');
     const preview=$('#profileCoverPreview');
     if(input)input.value='';
     if(preview)preview.innerHTML='<b>＋</b>';
     $('#profileCoverClear').hidden=true;
+    syncProfileCoverBookOption();
   });
+  syncProfileCoverBookOption();
 
   $('#mediaFile')?.addEventListener('change',e=>{
     const file=e.target.files?.[0];
@@ -955,7 +1021,12 @@ async function publishNewFlow(e){
     let mediaUrl=null;let thumbnailUrl=null;let postType='image';
     if(selectedStyle==='review-card'){const blob=await reviewCardBlob();mediaUrl=await uploadBlob(blob,session.user.id);postType='image';}
     else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle==='video'?'video':'image';}
-    if(coverFile){const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');}
+    if(coverFile&&profileCoverMode==='custom'){
+      const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();
+      thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');
+    }else if(profileCoverMode==='book'){
+      thumbnailUrl=selectedBookCoverUrl()||null;
+    }
     const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
     const liveEditorState=(selectedStyle==='photo'||selectedStyle==='video')
       ?normalizeEditorState(studioController?.getState?.()||editorState)
