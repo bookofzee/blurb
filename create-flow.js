@@ -82,6 +82,20 @@ function buildCreateUI(){
   if(uploadZone)uploadZone.before(reviewWrap);
   if(uploadZone){uploadZone.classList.add('create-media-panel');uploadZone.style.display='none';}
 
+  const coverWrap=document.createElement('div');
+  coverWrap.className='profile-cover-field';
+  coverWrap.innerHTML=`
+    <label class="field-label" for="profileCoverFile">Profile cover <span class="optional">optional</span></label>
+    <div class="profile-cover-row">
+      <label class="profile-cover-upload" for="profileCoverFile">
+        <input id="profileCoverFile" type="file" accept="image/jpeg,image/png,image/webp" />
+        <span class="profile-cover-thumb" id="profileCoverPreview"><b>＋</b></span>
+        <span class="profile-cover-copy"><strong>Choose a cover image</strong><small>Used on your profile grid instead of the post itself.</small></span>
+      </label>
+      <button type="button" class="profile-cover-clear" id="profileCoverClear" hidden>Remove</button>
+    </div>`;
+  if(uploadZone)uploadZone.after(coverWrap);
+
   const tags=$('#tags');
   if(tags){
     const label=tags.previousElementSibling;
@@ -115,6 +129,24 @@ function bindCreateUI(){
   $('#caption')?.addEventListener('input',e=>{const c=$('#captionCount');if(c)c.textContent=e.target.value.length;});
   $('#reviewText')?.addEventListener('input',e=>{const c=$('#reviewCount');if(c)c.textContent=e.target.value.length;updateReviewCardPreview();});
   $('#selectedBookLabel')?.addEventListener('DOMSubtreeModified',updateReviewCardPreview);
+
+  $('#profileCoverFile')?.addEventListener('change',e=>{
+    const file=e.target.files?.[0];
+    const preview=$('#profileCoverPreview');
+    const clear=$('#profileCoverClear');
+    if(!file){if(preview)preview.innerHTML='<b>＋</b>';if(clear)clear.hidden=true;return;}
+    if(file.size>15*1024*1024){toast('Cover image must be under 15 MB');e.target.value='';return;}
+    const url=URL.createObjectURL(file);
+    if(preview)preview.innerHTML='<img src="'+url+'" alt="Selected cover preview" />';
+    if(clear)clear.hidden=false;
+  });
+  $('#profileCoverClear')?.addEventListener('click',()=>{
+    const input=$('#profileCoverFile');
+    const preview=$('#profileCoverPreview');
+    if(input)input.value='';
+    if(preview)preview.innerHTML='<b>＋</b>';
+    $('#profileCoverClear').hidden=true;
+  });
 
   document.querySelectorAll('[data-post-style]').forEach(btn=>btn.addEventListener('click',()=>setStyle(btn.dataset.postStyle)));
   document.querySelectorAll('[data-bg]').forEach(btn=>btn.addEventListener('click',()=>{selectedBg=btn.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('active',x===btn));selectedText=bgThemes[selectedBg].text;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x.dataset.colour===selectedText));updateReviewCardPreview();}));
@@ -209,17 +241,18 @@ async function publishNewFlow(e){
   e.preventDefault();e.stopImmediatePropagation();
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user){$('#sheetBackdrop').hidden=false;$('#authSheet').hidden=false;return;}
-  const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim()||'';const review=$('#reviewText')?.value?.trim()||'';const file=$('#mediaFile')?.files?.[0];
+  const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim()||'';const review=$('#reviewText')?.value?.trim()||'';const file=$('#mediaFile')?.files?.[0];const coverFile=$('#profileCoverFile')?.files?.[0];
   if(!bookId){setStatus('Choose a book first.',true);return;}
   if(selectedStyle==='review-card'&&!review){setStatus('Write your review first.',true);return;}
   if(selectedStyle!=='review-card'&&!file){setStatus(`Add a ${selectedStyle} first.`,true);return;}
   const button=$('#publishButton');button.disabled=true;setStatus('Creating your Blurb…');
   try{
-    let mediaUrl=null;let postType='image';
+    let mediaUrl=null;let thumbnailUrl=null;let postType='image';
     if(selectedStyle==='review-card'){const blob=await reviewCardBlob();mediaUrl=await uploadBlob(blob,session.user.id);postType='image';}
     else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle;}
+    if(coverFile){const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');}
     const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
-    const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published'}).select().single();if(error)throw error;
+    const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,thumbnail_url:thumbnailUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published'}).select().single();if(error)throw error;
     const tags=($('#tags')?.value||'').split(',').map(x=>x.trim().replace(/^#/,'' )).filter(Boolean).slice(0,10);if(tags.length)await supabase.from('blurb_post_tags').insert(tags.map(tag=>({post_id:post.id,tag})));
     toast('Your Blurb is live');setStatus('Posted!');setTimeout(()=>location.reload(),650);
   }catch(err){console.error(err);setStatus(err?.message||'Couldn’t publish that Blurb.',true);}finally{button.disabled=false;}
