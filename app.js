@@ -267,7 +267,6 @@ async function renderProfile(){
       <div class="profile-intro">
         <div class="profile-avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div>
         <div class="profile-identity">
-          <p class="profile-kicker">Reader profile</p>
           <h1>${escapeHtml(name)}</h1>
           <div class="profile-username">@${escapeHtml(p.username||'choose_a_username')}</div>
         </div>
