@@ -175,8 +175,7 @@ export function createMediaStudio({
           <div class="studio-add-text-row">
             <button type="button" class="studio-add-text" data-add-text>＋ Add text</button>
             <span>Add text, then drag it anywhere on your post.</span>
-          </div>
-;
+          </div>`;
         return;
       }
       const colours=['#ffffff','#f7ead4','#c96832','#241a17','#e8bfd0','#d9efe3'];
@@ -193,9 +192,9 @@ export function createMediaStudio({
               <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
             </div>
             <div class="studio-align-row" aria-label="Text alignment">
-              <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left">≡</button>
-              <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre">≡</button>
-              <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right">≡</button>
+              <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left">Left</button>
+              <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre">Centre</button>
+              <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right">Right</button>
             </div>
             <div class="studio-colour-row">
               ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
@@ -239,15 +238,20 @@ export function createMediaStudio({
     renderPanel();
   }
 
-  function addOverlay(preset='text'){
-    const presetMap={
-      text:{text:'Add text',font:'serif',size:28,background:'none',y:30},
-      heading:{text:'Add a heading',font:'bold',size:34,background:'none',y:24},
-      quote:{text:'“Add a quote”',font:'serif',size:30,background:'soft',y:38},
-      tag:{text:'BOOK THOUGHTS',font:'clean',size:18,background:'solid',y:18}
+  function addOverlay(){
+    const layer={
+      id:uid(),
+      text:'Add text',
+      x:50,
+      y:30,
+      scale:1,
+      rotation:0,
+      font:'serif',
+      color:'#ffffff',
+      background:'none',
+      size:28,
+      align:'center'
     };
-    const p=presetMap[preset]||presetMap.text;
-    const layer={id:uid(),text:p.text,x:50,y:p.y,scale:1,rotation:0,font:p.font,color:'#ffffff',background:p.background,size:p.size,align:'center'};
     state.overlays.push(layer);
     selectedOverlayId=layer.id;
     activeTab='text';
@@ -291,12 +295,9 @@ export function createMediaStudio({
       return;
     }
     if(e.target.closest('[data-add-text]')){
-      addOverlay('text');
+      addOverlay();
       return;
     }
-    const preset=e.target.closest('[data-add-preset]');
-    if(preset){addOverlay(preset.dataset.addPreset);return;}
-
     const fit=e.target.closest('[data-media-fit]');
     if(fit){
       state.media.fit=fit.dataset.mediaFit==='contain'?'contain':'cover';
