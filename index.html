@@ -10,7 +10,7 @@
   <title>Blurb — books worth talking about</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=9" />
+  <link rel="stylesheet" href="/styles.css?v=10" />
   <link rel="stylesheet" href="/spoiler-upgrade.css?v=1" />
   <link rel="stylesheet" href="/catalogue-layout-fix.css?v=1" />
   <link rel="stylesheet" href="/feed-action-tweaks.css?v=6" />
@@ -111,11 +111,31 @@
     </section>
 
     <nav class="bottom-nav" aria-label="Primary navigation">
-      <button data-view="feed" class="nav-item active" aria-label="Home"><span class="nav-icon">⌂</span><span>Home</span></button>
-      <button data-view="discover" class="nav-item" aria-label="Discover"><span class="nav-icon">⌕</span><span>Discover</span></button>
-      <button data-view="create" class="nav-item create-nav" aria-label="Create"><span class="create-plus">＋</span><span>Create</span></button>
-      <button data-view="library" class="nav-item" aria-label="Library"><span class="nav-icon">▤</span><span>Library</span></button>
-      <button data-view="profile" class="nav-item" aria-label="Profile"><span class="nav-icon">◉</span><span>Profile</span></button>
+      <button data-view="feed" class="nav-item active" aria-label="Home">
+        <span class="nav-art nav-home" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><path class="icon-page" d="M8 22.5 24 9l16 13.5V40H29V28H19v12H8Z"/><path class="icon-line" d="M5.5 23.5 24 8l18.5 15.5M11 21v19h10V29h6v11h10V21"/></svg>
+        </span>
+      </button>
+      <button data-view="discover" class="nav-item" aria-label="Discover">
+        <span class="nav-art nav-discover" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><circle class="icon-page" cx="21" cy="21" r="12"/><circle class="icon-line" cx="21" cy="21" r="12"/><path class="icon-line" d="m30 30 10 10"/><path class="icon-star" d="m21 14 1.8 4.2L27 20l-4.2 1.8L21 26l-1.8-4.2L15 20l4.2-1.8Z"/></svg>
+        </span>
+      </button>
+      <button data-view="create" class="nav-item create-nav" aria-label="Create">
+        <span class="nav-art nav-create" aria-hidden="true">
+          <svg viewBox="0 0 58 48"><path class="book-edge" d="M3 9h6c5 0 11 1.2 20 8.5C38 10.2 44 9 49 9h6v30c-7-1-15.5.2-26 7C18.5 39.2 10 38 3 39Z"/><path class="book-page" d="M7 6c7-.6 13.8 1.5 22 8.8V41C21 35 13.5 33.6 7 34.2Zm44 0c-7-.6-13.8 1.5-22 8.8V41c8-6 15.5-7.4 22-6.8Z"/><path class="icon-line" d="M29 15v26M18 25h22M29 14v22"/><path class="icon-line plus-line" d="M24 25h10M29 20v10"/></svg>
+        </span>
+      </button>
+      <button data-view="library" class="nav-item" aria-label="Library">
+        <span class="nav-art nav-library" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect class="icon-page" x="7" y="11" width="9" height="28" rx="2"/><rect class="icon-page" x="18" y="8" width="11" height="31" rx="2"/><path class="icon-page" d="m32 14 8-2 5 25-8 2Z"/><path class="icon-line" d="M7 12h9v27H7Zm11-3h11v30H18Zm14 5 8-2 5 25-8 2ZM9 18h5M20 16h7M34 20l8-2M9 34h5M20 34h7M37 34l7-2"/></svg>
+        </span>
+      </button>
+      <button data-view="profile" class="nav-item" aria-label="Profile">
+        <span class="nav-art nav-profile" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><circle class="icon-page" cx="24" cy="24" r="17"/><circle class="icon-line" cx="24" cy="24" r="17"/><circle class="profile-fill" cx="24" cy="19" r="6"/><path class="profile-fill" d="M13.5 36c1.8-6.3 5.5-9.5 10.5-9.5S32.7 29.7 34.5 36"/><circle class="icon-line" cx="24" cy="19" r="6"/><path class="icon-line" d="M13.5 36c1.8-6.3 5.5-9.5 10.5-9.5S32.7 29.7 34.5 36"/></svg>
+        </span>
+      </button>
     </nav>
   </main>
 
@@ -157,7 +177,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="/app.js?v=9"></script>
+  <script type="module" src="/app.js?v=10"></script>
   <script type="module" src="/spoiler-upgrade.js?v=1"></script>
   <script type="module" src="/catalogue-link.js?v=3"></script>
   <script type="module" src="/cover-inline-fix.js?v=1"></script>
