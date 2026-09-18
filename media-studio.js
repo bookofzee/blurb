@@ -192,9 +192,9 @@ export function createMediaStudio({
               <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
             </div>
             <div class="studio-align-row" aria-label="Text alignment">
-              <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left">Left</button>
-              <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre">Centre</button>
-              <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right">Right</button>
+              <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left"><span class="align-glyph align-left"><i></i><i></i><i></i></span></button>
+              <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre"><span class="align-glyph align-centre"><i></i><i></i><i></i></span></button>
+              <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right"><span class="align-glyph align-right"><i></i><i></i><i></i></span></button>
             </div>
             <div class="studio-colour-row">
               ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
@@ -424,7 +424,9 @@ export function createMediaStudio({
       const rect=canvas.getBoundingClientRect();
       layer.x=clamp(overlayDrag.x+((e.clientX-overlayDrag.startX)/rect.width)*100,4,96);
       layer.y=clamp(overlayDrag.y+((e.clientY-overlayDrag.startY)/rect.height)*100,4,96);
-      renderOverlays();emit();return;
+      const live=overlayLayer.querySelector('[data-overlay-id="'+CSS.escape(layer.id)+'"]');
+      if(live){live.style.left=layer.x+'%';live.style.top=layer.y+'%';}
+      emit();return;
     }
 
     if(!pointers.has(e.pointerId))return;
