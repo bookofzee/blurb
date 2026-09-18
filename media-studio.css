@@ -1012,3 +1012,96 @@
   .studio-tool-group-wide{grid-column:auto}
   .studio-colour-row{gap:8px!important}
 }
+
+/* Studio v5 — flowing text controls */
+.studio-text-entry{
+  padding-top:0;
+}
+.studio-text-entry textarea{
+  padding-right:74px!important;
+}
+.studio-text-done{
+  position:absolute;
+  top:9px;
+  right:9px;
+  min-width:52px;
+  height:30px;
+  border:0;
+  border-radius:999px;
+  background:#c96832;
+  color:#fff8ed;
+  font-size:8px;
+  font-weight:900;
+  box-shadow:0 4px 10px rgba(201,104,50,.16);
+}
+.studio-text-entry>span{
+  top:9px!important;
+}
+
+.studio-text-tool-list{
+  display:grid;
+  gap:0;
+  border:1px solid rgba(111,77,61,.11);
+  border-radius:14px;
+  overflow:hidden;
+  background:#fffdf9;
+}
+.studio-tool-row{
+  display:grid;
+  grid-template-columns:84px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+  min-height:58px;
+  padding:9px 11px;
+  border-top:1px solid rgba(111,77,61,.08);
+}
+.studio-tool-row:first-child{
+  border-top:0;
+}
+.studio-tool-row .studio-tool-label{
+  margin:0;
+}
+.studio-tool-row .studio-option-row,
+.studio-tool-row .studio-colour-row,
+.studio-tool-row .studio-align-row,
+.studio-tool-row .studio-size-range{
+  justify-self:stretch;
+}
+.studio-tool-row .studio-font-row,
+.studio-tool-row .studio-background-row{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  width:100%;
+  gap:6px!important;
+}
+.studio-tool-row .studio-font-row button,
+.studio-tool-row .studio-background-row button{
+  width:100%;
+  min-height:36px;
+}
+.studio-tool-row .studio-align-row{
+  justify-self:start;
+}
+.studio-tool-row .studio-colour-row{
+  width:auto!important;
+}
+.studio-size-tool-row{
+  padding-bottom:11px;
+}
+.studio-size-tool-row .studio-size-range{
+  min-width:0!important;
+}
+
+@media(max-width:520px){
+  .studio-tool-row{
+    grid-template-columns:1fr;
+    gap:7px;
+    padding:10px 11px;
+  }
+  .studio-tool-row .studio-align-row{
+    justify-self:start;
+  }
+  .studio-text-entry textarea{
+    padding-right:68px!important;
+  }
+}
