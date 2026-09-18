@@ -34,6 +34,7 @@ export function createMediaStudio({
   let state=normalizeEditorState(initialState||defaultEditorState());
   state.layout={showBook:true,showRating:true,actions:'right'};
   let activeTab='media';
+  let activeTextTool='font';
   let selectedOverlayId=null;
   let mediaUrl=URL.createObjectURL(file);
   const pointers=new Map();
@@ -174,63 +175,85 @@ export function createMediaStudio({
         panel.innerHTML=`
           <div class="studio-add-text-row">
             <button type="button" class="studio-add-text" data-add-text>＋ Add text</button>
-            <span>Add text, then drag it anywhere on your post.</span>
+            <span>Add another text layer anywhere on the post.</span>
           </div>`;
         return;
       }
+
       const colours=['#ffffff','#f7ead4','#c96832','#241a17','#e8bfd0','#d9efe3'];
+      const alignmentIcon=`
+        <span class="studio-toolbar-align-icon" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>`;
+
+      let options='';
+      if(activeTextTool==='font'){
+        options=`
+          <div class="studio-context-options studio-font-options">
+            <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
+            <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
+            <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
+          </div>`;
+      }else if(activeTextTool==='align'){
+        options=`
+          <div class="studio-context-options studio-align-options" aria-label="Text alignment">
+            <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left"><span class="align-glyph align-left"><i></i><i></i><i></i></span></button>
+            <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre"><span class="align-glyph align-centre"><i></i><i></i><i></i></span></button>
+            <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right"><span class="align-glyph align-right"><i></i><i></i><i></i></span></button>
+          </div>`;
+      }else if(activeTextTool==='colour'){
+        options=`
+          <div class="studio-context-options studio-colour-options">
+            ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="--swatch:${c}" aria-label="Text colour"></button>`).join('')}
+          </div>`;
+      }else if(activeTextTool==='background'){
+        options=`
+          <div class="studio-context-options studio-background-options">
+            <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">Clear</button>
+            <button type="button" data-layer-bg="soft" class="${selected.background==='soft'?'active':''}">Glass</button>
+            <button type="button" data-layer-bg="solid" class="${selected.background==='solid'?'active':''}">Paper</button>
+          </div>`;
+      }else if(activeTextTool==='size'){
+        options=`
+          <label class="studio-context-options studio-size-options">
+            <span>A</span>
+            <input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size />
+            <b>A</b>
+          </label>`;
+      }
+
       panel.innerHTML=`
-        <div class="studio-layer-editor">
-          <div class="studio-text-entry">
-            <textarea rows="2" maxlength="180" data-layer-text aria-label="Overlay text">${escapeHtml(selected.text)}</textarea>
+        <div class="studio-layer-editor studio-layer-editor-compact">
+          <div class="studio-text-entry studio-text-entry-flat">
             <span>Text</span>
+            <textarea rows="2" maxlength="180" data-layer-text aria-label="Overlay text">${escapeHtml(selected.text)}</textarea>
             <button type="button" class="studio-text-done" data-layer-done>Done</button>
           </div>
 
-          <div class="studio-text-tool-list">
-            <section class="studio-tool-row">
-              <span class="studio-tool-label">Typeface</span>
-              <div class="studio-option-row studio-font-row">
-                <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
-                <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
-                <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
-              </div>
-            </section>
+          <div class="studio-text-toolbar" aria-label="Text tools">
+            <button type="button" data-text-tool="font" class="${activeTextTool==='font'?'active':''}" aria-label="Font">
+              <span class="studio-toolbar-aa">Aa</span>
+            </button>
+            <button type="button" data-text-tool="align" class="${activeTextTool==='align'?'active':''}" aria-label="Alignment">
+              ${alignmentIcon}
+            </button>
+            <button type="button" data-text-tool="colour" class="${activeTextTool==='colour'?'active':''}" aria-label="Colour">
+              <span class="studio-toolbar-colour" style="--tool-colour:${selected.color}"></span>
+            </button>
+            <button type="button" data-text-tool="background" class="${activeTextTool==='background'?'active':''}" aria-label="Background">
+              <span class="studio-toolbar-checker"></span>
+            </button>
+            <button type="button" data-text-tool="size" class="${activeTextTool==='size'?'active':''}" aria-label="Size">
+              <span class="studio-toolbar-size">A</span>
+            </button>
+          </div>
 
-            <section class="studio-tool-row">
-              <span class="studio-tool-label">Alignment</span>
-              <div class="studio-align-row" aria-label="Text alignment">
-                <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left"><span class="align-glyph align-left"><i></i><i></i><i></i></span></button>
-                <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre"><span class="align-glyph align-centre"><i></i><i></i><i></i></span></button>
-                <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right"><span class="align-glyph align-right"><i></i><i></i><i></i></span></button>
-              </div>
-            </section>
-
-            <section class="studio-tool-row">
-              <span class="studio-tool-label">Colour</span>
-              <div class="studio-colour-row">
-                ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
-              </div>
-            </section>
-
-            <section class="studio-tool-row">
-              <span class="studio-tool-label">Background</span>
-              <div class="studio-option-row studio-background-row">
-                <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">Clear</button>
-                <button type="button" data-layer-bg="soft" class="${selected.background==='soft'?'active':''}">Glass</button>
-                <button type="button" data-layer-bg="solid" class="${selected.background==='solid'?'active':''}">Paper</button>
-              </div>
-            </section>
-
-            <section class="studio-tool-row studio-size-tool-row">
-              <span class="studio-tool-label">Size</span>
-              <label class="studio-range studio-size-range"><span>A</span><input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size /><b>A</b></label>
-            </section>
+          <div class="studio-text-context-strip">
+            ${options}
           </div>
         </div>`;
       return;
     }
-
 
     if(activeTab==='look'){
       panel.innerHTML=`
@@ -267,13 +290,14 @@ export function createMediaStudio({
       rotation:0,
       font:'serif',
       color:'#ffffff',
-      background:'none',
+      background:'soft',
       size:28,
       align:'center'
     };
     state.overlays.push(layer);
     selectedOverlayId=layer.id;
     activeTab='text';
+    activeTextTool='font';
     updateAll();
     setTimeout(()=>panel.querySelector('[data-layer-text]')?.select(),20);
     emit();
@@ -306,6 +330,12 @@ export function createMediaStudio({
     const tab=e.target.closest('[data-studio-tab]');
     if(tab){
       activeTab=tab.dataset.studioTab;
+      renderPanel();
+      return;
+    }
+    const textTool=e.target.closest('[data-text-tool]');
+    if(textTool){
+      activeTextTool=textTool.dataset.textTool||'font';
       renderPanel();
       return;
     }
@@ -358,6 +388,7 @@ export function createMediaStudio({
     if(layer){
       selectedOverlayId=layer.dataset.overlayId;
       activeTab='text';
+      activeTextTool='font';
       renderOverlays();
       renderPanel();
       return;
