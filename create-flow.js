@@ -1,4 +1,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
+import { createMediaStudio } from './media-studio.js?v=1';
+import { defaultEditorState, normalizeEditorState, editorMediaStyle, editorOverlayMarkup, editorFeedClasses, editorLookMarkup } from './editor-state.js?v=1';
 
 const supabase=createClient('https://ndinulaqwixbmgjhrhdo.supabase.co','sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1');
 
@@ -17,6 +19,8 @@ let selectedStyle='review-card';
 let selectedBg='parchment';
 let selectedText=bgThemes.parchment.text;
 let draggingRating=false;
+let editorState=defaultEditorState();
+let studioController=null;
 let mediaEditorDragging=false;
 let mediaEditorPointer=null;
 let mediaEditorStart={x:0,y:0,offsetX:0,offsetY:0};
@@ -417,6 +421,11 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   const ratingLabel=ratingPicker?.previousElementSibling;
   const ratingValue=$('#ratingValue');
 
+  const styleLabel=reviewWrap.querySelector(':scope > .field-label');
+  const stylePicker=reviewWrap.querySelector('.post-style-picker');
+  const reviewBuilder=reviewWrap.querySelector('#reviewCardBuilder');
+  const reviewFields=reviewWrap.querySelector('#reviewOnlyFields');
+
   const caption=$('#caption');
   const captionLabel=caption?.previousElementSibling;
   const captionCount=caption?.nextElementSibling;
@@ -427,15 +436,13 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
 
   const stepper=document.createElement('div');
   stepper.className='create-stepper';
-  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Details</span><i></i><span data-step-dot="3">3 · Review</span>';
+  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Edit</span><i></i><span data-step-dot="3">3 · Details</span><i></i><span data-step-dot="4">4 · Review</span>';
   form.prepend(stepper);
 
   const step1=document.createElement('section');
   step1.className='create-step active';
   step1.dataset.createStep='1';
-  [bookLabel,bookButton,bookId,ratingLabel,ratingPicker,ratingValue].forEach(node=>node&&step1.appendChild(node));
-  while(reviewWrap.firstChild)step1.appendChild(reviewWrap.firstChild);
-  reviewWrap.remove();
+  [bookLabel,bookButton,bookId,ratingLabel,ratingPicker,ratingValue,styleLabel,stylePicker].forEach(node=>node&&step1.appendChild(node));
   if(uploadZone)step1.appendChild(uploadZone);
 
   const next1=document.createElement('button');
@@ -453,17 +460,36 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   const step2=document.createElement('section');
   step2.className='create-step';
   step2.dataset.createStep='2';
-  [captionLabel,caption,captionCount,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step2.appendChild(node));
+  const editorMount=document.createElement('div');
+  editorMount.id='postEditorMount';
+  editorMount.className='post-editor-mount';
+  step2.appendChild(editorMount);
+  if(reviewBuilder)step2.appendChild(reviewBuilder);
+  if(reviewFields)step2.appendChild(reviewFields);
 
-  const detailsActions=document.createElement('div');
-  detailsActions.className='create-final-actions';
-  detailsActions.innerHTML='<button type="button" class="secondary-button" id="createBackButton">Back</button><button type="button" class="primary-button" id="createReviewButton">Next</button>';
-  step2.appendChild(detailsActions);
+  const editorActions=document.createElement('div');
+  editorActions.className='create-final-actions editor-step-actions';
+  editorActions.innerHTML='<button type="button" class="secondary-button" id="editorBackButton">Back</button><button type="button" class="primary-button" id="editorNextButton">Next</button>';
+  step2.appendChild(editorActions);
+  const editorStatus=document.createElement('p');
+  editorStatus.id='editorStepStatus';
+  editorStatus.className='form-status';
+  step2.appendChild(editorStatus);
 
   const step3=document.createElement('section');
   step3.className='create-step';
   step3.dataset.createStep='3';
-  step3.innerHTML=`
+  [captionLabel,caption,captionCount,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step3.appendChild(node));
+
+  const detailsActions=document.createElement('div');
+  detailsActions.className='create-final-actions';
+  detailsActions.innerHTML='<button type="button" class="secondary-button" id="createBackButton">Back</button><button type="button" class="primary-button" id="createReviewButton">Next</button>';
+  step3.appendChild(detailsActions);
+
+  const step4=document.createElement('section');
+  step4.className='create-step';
+  step4.dataset.createStep='4';
+  step4.innerHTML=`
     <div class="review-step-heading">
       <span>Final check</span>
       <h2>Review your Blurb</h2>
@@ -482,10 +508,11 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
     publish.textContent='Post to Blurb';
     finalActions.appendChild(publish);
   }
-  step3.appendChild(finalActions);
-  if(status)step3.appendChild(status);
+  step4.appendChild(finalActions);
+  if(status)step4.appendChild(status);
 
-  form.append(step1,step2,step3);
+  reviewWrap.remove();
+  form.append(step1,step2,step3,step4);
 }
 
 function setStepStatus(message='',error=false){
@@ -503,11 +530,70 @@ function showCreateStep(step){
   setStepStatus('');
 }
 
+function currentEditorMeta(){
+  return {
+    ...selectedBookParts(),
+    coverUrl:$('#selectedBookCover img')?.src||'',
+    rating:Number($('#ratingValue')?.value||0)
+  };
+}
+
+function setEditorStepStatus(message='',error=false){
+  const el=$('#editorStepStatus');
+  if(!el)return;
+  el.textContent=message;
+  el.className=`form-status${error?' error':''}`;
+}
+
+function renderActiveEditor(){
+  const mount=$('#postEditorMount');
+  const builder=$('#reviewCardBuilder');
+  const reviewFields=$('#reviewOnlyFields');
+  if(!mount)return;
+
+  studioController?.destroy?.();
+  studioController=null;
+  mount.innerHTML='';
+  setEditorStepStatus('');
+
+  if(selectedStyle==='review-card'){
+    mount.hidden=true;
+    if(builder)builder.style.display='block';
+    if(reviewFields)reviewFields.style.display='block';
+    updateReviewCardPreview();
+    return;
+  }
+
+  mount.hidden=false;
+  if(builder)builder.style.display='none';
+  if(reviewFields)reviewFields.style.display='none';
+
+  const file=$('#mediaFile')?.files?.[0];
+  if(!file){
+    mount.innerHTML='<div class="editor-missing-media">Go back and choose your media first.</div>';
+    return;
+  }
+
+  studioController=createMediaStudio({
+    mount,
+    file,
+    type:selectedStyle==='video'?'video':'photo',
+    initialState:editorState,
+    meta:currentEditorMeta(),
+    aspectRatio:feedCardSize().ratio,
+    onStateChange:next=>{editorState=normalizeEditorState(next);},
+    onChangeMedia:()=>$('#mediaFile')?.click()
+  });
+}
+
+function validateEditorStep(){
+  if(selectedStyle==='review-card'&&!$('#reviewText')?.value?.trim())return 'Write your review first.';
+  return '';
+}
+
 function validateCreateStepOne(){
   if(!$('#selectedBookId')?.value)return 'Choose a book first.';
   const file=$('#mediaFile')?.files?.[0];
-  const review=$('#reviewText')?.value?.trim()||'';
-  if(selectedStyle==='review-card'&&!review)return 'Write your review first.';
   if(selectedStyle!=='review-card'&&!file)return `Add a ${selectedStyle} first.`;
   return '';
 }
@@ -574,10 +660,11 @@ async function buildFinalReviewPreview(){
   }else{
     const file=$('#mediaFile')?.files?.[0];
     if(file){
-      const url=(selectedStyle==='photo'&&mediaEdit.file===file&&mediaEdit.url)?mediaEdit.url:URL.createObjectURL(file);
+      const url=URL.createObjectURL(file);
+      const state=normalizeEditorState(editorState);
       mediaHtml=selectedStyle==='video'
-        ? '<video class="feed-media" src="'+url+'" muted loop playsinline autoplay></video>'
-        : '<img class="feed-media" src="'+url+'" alt="" style="'+mediaTransformCss()+'">';
+        ? '<video class="feed-media" src="'+url+'" muted loop playsinline autoplay style="'+editorMediaStyle(state)+'"></video>'
+        : '<img class="feed-media" src="'+url+'" alt="" style="'+editorMediaStyle(state)+'">';
     }
   }
 
@@ -602,9 +689,14 @@ async function buildFinalReviewPreview(){
     ? '<span class="chip-rating"><span class="rating-line" data-simple-rating="1"><span class="single-rating-star">'+starSvg+'</span><span class="single-rating-value">'+rating.toFixed(1)+'</span></span></span>'
     : '';
 
+  const reviewEditorState=normalizeEditorState(editorState);
+  const overlayHtml=selectedStyle==='review-card'?'':editorOverlayMarkup(reviewEditorState,safe);
+  const lookHtml=selectedStyle==='review-card'?'':editorLookMarkup(reviewEditorState);
+  const editorClasses=selectedStyle==='review-card'?'':editorFeedClasses(reviewEditorState);
+
   stage.innerHTML=`
-    <article class="feed-card mini-live-feed-card">
-      ${mediaHtml}
+    <article class="feed-card mini-live-feed-card ${editorClasses}">
+      ${mediaHtml}${lookHtml}${overlayHtml}
       <div class="feed-copy">
         ${caption?'<p class="caption">'+safe(caption)+'</p>':''}
         ${tags.length?'<div class="tags">'+tags.map(t=>'<span class="tag">'+safe(String(t).replace(/^#/,''))+'</span>').join('')+'</div>':''}
@@ -698,14 +790,11 @@ function bindCreateUI(){
       e.target.value='';
       return;
     }
-    if(selectedStyle==='photo'&&file.type.startsWith('image/')){
-      setTimeout(()=>renderPhotoEditor(file,true),0);
-    }else{
-      const upload=e.target.closest('.upload-zone');
-      upload?.classList.remove('photo-editor-source-hidden');
-      const panel=$('#photoEditorPanel');
-      if(panel)panel.hidden=true;
-      resetMediaEdit(null);
+    editorState=defaultEditorState();
+    studioController?.destroy?.();
+    studioController=null;
+    if(document.querySelector('[data-create-step="2"]')?.classList.contains('active')){
+      setTimeout(renderActiveEditor,40);
     }
   });
 
@@ -733,8 +822,19 @@ function bindCreateUI(){
     const problem=validateCreateStepOne();
     if(problem){setStepStatus(problem,true);return;}
     showCreateStep(2);
+    renderActiveEditor();
   });
-  $('#createBackButton')?.addEventListener('click',()=>showCreateStep(1));
+  $('#editorBackButton')?.addEventListener('click',()=>showCreateStep(1));
+  $('#editorNextButton')?.addEventListener('click',()=>{
+    const problem=validateEditorStep();
+    if(problem){setEditorStepStatus(problem,true);return;}
+    if(studioController)editorState=studioController.getState();
+    showCreateStep(3);
+  });
+  $('#createBackButton')?.addEventListener('click',()=>{
+    showCreateStep(2);
+    renderActiveEditor();
+  });
   $('#createReviewButton')?.addEventListener('click',async()=>{
     const pending=$('#hashtagInput')?.value?.trim();
     if(pending)addHashtags(pending);
@@ -742,12 +842,12 @@ function bindCreateUI(){
     if(button)button.disabled=true;
     try{
       await buildFinalReviewPreview();
-      showCreateStep(3);
+      showCreateStep(4);
     }finally{
       if(button)button.disabled=false;
     }
   });
-  $('#reviewBackButton')?.addEventListener('click',()=>showCreateStep(2));
+  $('#reviewBackButton')?.addEventListener('click',()=>showCreateStep(3));
 
   $('#createForm')?.addEventListener('submit',publishNewFlow,true);
 }
@@ -772,25 +872,23 @@ function setStyle(style){
   const builder=$('#reviewCardBuilder');
   const reviewFields=$('#reviewOnlyFields');
   if(upload)upload.style.display=style==='review-card'?'none':'block';
+  if(builder)builder.style.display=style==='review-card'?'block':'none';
   if(reviewFields)reviewFields.style.display=style==='review-card'?'block':'none';
   builder?.classList.toggle('active',style==='review-card');
+
   const file=$('#mediaFile');
   if(file)file.accept=style==='photo'?'image/jpeg,image/png,image/webp':'video/mp4,video/webm,video/quicktime';
   const prompt=$('#uploadPrompt');
-  if(prompt){prompt.innerHTML=style==='photo'?'<strong>＋ Add photo</strong><span>JPEG, PNG or WebP up to 50 MB</span>':'<strong>＋ Add video</strong><span>MP4, WebM or MOV up to 50 MB</span>';}
-  const currentFile=file?.files?.[0];
-  const panel=$('#photoEditorPanel');
-  if(style==='photo'&&currentFile?.type?.startsWith('image/')){
-    setTimeout(()=>renderPhotoEditor(currentFile,mediaEdit.file!==currentFile),0);
-  }else if(style==='photo'){
-    upload?.classList.remove('photo-editor-source-hidden');
-    if(panel)panel.hidden=true;
-  }else if(style==='video'){
-    upload?.classList.remove('photo-editor-source-hidden');
-    if(panel)panel.hidden=true;
-  }else if(panel){
-    panel.hidden=true;
+  if(prompt){
+    prompt.innerHTML=style==='photo'
+      ?'<strong>＋ Add photo</strong><span>JPEG, PNG or WebP up to 50 MB</span>'
+      :'<strong>＋ Add video</strong><span>MP4, WebM or MOV up to 50 MB</span>';
   }
+
+  studioController?.destroy?.();
+  studioController=null;
+  editorState=defaultEditorState();
+  if(document.querySelector('[data-create-step="2"]')?.classList.contains('active'))renderActiveEditor();
 }
 
 function selectedBookParts(){
@@ -859,14 +957,18 @@ async function publishNewFlow(e){
     else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle;}
     if(coverFile){const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');}
     const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
-    const positioning=selectedStyle==='photo'?{
-      media_scale:mediaEdit.scale,
-      media_offset_x:mediaEdit.offsetX,
-      media_offset_y:mediaEdit.offsetY,
-      media_fit:mediaEdit.fit,
-      media_rotation:mediaEdit.rotation
+    const liveEditorState=(selectedStyle==='photo'||selectedStyle==='video')
+      ?normalizeEditorState(studioController?.getState?.()||editorState)
+      :defaultEditorState();
+    editorState=liveEditorState;
+    const positioning=(selectedStyle==='photo'||selectedStyle==='video')?{
+      media_scale:liveEditorState.media.scale,
+      media_offset_x:liveEditorState.media.x,
+      media_offset_y:liveEditorState.media.y,
+      media_fit:liveEditorState.media.fit,
+      media_rotation:liveEditorState.media.rotation
     }:{media_scale:1,media_offset_x:0,media_offset_y:0,media_fit:'cover',media_rotation:0};
-    const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,thumbnail_url:thumbnailUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published',...positioning}).select().single();if(error)throw error;
+    const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,thumbnail_url:thumbnailUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published',editor_state:liveEditorState,...positioning}).select().single();if(error)throw error;
     const tags=[
       ...selectedHashtags.slice(0,5).map(tag=>'#'+tag),
       ...selectedTropes
