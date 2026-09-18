@@ -272,3 +272,80 @@
   .create-stepper{gap:5px}
   .create-stepper span{font-size:7px}
 }
+
+.profile-cover-book-option{
+  width:100%;
+  margin-top:8px;
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) 24px;
+  align-items:center;
+  gap:10px;
+  min-height:58px;
+  padding:8px 10px;
+  border:1px solid rgba(111,77,61,.14);
+  border-radius:12px;
+  background:#fffaf3;
+  color:#5f4639;
+  text-align:left;
+}
+.profile-cover-book-option:not(:disabled){cursor:pointer}
+.profile-cover-book-option:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+}
+.profile-cover-book-option.active{
+  border-color:#c96832;
+  box-shadow:inset 0 0 0 1px rgba(201,104,50,.12);
+  background:#fff8f0;
+}
+.profile-cover-book-thumb{
+  width:38px;
+  height:50px;
+  overflow:hidden;
+  border-radius:5px;
+  display:grid;
+  place-items:center;
+  background:#efe1d4;
+  color:#94715e;
+  font-size:7px;
+  font-weight:850;
+}
+.profile-cover-book-thumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.profile-cover-book-option>span:nth-child(2){
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.profile-cover-book-option strong{
+  font-size:10px;
+  color:#5d4336;
+}
+.profile-cover-book-option small{
+  font-size:8px;
+  line-height:1.3;
+  color:#9a7e6d;
+}
+.profile-cover-book-option i{
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-style:normal;
+  font-size:10px;
+  font-weight:900;
+  color:transparent;
+  border:1px solid rgba(111,77,61,.14);
+  background:#fffdf8;
+}
+.profile-cover-book-option.active i{
+  color:#fff;
+  background:#c96832;
+  border-color:#c96832;
+}
