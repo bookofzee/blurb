@@ -253,9 +253,47 @@ async function renderProfile(){
     supabase.from('blurb_posts').select('id,caption,book_id,blurb_books(title)').eq('user_id',state.user.id).order('created_at',{ascending:false}).limit(9)
   ]);
   const p=state.profile||{}; const name=p.display_name||p.username||state.user.email?.split('@')[0]||'Reader';
-  root.innerHTML=`<div class="profile-hero"><div class="profile-avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div><h1>${escapeHtml(name)}</h1><div class="profile-username">@${escapeHtml(p.username||'choose_a_username')}</div><p class="profile-bio">${escapeHtml(p.bio||'Books, reviews and whatever I’m currently obsessed with.')}</p><div class="profile-stats"><div class="profile-stat"><strong>${postCount||0}</strong><span>Blurbs</span></div><div class="profile-stat"><strong>${followerCount||0}</strong><span>Followers</span></div><div class="profile-stat"><strong>${followingCount||0}</strong><span>Following</span></div></div><div class="profile-actions"><button class="edit" id="editProfileButton">Edit profile</button><button class="signout" id="signOutButton">Sign out</button></div></div><div class="profile-tabs"><button class="active">Blurbs</button><button>Reviews</button><button>Library</button></div><div class="profile-grid">${(posts||[]).map(x=>{const [a,b]=paletteFor(x.id);return `<div class="profile-post" style="--card-a:${a};--card-b:${b}">${escapeHtml(x.blurb_books?.title||x.caption||'Blurb')}</div>`;}).join('')}</div>`;
+  root.innerHTML=`<div class="profile-shell">
+    <div class="profile-settings-wrap">
+      <button class="profile-settings-button" id="profileSettingsButton" type="button" aria-label="Profile settings" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="M19.1 13.4c.1-.5.1-.9 0-1.4l2-1.5-2-3.5-2.5 1a7.5 7.5 0 0 0-1.2-.7L15 4.7h-4l-.4 2.6c-.4.2-.8.4-1.2.7L6.9 7l-2 3.5 2 1.5a6.5 6.5 0 0 0 0 1.4l-2 1.5 2 3.5 2.5-1c.4.3.8.5 1.2.7l.4 2.6h4l.4-2.6c.4-.2.8-.4 1.2-.7l2.5 1 2-3.5-2-1.5Z"/></svg>
+      </button>
+      <div class="profile-settings-menu" id="profileSettingsMenu" hidden>
+        <button type="button" id="editProfileButton">Edit profile</button>
+        <button type="button" id="signOutButton" class="danger">Sign out</button>
+      </div>
+    </div>
+    <div class="profile-hero">
+      <div class="profile-intro">
+        <div class="profile-avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div>
+        <div class="profile-identity">
+          <p class="profile-kicker">Reader profile</p>
+          <h1>${escapeHtml(name)}</h1>
+          <div class="profile-username">@${escapeHtml(p.username||'choose_a_username')}</div>
+        </div>
+      </div>
+      <p class="profile-bio">${escapeHtml(p.bio||'Books, reviews and whatever I’m currently obsessed with.')}</p>
+      <div class="profile-stats">
+        <div class="profile-stat"><strong>${postCount||0}</strong><span>Blurbs</span></div>
+        <div class="profile-stat"><strong>${followerCount||0}</strong><span>Followers</span></div>
+        <div class="profile-stat"><strong>${followingCount||0}</strong><span>Following</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="profile-tabs"><button class="active">Blurbs</button><button>Reviews</button><button>Library</button></div><div class="profile-grid">${(posts||[]).map(x=>{const [a,b]=paletteFor(x.id);return `<div class="profile-post" style="--card-a:${a};--card-b:${b}">${escapeHtml(x.blurb_books?.title||x.caption||'Blurb')}</div>`;}).join('')}</div>`;
+  const settingsButton=$('#profileSettingsButton');
+  const settingsMenu=$('#profileSettingsMenu');
+  settingsButton?.addEventListener('click',e=>{
+    e.stopPropagation();
+    const opening=settingsMenu.hidden;
+    settingsMenu.hidden=!opening;
+    settingsButton.setAttribute('aria-expanded',String(opening));
+  });
+  root.addEventListener('click',e=>{
+    if(!e.target.closest('.profile-settings-wrap')&&settingsMenu&&!settingsMenu.hidden){settingsMenu.hidden=true;settingsButton?.setAttribute('aria-expanded','false');}
+  },{once:true});
   $('#signOutButton').addEventListener('click',async()=>{await supabase.auth.signOut();toast('Signed out');showView('feed');});
-  $('#editProfileButton').addEventListener('click',editProfile);
+  $('#editProfileButton').addEventListener('click',()=>{if(settingsMenu)settingsMenu.hidden=true;editProfile();});
 }
 
 async function editProfile(){
