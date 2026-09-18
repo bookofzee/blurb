@@ -169,7 +169,7 @@ function feedCard(post,i){
   return `<article class="feed-card ${editorClasses}" data-post="${post.id}" style="--card-a:${a};--card-b:${b};--card-glow:${g}">
     ${media}${editorLook}${editorOverlays}${spoiler}
     <div class="feed-copy">
-      <div class="creator-row"><div class="avatar">${profile.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}" alt="" />`:initials(displayName)}</div><strong>@${escapeHtml(username)}</strong>${post.demo?'':`<button class="follow-mini" data-follow="${post.user_id}">Follow</button>`}</div>
+      <div class="creator-row"><div class="avatar">${profile.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}" alt="" />`:initials(displayName)}</div><strong>@${escapeHtml(username)}</strong></div>
       ${post.rating?`<div class="rating-line">${ratingStars(Number(post.rating))} <span>${Number(post.rating).toFixed(1)}</span></div>`:''}
       <p class="caption">${escapeHtml(post.caption)}</p>
       <div class="tags">${tags.map(t=>`<span class="tag ${String(t).startsWith('#')?'hashtag':'trope'}">${escapeHtml(String(t).replace(/^#/,''))}</span>`).join('')}</div>
