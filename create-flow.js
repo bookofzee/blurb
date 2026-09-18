@@ -66,17 +66,17 @@ function buildCreateUI(){
       <button type="button" class="post-style-option" data-post-style="video"><span>▷</span><span>Video</span></button>
       <button type="button" class="post-style-option active" data-post-style="review-card"><span>✦</span><span>Review card</span></button>
     </div>
-    <div id="reviewOnlyFields">
-      <label class="field-label required" for="reviewText">Review</label>
-      <textarea id="reviewText" class="review-field" maxlength="1800" placeholder="Write your full review here…"></textarea>
-      <div class="char-count"><span id="reviewCount">0</span>/1800</div>
-    </div>
     <div class="review-card-builder active" id="reviewCardBuilder">
       <div class="review-card-preview" id="reviewCardPreview"><div class="card-book">Choose a book</div><div class="card-review">Your review will appear here.</div><div class="card-author">BLURB</div><div class="ornament">✦  ❦  ✦</div></div>
       <div class="card-controls">
         <div><div class="choice-label">Background</div><div class="background-choices">${Object.keys(bgThemes).map((k,i)=>`<button type="button" class="bg-choice${i===0?' active':''}" data-bg="${k}" aria-label="${k}"></button>`).join('')}</div></div>
         <div><div class="choice-label">Text colour</div><div class="text-colour-choices">${textColours.map((c,i)=>`<button type="button" class="colour-choice${i===0?' active':''}" data-colour="${c}" style="background:${c}" aria-label="Text colour"></button>`).join('')}</div></div>
       </div>
+    </div>
+    <div id="reviewOnlyFields">
+      <label class="field-label required" for="reviewText">Review</label>
+      <textarea id="reviewText" class="review-field" maxlength="1800" placeholder="Write your full review here…"></textarea>
+      <div class="char-count"><span id="reviewCount">0</span>/1800</div>
     </div>`;
 
   if(uploadZone)uploadZone.before(reviewWrap);
