@@ -252,3 +252,7 @@
 .media-fit-row button.active{background:#fffaf3;color:#a9532c;box-shadow:0 3px 10px rgba(75,42,25,.08)}
 .media-tool-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .media-tool-actions button{border:1px solid rgba(111,77,61,.14);min-height:38px;border-radius:10px;background:#fffdf8;color:#735345;font-size:8px;font-weight:850}
+
+.photo-editor-panel{margin-top:10px}
+.photo-editor-panel[hidden]{display:none!important}
+.create-flow .upload-zone.photo-editor-source-hidden{display:none!important}
