@@ -215,7 +215,103 @@ function closeBookSheet(){
   if(backdrop)backdrop.hidden=true;
 }
 
+async function uploadNewBookCover(file,userId){
+  if(!file)return null;
+  if(file.size>10*1024*1024)throw new Error('Cover image must be under 10 MB');
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const path=`${userId}/book-covers/${crypto.randomUUID()}.${ext}`;
+  const {error}=await supabase.storage.from('blurb-media').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+  if(error)throw error;
+  return supabase.storage.from('blurb-media').getPublicUrl(path).data.publicUrl;
+}
+
+function resetAddBookForm(){
+  const form=document.querySelector('#addBookForm');
+  const preview=document.querySelector('#newBookCoverPreview');
+  const status=document.querySelector('#addBookStatus');
+  form?.reset();
+  if(preview)preview.textContent='＋';
+  if(status){status.textContent='';status.className='form-status';}
+}
+
+function bindAddBookUI(){
+  const toggle=document.querySelector('#addBookToggle');
+  const form=document.querySelector('#addBookForm');
+  const cancel=document.querySelector('#cancelAddBook');
+  const cover=document.querySelector('#newBookCover');
+  const preview=document.querySelector('#newBookCoverPreview');
+  if(!toggle||!form||form.dataset.bound==='1')return;
+  form.dataset.bound='1';
+
+  toggle.addEventListener('click',()=>{
+    form.hidden=!form.hidden;
+    toggle.textContent=form.hidden?'＋ Book not listed? Add it':'− Hide add book form';
+    if(!form.hidden)setTimeout(()=>document.querySelector('#newBookTitle')?.focus(),60);
+  });
+
+  cancel?.addEventListener('click',()=>{
+    form.hidden=true;
+    toggle.textContent='＋ Book not listed? Add it';
+    resetAddBookForm();
+  });
+
+  cover?.addEventListener('change',()=>{
+    const file=cover.files?.[0];
+    if(!preview)return;
+    if(!file){preview.textContent='＋';return;}
+    const url=URL.createObjectURL(file);
+    preview.innerHTML='<img src="'+url+'" alt="" />';
+  });
+
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const status=document.querySelector('#addBookStatus');
+    const button=document.querySelector('#saveNewBook');
+    const title=document.querySelector('#newBookTitle')?.value?.trim()||'';
+    const author=document.querySelector('#newBookAuthor')?.value?.trim()||'';
+    const file=cover?.files?.[0]||null;
+    if(!title||!author)return;
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session?.user){
+      if(status){status.textContent='Sign in before adding a new book.';status.className='form-status error';}
+      return;
+    }
+    button.disabled=true;
+    if(status){status.textContent='Adding book…';status.className='form-status';}
+    try{
+      const coverUrl=await uploadNewBookCover(file,session.user.id);
+      const sourceId='user-'+crypto.randomUUID();
+      const {data,error}=await supabase.from('blurb_books').insert({
+        source:'user_added',
+        source_id:sourceId,
+        title,
+        author,
+        cover_url:coverUrl,
+        genres:[]
+      }).select('id,title,author,cover_url').single();
+      if(error)throw error;
+
+      const hidden=document.querySelector('#selectedBookId');
+      const label=document.querySelector('#selectedBookLabel');
+      if(hidden)hidden.value=data.id;
+      if(label)label.textContent=data.title;
+
+      resetAddBookForm();
+      form.hidden=true;
+      toggle.textContent='＋ Book not listed? Add it';
+      closeBookSheet();
+      toast('Book added');
+    }catch(err){
+      console.warn('Could not add custom book',err);
+      if(status){status.textContent=err?.message||'Couldn’t add that book.';status.className='form-status error';}
+    }finally{
+      button.disabled=false;
+    }
+  });
+}
+
 function renderPicker(){
+  bindAddBookUI();
   if(!ready)return;
   const list=document.querySelector('#bookSheetList');
   const search=document.querySelector('#bookSheetSearch');
@@ -313,6 +409,7 @@ async function loadCatalogue(){
 
 function start(){
   installDiscoverStyles();
+  bindAddBookUI();
   document.querySelector('#discoverSearch')?.addEventListener('input',()=>queueMicrotask(renderDiscover));
   document.querySelector('#bookSheetSearch')?.addEventListener('input',()=>queueMicrotask(renderPicker));
   document.querySelector('#bookPickerButton')?.addEventListener('click',()=>setTimeout(renderPicker,0));
