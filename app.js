@@ -1,4 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
+import { normalizeEditorState, editorMediaStyle, editorOverlayMarkup, editorFeedClasses, editorLookMarkup } from './editor-state.js?v=1';
 
 const SUPABASE_URL = 'https://ndinulaqwixbmgjhrhdo.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1';
@@ -88,7 +89,7 @@ async function loadBooks(){
 }
 
 async function loadPosts(){
-  const {data,error}=await supabase.from('blurb_posts').select('id,user_id,book_id,post_type,media_url,thumbnail_url,media_scale,media_offset_x,media_offset_y,media_fit,media_rotation,caption,rating,contains_spoilers,created_at,blurb_books(id,title,author,genres,source_id)').eq('status','published').order('created_at',{ascending:false}).limit(30);
+  const {data,error}=await supabase.from('blurb_posts').select('id,user_id,book_id,post_type,media_url,thumbnail_url,media_scale,media_offset_x,media_offset_y,media_fit,media_rotation,editor_state,caption,rating,contains_spoilers,created_at,blurb_books(id,title,author,genres,source_id)').eq('status','published').order('created_at',{ascending:false}).limit(30);
   if(error || !data?.length){ state.posts=[]; renderFeed(); return; }
   const ids=[...new Set(data.map(p=>p.user_id))];
   const postIds=data.map(p=>p.id);
@@ -138,13 +139,21 @@ function feedCard(post,i){
   const username=profile.username||profile.display_name||'reader';
   const displayName=profile.display_name||username;
   const tags=(post.tags?.length?post.tags:book.genres||[]).slice(0,8);
-  const mediaScale=clamp(Number(post.media_scale)||1,1,3);
-  const mediaOffsetX=clamp(Number(post.media_offset_x)||0,-55,55);
-  const mediaOffsetY=clamp(Number(post.media_offset_y)||0,-55,55);
-  const mediaFit=post.media_fit==='contain'?'contain':'cover';
-  const mediaRotation=((Number(post.media_rotation)||0)%360+360)%360;
-  const mediaStyle=`object-fit:${mediaFit};transform:translate3d(${mediaOffsetX}%,${mediaOffsetY}%,0) scale(${mediaScale}) rotate(${mediaRotation}deg);transform-origin:center center;`;
-  const media=post.media_url ? (post.post_type==='video'?`<video class="feed-media" src="${escapeHtml(post.media_url)}" playsinline muted loop preload="metadata"></video>`:`<img class="feed-media" src="${escapeHtml(post.media_url)}" alt="${escapeHtml(book.title||'Book review')}" style="${mediaStyle}" />`) : `<div class="cover-stage"><div class="cover-art" style="--cover-a:${a};--cover-b:${b}"><div class="cover-mark">${escapeHtml(book.title||'A book worth talking about')}</div><div class="cover-author">${escapeHtml(book.author||'BLURB')}</div></div></div>`;
+  const rawEditorState=post.editor_state&&Object.keys(post.editor_state||{}).length
+    ?post.editor_state
+    :{media:{
+      scale:Number(post.media_scale)||1,
+      x:Number(post.media_offset_x)||0,
+      y:Number(post.media_offset_y)||0,
+      fit:post.media_fit==='contain'?'contain':'cover',
+      rotation:Number(post.media_rotation)||0
+    }};
+  const editorState=normalizeEditorState(rawEditorState);
+  const mediaStyle=editorMediaStyle(editorState);
+  const editorClasses=editorFeedClasses(editorState);
+  const editorOverlays=editorOverlayMarkup(editorState,escapeHtml);
+  const editorLook=editorLookMarkup(editorState);
+  const media=post.media_url ? (post.post_type==='video'?`<video class="feed-media" src="${escapeHtml(post.media_url)}" playsinline muted loop preload="metadata" style="${mediaStyle}"></video>`:`<img class="feed-media" src="${escapeHtml(post.media_url)}" alt="${escapeHtml(book.title||'Book review')}" style="${mediaStyle}" />`) : `<div class="cover-stage"><div class="cover-art" style="--cover-a:${a};--cover-b:${b}"><div class="cover-mark">${escapeHtml(book.title||'A book worth talking about')}</div><div class="cover-author">${escapeHtml(book.author||'BLURB')}</div></div></div>`;
   const spoiler=post.contains_spoilers?`<div class="spoiler-cover">
     <div class="spoiler-panel">
       <span class="spoiler-chip">Spoiler</span>
@@ -157,8 +166,8 @@ function feedCard(post,i){
       <button data-reveal="${post.id}">Reveal this Blurb</button>
     </div>
   </div>`:'';
-  return `<article class="feed-card" data-post="${post.id}" style="--card-a:${a};--card-b:${b};--card-glow:${g}">
-    ${media}${spoiler}
+  return `<article class="feed-card ${editorClasses}" data-post="${post.id}" style="--card-a:${a};--card-b:${b};--card-glow:${g}">
+    ${media}${editorLook}${editorOverlays}${spoiler}
     <div class="feed-copy">
       <div class="creator-row"><div class="avatar">${profile.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}" alt="" />`:initials(displayName)}</div><strong>@${escapeHtml(username)}</strong>${post.demo?'':`<button class="follow-mini" data-follow="${post.user_id}">Follow</button>`}</div>
       ${post.rating?`<div class="rating-line">${ratingStars(Number(post.rating))} <span>${Number(post.rating).toFixed(1)}</span></div>`:''}
