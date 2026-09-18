@@ -184,10 +184,11 @@ export function createMediaStudio({
           <div class="studio-text-entry">
             <textarea rows="2" maxlength="180" data-layer-text aria-label="Overlay text">${escapeHtml(selected.text)}</textarea>
             <span>Text</span>
+            <button type="button" class="studio-text-done" data-layer-done>Done</button>
           </div>
 
-          <div class="studio-text-settings-grid">
-            <section class="studio-tool-group">
+          <div class="studio-text-tool-list">
+            <section class="studio-tool-row">
               <span class="studio-tool-label">Typeface</span>
               <div class="studio-option-row studio-font-row">
                 <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
@@ -196,7 +197,7 @@ export function createMediaStudio({
               </div>
             </section>
 
-            <section class="studio-tool-group">
+            <section class="studio-tool-row">
               <span class="studio-tool-label">Alignment</span>
               <div class="studio-align-row" aria-label="Text alignment">
                 <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left"><span class="align-glyph align-left"><i></i><i></i><i></i></span></button>
@@ -205,14 +206,14 @@ export function createMediaStudio({
               </div>
             </section>
 
-            <section class="studio-tool-group studio-tool-group-wide">
+            <section class="studio-tool-row">
               <span class="studio-tool-label">Colour</span>
               <div class="studio-colour-row">
                 ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
               </div>
             </section>
 
-            <section class="studio-tool-group">
+            <section class="studio-tool-row">
               <span class="studio-tool-label">Background</span>
               <div class="studio-option-row studio-background-row">
                 <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">Clear</button>
@@ -221,7 +222,7 @@ export function createMediaStudio({
               </div>
             </section>
 
-            <section class="studio-tool-group">
+            <section class="studio-tool-row studio-size-tool-row">
               <span class="studio-tool-label">Size</span>
               <label class="studio-range studio-size-range"><span>A</span><input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size /><b>A</b></label>
             </section>
@@ -314,6 +315,13 @@ export function createMediaStudio({
     }
     if(e.target.closest('[data-add-text]')){
       addOverlay();
+      return;
+    }
+    if(e.target.closest('[data-layer-done]')){
+      selectedOverlayId=null;
+      renderOverlays();
+      renderPanel();
+      emit();
       return;
     }
     const fit=e.target.closest('[data-media-fit]');
