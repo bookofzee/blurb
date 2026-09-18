@@ -84,7 +84,7 @@ export function editorOverlayMarkup(state,escapeHtml=(v=>' '+v)){
       `--overlay-size:${o.size}px`,
       `text-align:${o.align}`
     ].join(';');
-    return `<div class="feed-text-overlay font-${o.font} bg-${o.background}" style="${style}">${safe}</div>`;
+    return `<div class="feed-text-overlay" style="${style}"><span class="feed-text-bubble font-${o.font} bg-${o.background}">${safe}</span></div>`;
   }).join('')+'</div>';
 }
 
