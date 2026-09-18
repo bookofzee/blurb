@@ -9,9 +9,9 @@
 .create-step{display:none}
 .create-step.active{display:block}
 .create-step .field-label:first-child{margin-top:0}
-.create-step[data-create-step="1"] .review-card-preview{display:none}
+.create-step[data-create-step="1"] .review-card-preview{display:flex;width:min(100%,240px);margin:12px auto 0;aspect-ratio:9/16;border-radius:14px;padding:34px 18px;box-shadow:0 10px 24px rgba(69,39,25,.13)}
 .create-step[data-create-step="1"] .review-card-builder{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:13px;background:rgba(255,253,248,.62)}
-.create-step[data-create-step="1"] .card-controls{margin-top:0}
+.create-step[data-create-step="1"] .card-controls{margin-top:12px}
 .create-step[data-create-step="1"] .review-field{height:130px!important;min-height:130px!important}
 .create-next-button{margin-top:18px}
 .create-final-actions{display:grid;grid-template-columns:105px 1fr;gap:9px;margin-top:20px}
@@ -19,3 +19,5 @@
 .create-final-actions .primary-button{margin:0}
 .create-step[data-create-step="2"] .profile-cover-field{margin-top:18px}
 @media(max-height:760px){.create-flow .field-label{margin-top:13px}.rating-star{width:30px;height:30px;font-size:30px;line-height:30px}.post-style-option{min-height:60px}.create-step[data-create-step="1"] .review-field{height:105px!important;min-height:105px!important}}
+
+.create-step[data-create-step="1"] .review-card-preview .card-book{font-size:9px;margin-bottom:16px}.create-step[data-create-step="1"] .review-card-preview .card-review{font-size:14px;line-height:1.35;-webkit-line-clamp:11}.create-step[data-create-step="1"] .review-card-preview .card-author{font-size:8px;margin-top:16px}.create-step[data-create-step="1"] .review-card-preview .ornament{font-size:13px;bottom:16px}
