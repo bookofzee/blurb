@@ -42,8 +42,9 @@ async function hydrateProfileGrid(){
     grid.innerHTML=(posts||[]).map(post=>{
       const title=post.blurb_books?.title||post.caption||'Blurb';
       const [a,b]=paletteFor(post.id);
-      const media=post.media_url||post.thumbnail_url;
-      const visual=media?(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" />`):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
+      const cover=post.thumbnail_url||null;
+      const media=cover||post.media_url;
+      const visual=media?(cover?`<img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy" />`:(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" />`)):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
       return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}" data-caption="${escapeHtml(post.caption||'')}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><div class="profile-tile-controls" aria-hidden="true"><button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}">Edit</button><button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}">Delete</button></div></article>`;
     }).join('');
     grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
