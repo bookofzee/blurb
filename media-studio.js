@@ -32,7 +32,7 @@ export function createMediaStudio({
   mount.innerHTML=`
     <div class="studio-shell">
       <header class="studio-header">
-        <span><strong>Edit ${type==='video'?'video':'photo'}</strong><small>Drag · pinch · tap text to edit</small></span>
+        <span><strong>${type==='video'?'Video studio':'Photo studio'}</strong><small>Touch the post to edit it directly</small></span>
         <button type="button" data-studio-change>Change</button>
       </header>
 
@@ -54,7 +54,7 @@ export function createMediaStudio({
           <span>♥</span><span>◌</span><span>＋</span><span>↗</span>
         </div>
 
-        <div class="studio-gesture-hint">Drag · pinch · wheel</div>
+        <div class="studio-gesture-hint">Drag · pinch to resize</div>
       </div>
 
       <nav class="studio-tabs" aria-label="Editor tools">
@@ -136,7 +136,10 @@ export function createMediaStudio({
         class="studio-text-layer font-${o.font} bg-${o.background}${o.id===selectedOverlayId?' selected':''}"
         data-overlay-id="${escapeHtml(o.id)}"
         style="left:${o.x}%;top:${o.y}%;--layer-scale:${o.scale};--layer-rotation:${o.rotation}deg;--layer-color:${o.color};--layer-size:${o.size}px;text-align:${o.align}"
-      >${escapeHtml(o.text)}</div>`).join('');
+      >
+        <span data-overlay-content>${escapeHtml(o.text)}</span>
+        ${o.id===selectedOverlayId?'<button type="button" class="studio-layer-delete-handle" data-overlay-delete aria-label="Delete text">×</button>':''}
+      </div>`).join('');
   }
 
   function renderPanel(){
@@ -172,22 +175,28 @@ export function createMediaStudio({
       const colours=['#ffffff','#f7ead4','#c96832','#241a17','#e8bfd0','#d9efe3'];
       panel.innerHTML=`
         <div class="studio-layer-editor">
-          <input type="text" maxlength="180" value="${escapeHtml(selected.text)}" data-layer-text aria-label="Overlay text" />
-          <div class="studio-option-row">
-            <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
-            <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
-            <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
+          <div class="studio-text-entry">
+            <textarea rows="2" maxlength="180" data-layer-text aria-label="Overlay text">${escapeHtml(selected.text)}</textarea>
+            <span>Text</span>
           </div>
-          <div class="studio-colour-row">
-            ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
+          <div class="studio-control-strip">
+            <div class="studio-option-row studio-font-row">
+              <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
+              <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
+              <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
+            </div>
+            <div class="studio-colour-row">
+              ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
+            </div>
           </div>
-          <div class="studio-option-row">
-            <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">No bg</button>
-            <button type="button" data-layer-bg="soft" class="${selected.background==='soft'?'active':''}">Soft</button>
-            <button type="button" data-layer-bg="solid" class="${selected.background==='solid'?'active':''}">Solid</button>
+          <div class="studio-control-strip studio-control-strip-bottom">
+            <div class="studio-option-row">
+              <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">Clear</button>
+              <button type="button" data-layer-bg="soft" class="${selected.background==='soft'?'active':''}">Glass</button>
+              <button type="button" data-layer-bg="solid" class="${selected.background==='solid'?'active':''}">Paper</button>
+            </div>
+            <label class="studio-range studio-size-range"><span>A</span><input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size /><b>A</b></label>
           </div>
-          <label class="studio-range"><span>Size</span><input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size /></label>
-          <button type="button" class="studio-delete-layer" data-layer-delete>Delete text</button>
         </div>`;
       return;
     }
@@ -254,6 +263,20 @@ export function createMediaStudio({
   }
 
   mount.addEventListener('click',e=>{
+    const overlayDelete=e.target.closest('[data-overlay-delete]');
+    if(overlayDelete){
+      e.preventDefault();
+      e.stopPropagation();
+      const layerEl=overlayDelete.closest('[data-overlay-id]');
+      const id=layerEl?.dataset.overlayId||selectedOverlayId;
+      state.overlays=state.overlays.filter(o=>o.id!==id);
+      if(selectedOverlayId===id)selectedOverlayId=null;
+      renderOverlays();
+      renderPanel();
+      emit();
+      return;
+    }
+
     const tab=e.target.closest('[data-studio-tab]');
     if(tab){
       activeTab=tab.dataset.studioTab;
@@ -305,10 +328,6 @@ export function createMediaStudio({
     if(colour){changeSelected(layer=>layer.color=colour.dataset.layerColour);return;}
     const bg=e.target.closest('[data-layer-bg]');
     if(bg){changeSelected(layer=>layer.background=bg.dataset.layerBg);return;}
-    if(e.target.closest('[data-layer-delete]')){
-      state.overlays=state.overlays.filter(o=>o.id!==selectedOverlayId);
-      selectedOverlayId=null;updateAll();emit();return;
-    }
     if(e.target.closest('[data-video-play]')&&type==='video'){
       media.paused?media.play().catch(()=>{}):media.pause();
       renderPanel();return;
@@ -334,11 +353,21 @@ export function createMediaStudio({
 
   mount.addEventListener('input',e=>{
     if(e.target.matches('[data-layer-text]')){
-      changeSelected(layer=>layer.text=e.target.value.slice(0,180));
+      const layer=overlayById(selectedOverlayId);
+      if(!layer)return;
+      layer.text=e.target.value.slice(0,180);
+      const live=overlayLayer.querySelector('[data-overlay-id="'+CSS.escape(layer.id)+'"] [data-overlay-content]');
+      if(live)live.textContent=layer.text;
+      emit();
       return;
     }
     if(e.target.matches('[data-layer-size]')){
-      changeSelected(layer=>layer.size=clamp(Number(e.target.value)||26,12,52));
+      const layer=overlayById(selectedOverlayId);
+      if(!layer)return;
+      layer.size=clamp(Number(e.target.value)||26,12,52);
+      const live=overlayLayer.querySelector('[data-overlay-id="'+CSS.escape(layer.id)+'"]');
+      if(live)live.style.setProperty('--layer-size',layer.size+'px');
+      emit();
       return;
     }
     if(e.target.matches('[data-look-dim]')){
@@ -367,6 +396,7 @@ export function createMediaStudio({
   });
 
   canvas.addEventListener('pointerdown',e=>{
+    if(e.target.closest('[data-overlay-delete]'))return;
     const layerEl=e.target.closest('[data-overlay-id]');
     if(layerEl){
       const layer=overlayById(layerEl.dataset.overlayId);
