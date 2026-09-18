@@ -17,6 +17,13 @@ let selectedStyle='review-card';
 let selectedBg='parchment';
 let selectedText=bgThemes.parchment.text;
 let draggingRating=false;
+let selectedHashtags=[];
+let selectedTropes=[];
+const quickTropes=[
+  'Slow burn','Enemies to lovers','Found family','Forced proximity',
+  'Friends to lovers','Grumpy / sunshine','Second chance','Forbidden romance',
+  'Dark romance','Fake dating','Small town','Morally grey'
+];
 
 const $=s=>document.querySelector(s);
 
@@ -104,8 +111,8 @@ function buildCreateUI(){
 
   const caption=$('#caption');
   const captionLabel=caption?.previousElementSibling;
-  if(captionLabel)captionLabel.innerHTML='What did you think? <span class="optional">optional short hook</span>';
-  if(caption){caption.maxLength=180;caption.classList.add('hook-field');caption.placeholder='Give people the one-line reason they should stop scrolling…';}
+  if(captionLabel)captionLabel.innerHTML='Add caption <span class="optional">optional</span>';
+  if(caption){caption.maxLength=180;caption.classList.add('hook-field');caption.placeholder='Add a short caption to your Blurb…';}
   const captionCount=caption?.nextElementSibling;
   if(captionCount)captionCount.innerHTML='<span id="captionCount">0</span>/180';
 
@@ -154,11 +161,43 @@ function buildCreateUI(){
   const tags=$('#tags');
   if(tags){
     const label=tags.previousElementSibling;
-    if(label)label.innerHTML='Tropes & tags <span class="optional">optional</span>';
-    tags.insertAdjacentHTML('afterend','<div class="tag-help">Add a few searchable tropes, separated by commas.</div>');
+    label?.remove();
+    const oldHelp=tags.nextElementSibling?.classList?.contains('tag-help')?tags.nextElementSibling:null;
+    oldHelp?.remove();
+    tags.type='hidden';
+    tags.value='';
   }
 
-  buildCreateSteps(form,reviewWrap,uploadZone,coverWrap);
+  const detailsExtras=document.createElement('div');
+  detailsExtras.className='create-details-extras';
+  detailsExtras.innerHTML=`
+    <div class="hashtag-block">
+      <label class="field-label" for="hashtagInput">Hashtags <span class="optional">optional · up to 5</span></label>
+      <div class="hashtag-entry">
+        <span>#</span>
+        <input id="hashtagInput" type="text" maxlength="40" placeholder="Add hashtag" autocomplete="off" />
+        <b id="hashtagCount">0/5</b>
+      </div>
+      <div class="hashtag-chips" id="hashtagChips"></div>
+      <small class="spotlight-help">Hashtags help people find your Blurb in Spotlight search.</small>
+    </div>
+    <div class="trope-block">
+      <label class="field-label">Tropes <span class="optional">optional · tap to add</span></label>
+      <div class="trope-picker" id="tropePicker">
+        ${quickTropes.map(t=>`<button type="button" class="trope-choice" data-trope="${t.replace(/"/g,'&quot;')}">${t}</button>`).join('')}
+      </div>
+    </div>`;
+
+  const spoiler=$('#spoilerToggle')?.closest('.toggle-row');
+  if(spoiler){
+    spoiler.classList.add('spoiler-question');
+    const strong=spoiler.querySelector('strong');
+    const small=spoiler.querySelector('small');
+    if(strong)strong.textContent='Does this contain spoilers?';
+    if(small)small.textContent='We’ll hide the post until someone chooses to reveal it.';
+  }
+
+  buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras);
   bindCreateUI();
   setStyle(selectedStyle);
   clearRating();
@@ -166,7 +205,7 @@ function buildCreateUI(){
   showCreateStep(1);
 }
 
-function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap){
+function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   if(form.querySelector('.create-step'))return;
 
   const bookButton=$('#bookPickerButton');
@@ -179,34 +218,30 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap){
   const caption=$('#caption');
   const captionLabel=caption?.previousElementSibling;
   const captionCount=caption?.nextElementSibling;
-
   const tags=$('#tags');
-  const tagsLabel=tags?.previousElementSibling;
-  const tagHelp=tags?.nextElementSibling?.classList?.contains('tag-help')?tags.nextElementSibling:null;
   const spoiler=$('#spoilerToggle')?.closest('.toggle-row');
   const publish=$('#publishButton');
   const status=$('#createStatus');
 
   const stepper=document.createElement('div');
   stepper.className='create-stepper';
-  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Details</span>';
+  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Details</span><i></i><span data-step-dot="3">3 · Review</span>';
   form.prepend(stepper);
 
   const step1=document.createElement('section');
   step1.className='create-step active';
   step1.dataset.createStep='1';
-
   [bookLabel,bookButton,bookId,ratingLabel,ratingPicker,ratingValue].forEach(node=>node&&step1.appendChild(node));
   while(reviewWrap.firstChild)step1.appendChild(reviewWrap.firstChild);
   reviewWrap.remove();
   if(uploadZone)step1.appendChild(uploadZone);
 
-  const next=document.createElement('button');
-  next.type='button';
-  next.id='createNextButton';
-  next.className='primary-button create-next-button';
-  next.textContent='Next';
-  step1.appendChild(next);
+  const next1=document.createElement('button');
+  next1.type='button';
+  next1.id='createNextButton';
+  next1.className='primary-button create-next-button';
+  next1.textContent='Next';
+  step1.appendChild(next1);
 
   const stepError=document.createElement('p');
   stepError.id='createStepStatus';
@@ -216,17 +251,48 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap){
   const step2=document.createElement('section');
   step2.className='create-step';
   step2.dataset.createStep='2';
+  [captionLabel,caption,captionCount,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step2.appendChild(node));
 
-  [captionLabel,caption,captionCount,coverWrap,tagsLabel,tags,tagHelp,spoiler].forEach(node=>node&&step2.appendChild(node));
+  const detailsActions=document.createElement('div');
+  detailsActions.className='create-final-actions';
+  detailsActions.innerHTML='<button type="button" class="secondary-button" id="createBackButton">Back</button><button type="button" class="primary-button" id="createReviewButton">Next</button>';
+  step2.appendChild(detailsActions);
+
+  const step3=document.createElement('section');
+  step3.className='create-step';
+  step3.dataset.createStep='3';
+  step3.innerHTML=`
+    <div class="review-step-heading">
+      <span>Final check</span>
+      <h2>Review your Blurb</h2>
+      <p>This is how your post will look before it goes live.</p>
+    </div>
+    <article class="final-post-preview" id="finalPostPreview">
+      <div class="final-preview-media" id="finalPreviewMedia"></div>
+      <div class="final-preview-body">
+        <div class="final-preview-book">
+          <span class="final-preview-cover" id="finalPreviewCover"><b>B</b></span>
+          <span><strong id="finalPreviewBook">Choose a book</strong><small id="finalPreviewAuthor"></small></span>
+          <em id="finalPreviewRating"></em>
+        </div>
+        <p class="final-preview-caption" id="finalPreviewCaption" hidden></p>
+        <div class="final-preview-tags" id="finalPreviewTags"></div>
+        <div class="final-preview-spoiler" id="finalPreviewSpoiler" hidden>⚠ Contains spoilers · viewers will need to reveal this post</div>
+      </div>
+    </article>
+    <div class="review-profile-cover" id="reviewProfileCover" hidden></div>`;
 
   const finalActions=document.createElement('div');
   finalActions.className='create-final-actions';
-  finalActions.innerHTML='<button type="button" class="secondary-button" id="createBackButton">Back</button>';
-  if(publish)finalActions.appendChild(publish);
-  step2.appendChild(finalActions);
-  if(status)step2.appendChild(status);
+  finalActions.innerHTML='<button type="button" class="secondary-button" id="reviewBackButton">Back</button>';
+  if(publish){
+    publish.textContent='Post to Blurb';
+    finalActions.appendChild(publish);
+  }
+  step3.appendChild(finalActions);
+  if(status)step3.appendChild(status);
 
-  form.append(step1,step2);
+  form.append(step1,step2,step3);
 }
 
 function setStepStatus(message='',error=false){
@@ -251,6 +317,115 @@ function validateCreateStepOne(){
   if(selectedStyle==='review-card'&&!review)return 'Write your review first.';
   if(selectedStyle!=='review-card'&&!file)return `Add a ${selectedStyle} first.`;
   return '';
+}
+
+function cleanHashtag(value=''){
+  return String(value).trim().replace(/^#+/,'').replace(/[^A-Za-z0-9_]/g,'').slice(0,30);
+}
+
+function renderHashtags(){
+  const host=$('#hashtagChips');
+  const count=$('#hashtagCount');
+  if(count)count.textContent=`${selectedHashtags.length}/5`;
+  if(!host)return;
+  host.innerHTML=selectedHashtags.map(tag=>`<button type="button" class="hashtag-chip" data-remove-hashtag="${tag}">#${tag}<span>×</span></button>`).join('');
+}
+
+function addHashtags(raw=''){
+  const values=String(raw).split(/[\s,]+/).map(cleanHashtag).filter(Boolean);
+  for(const tag of values){
+    if(selectedHashtags.length>=5)break;
+    if(!selectedHashtags.some(x=>x.toLowerCase()===tag.toLowerCase()))selectedHashtags.push(tag);
+  }
+  renderHashtags();
+  const input=$('#hashtagInput');
+  if(input)input.value='';
+}
+
+function toggleTrope(trope){
+  const index=selectedTropes.indexOf(trope);
+  if(index>=0)selectedTropes.splice(index,1);
+  else selectedTropes.push(trope);
+  document.querySelectorAll('[data-trope]').forEach(btn=>btn.classList.toggle('active',selectedTropes.includes(btn.dataset.trope)));
+}
+
+function buildFinalReviewPreview(){
+  const {title,author}=selectedBookParts();
+  const titleEl=$('#finalPreviewBook');
+  const authorEl=$('#finalPreviewAuthor');
+  const coverEl=$('#finalPreviewCover');
+  if(titleEl)titleEl.textContent=title;
+  if(authorEl)authorEl.textContent=author||'';
+  const selectedCover=$('#selectedBookCover img');
+  if(coverEl){
+    coverEl.innerHTML=selectedCover?'<img src="'+selectedCover.src+'" alt="" />':'<b>'+((title||'B').charAt(0).toUpperCase())+'</b>';
+  }
+
+  const rating=Number($('#ratingValue')?.value||0);
+  const ratingEl=$('#finalPreviewRating');
+  if(ratingEl){
+    ratingEl.textContent=rating?`★ ${rating.toFixed(1)}`:'';
+    ratingEl.hidden=!rating;
+  }
+
+  const caption=$('#caption')?.value?.trim()||'';
+  const captionEl=$('#finalPreviewCaption');
+  if(captionEl){
+    captionEl.textContent=caption;
+    captionEl.hidden=!caption;
+  }
+
+  const tagHost=$('#finalPreviewTags');
+  if(tagHost){
+    const hashtagHtml=selectedHashtags.map(t=>`<span class="final-tag hashtag">#${t}</span>`).join('');
+    const tropeHtml=selectedTropes.map(t=>`<span class="final-tag">${t}</span>`).join('');
+    tagHost.innerHTML=hashtagHtml+tropeHtml;
+    tagHost.hidden=!(selectedHashtags.length||selectedTropes.length);
+  }
+
+  const spoiler=$('#spoilerToggle')?.checked||false;
+  const spoilerEl=$('#finalPreviewSpoiler');
+  if(spoilerEl)spoilerEl.hidden=!spoiler;
+
+  const mediaHost=$('#finalPreviewMedia');
+  if(mediaHost){
+    mediaHost.innerHTML='';
+    if(selectedStyle==='review-card'){
+      const source=$('#reviewCardPreview');
+      if(source){
+        const clone=source.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.classList.add('final-review-card');
+        mediaHost.appendChild(clone);
+      }
+    }else{
+      const file=$('#mediaFile')?.files?.[0];
+      if(file){
+        const url=URL.createObjectURL(file);
+        if(selectedStyle==='video'){
+          const video=document.createElement('video');
+          video.src=url;video.muted=true;video.loop=true;video.playsInline=true;video.controls=true;
+          mediaHost.appendChild(video);
+        }else{
+          const img=document.createElement('img');
+          img.src=url;img.alt='Post preview';
+          mediaHost.appendChild(img);
+        }
+      }
+    }
+  }
+
+  const coverFile=$('#profileCoverFile')?.files?.[0];
+  const coverNote=$('#reviewProfileCover');
+  if(coverNote){
+    if(coverFile){
+      coverNote.hidden=false;
+      coverNote.innerHTML='<span>Profile grid cover</span><img src="'+URL.createObjectURL(coverFile)+'" alt="" /><strong>Custom cover selected</strong>';
+    }else{
+      coverNote.hidden=true;
+      coverNote.innerHTML='';
+    }
+  }
 }
 
 function bindCreateUI(){
@@ -301,12 +476,35 @@ function bindCreateUI(){
   document.querySelectorAll('[data-bg]').forEach(btn=>btn.addEventListener('click',()=>{selectedBg=btn.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('active',x===btn));selectedText=bgThemes[selectedBg].text;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x.dataset.colour===selectedText));updateReviewCardPreview();}));
   document.querySelectorAll('[data-colour]').forEach(btn=>btn.addEventListener('click',()=>{selectedText=btn.dataset.colour;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x===btn));updateReviewCardPreview();}));
 
+  $('#hashtagInput')?.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===','){
+      e.preventDefault();
+      addHashtags(e.target.value);
+    }
+  });
+  $('#hashtagInput')?.addEventListener('blur',e=>{if(e.target.value.trim())addHashtags(e.target.value);});
+  $('#hashtagChips')?.addEventListener('click',e=>{
+    const chip=e.target.closest('[data-remove-hashtag]');
+    if(!chip)return;
+    selectedHashtags=selectedHashtags.filter(t=>t!==chip.dataset.removeHashtag);
+    renderHashtags();
+  });
+  document.querySelectorAll('[data-trope]').forEach(btn=>btn.addEventListener('click',()=>toggleTrope(btn.dataset.trope)));
+  renderHashtags();
+
   $('#createNextButton')?.addEventListener('click',()=>{
     const problem=validateCreateStepOne();
     if(problem){setStepStatus(problem,true);return;}
     showCreateStep(2);
   });
   $('#createBackButton')?.addEventListener('click',()=>showCreateStep(1));
+  $('#createReviewButton')?.addEventListener('click',()=>{
+    const pending=$('#hashtagInput')?.value?.trim();
+    if(pending)addHashtags(pending);
+    buildFinalReviewPreview();
+    showCreateStep(3);
+  });
+  $('#reviewBackButton')?.addEventListener('click',()=>showCreateStep(2));
 
   $('#createForm')?.addEventListener('submit',publishNewFlow,true);
 }
@@ -405,7 +603,11 @@ async function publishNewFlow(e){
     if(coverFile){const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');}
     const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
     const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,thumbnail_url:thumbnailUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published'}).select().single();if(error)throw error;
-    const tags=($('#tags')?.value||'').split(',').map(x=>x.trim().replace(/^#/,'' )).filter(Boolean).slice(0,10);if(tags.length)await supabase.from('blurb_post_tags').insert(tags.map(tag=>({post_id:post.id,tag})));
+    const tags=[
+      ...selectedHashtags.slice(0,5).map(tag=>'#'+tag),
+      ...selectedTropes
+    ].filter(Boolean);
+    if(tags.length)await supabase.from('blurb_post_tags').insert(tags.map(tag=>({post_id:post.id,tag})));
     toast('Your Blurb is live');setStatus('Posted!');setTimeout(()=>location.reload(),650);
   }catch(err){console.error(err);setStatus(err?.message||'Couldn’t publish that Blurb.',true);}finally{button.disabled=false;}
 }
