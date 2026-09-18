@@ -948,13 +948,13 @@ async function publishNewFlow(e){
   if(!session?.user){$('#sheetBackdrop').hidden=false;$('#authSheet').hidden=false;return;}
   const bookId=$('#selectedBookId')?.value;const rawRating=$('#ratingValue')?.value;const rating=rawRating?Number(rawRating):null;const hook=$('#caption')?.value?.trim()||'';const review=$('#reviewText')?.value?.trim()||'';const file=$('#mediaFile')?.files?.[0];const coverFile=$('#profileCoverFile')?.files?.[0];
   if(!bookId){showCreateStep(1);setStepStatus('Choose a book first.',true);return;}
-  if(selectedStyle==='review-card'&&!review){showCreateStep(1);setStepStatus('Write your review first.',true);return;}
+  if(selectedStyle==='review-card'&&!review){showCreateStep(2);setEditorStepStatus('Write your review first.',true);return;}
   if(selectedStyle!=='review-card'&&!file){showCreateStep(1);setStepStatus(`Add a ${selectedStyle} first.`,true);return;}
   const button=$('#publishButton');button.disabled=true;setStatus('Creating your Blurb…');
   try{
     let mediaUrl=null;let thumbnailUrl=null;let postType='image';
     if(selectedStyle==='review-card'){const blob=await reviewCardBlob();mediaUrl=await uploadBlob(blob,session.user.id);postType='image';}
-    else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle;}
+    else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle==='video'?'video':'image';}
     if(coverFile){const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');}
     const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
     const liveEditorState=(selectedStyle==='photo'||selectedStyle==='video')
