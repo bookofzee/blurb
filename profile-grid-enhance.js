@@ -5,6 +5,28 @@ const escapeHtml=(value='')=>String(value).replace(/[&<>'\"]/g,c=>({'&':'&amp;',
 const palettes=[['#6f324c','#15101b'],['#263d5b','#10131d'],['#69532c','#18140d'],['#24463e','#0d1715'],['#5b2a2a','#160d0d'],['#47345f','#120f1a'],['#273c53','#0c1118'],['#684639','#17100d']];
 const paletteFor=key=>palettes[Math.abs([...String(key)].reduce((a,c)=>a+c.charCodeAt(0),0))%palettes.length];
 let busy=false;
+let longPressTimer=null;
+function closeTileControls(except=null){
+  document.querySelectorAll('.profile-media-tile.controls-open').forEach(tile=>{
+    if(tile!==except)tile.classList.remove('controls-open');
+  });
+}
+function bindLongPress(tile){
+  const clearPress=()=>{clearTimeout(longPressTimer);longPressTimer=null;};
+  tile.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.profile-tile-controls'))return;
+    clearPress();
+    longPressTimer=setTimeout(()=>{
+      closeTileControls(tile);
+      tile.classList.add('controls-open');
+      navigator.vibrate?.(18);
+    },550);
+  });
+  tile.addEventListener('pointerup',clearPress);
+  tile.addEventListener('pointercancel',clearPress);
+  tile.addEventListener('pointerleave',clearPress);
+  tile.addEventListener('contextmenu',e=>e.preventDefault());
+}
 function toast(message){const el=document.querySelector('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 async function hydrateProfileGrid(){
   if(busy)return;
@@ -22,8 +44,22 @@ async function hydrateProfileGrid(){
       const [a,b]=paletteFor(post.id);
       const media=post.media_url||post.thumbnail_url;
       const visual=media?(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" />`):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
-      return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete post">×</button></article>`;
+      return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}" data-caption="${escapeHtml(post.caption||'')}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><div class="profile-tile-controls" aria-hidden="true"><button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}">Edit</button><button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}">Delete</button></div></article>`;
     }).join('');
+    grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
+    grid.querySelectorAll('[data-edit-profile-post]').forEach(btn=>btn.addEventListener('click',async e=>{
+      e.stopPropagation();
+      const id=btn.dataset.editProfilePost;
+      const tile=btn.closest('.profile-media-tile');
+      const next=prompt('Edit this Blurb',tile?.dataset.caption||'');
+      if(next===null)return;
+      const caption=next.trim();
+      const {error}=await supabase.from('blurb_posts').update({caption}).eq('id',id).eq('user_id',session.user.id);
+      if(error){toast('Couldn’t edit that Blurb');return;}
+      if(tile)tile.dataset.caption=caption;
+      tile?.classList.remove('controls-open');
+      toast('Blurb updated');
+    }));
     grid.querySelectorAll('[data-delete-profile-post]').forEach(btn=>btn.addEventListener('click',async e=>{
       e.stopPropagation();
       const id=btn.dataset.deleteProfilePost;
@@ -40,5 +76,6 @@ function watch(){
   hydrateProfileGrid();
   const root=document.querySelector('#profileContent');
   if(root)new MutationObserver(()=>{const grid=root.querySelector('.profile-grid');if(grid&&!grid.dataset.enhanced)hydrateProfileGrid();}).observe(root,{childList:true,subtree:true});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.profile-media-tile'))closeTileControls();});
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',watch,{once:true}):watch();
