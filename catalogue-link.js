@@ -248,22 +248,18 @@ function bindAddBookUI(){
 
   const search=document.querySelector('#bookSheetSearch');
   const list=document.querySelector('#bookSheetList');
-  const heading=document.querySelector('#bookSheet h2');
+  const modal=document.querySelector('#bookSheet');
 
   const showAddBook=()=>{
     form.hidden=false;
-    if(search)search.hidden=true;
-    if(list)list.hidden=true;
-    if(heading)heading.textContent='Add a book';
+    modal?.classList.add('adding-book');
     toggle.textContent='← Back to book list';
     setTimeout(()=>document.querySelector('#newBookTitle')?.focus(),60);
   };
 
   const showBookList=()=>{
     form.hidden=true;
-    if(search)search.hidden=false;
-    if(list)list.hidden=false;
-    if(heading)heading.textContent='Choose a book';
+    modal?.classList.remove('adding-book');
     toggle.textContent='＋ Book not listed? Add it';
     resetAddBookForm();
   };
@@ -314,9 +310,7 @@ function bindAddBookUI(){
 
       resetAddBookForm();
       form.hidden=true;
-      if(search)search.hidden=false;
-      if(list)list.hidden=false;
-      if(heading)heading.textContent='Choose a book';
+      modal?.classList.remove('adding-book');
       toggle.textContent='＋ Book not listed? Add it';
       closeBookSheet();
       toast('Book added');
