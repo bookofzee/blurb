@@ -17,6 +17,10 @@ let selectedStyle='review-card';
 let selectedBg='parchment';
 let selectedText=bgThemes.parchment.text;
 let draggingRating=false;
+let mediaEditorDragging=false;
+let mediaEditorPointer=null;
+let mediaEditorStart={x:0,y:0,offsetX:0,offsetY:0};
+let mediaEdit={file:null,url:'',scale:1,offsetX:0,offsetY:0,fit:'cover',rotation:0};
 let selectedHashtags=[];
 let selectedTropes=[];
 const quickTropes=[
@@ -66,6 +70,7 @@ async function syncSelectedBookPreview(){
       cover.classList.remove('has-cover');
     }
     updateReviewCardPreview();
+    updateMediaEditorMeta();
   },60);
 }
 
@@ -80,6 +85,125 @@ function feedCardSize(){
   const width=1080;
   const height=Math.round(width*(feedHeight/feedWidth));
   return {width,height,ratio:feedWidth/feedHeight};
+}
+
+function clamp(value,min,max){
+  return Math.max(min,Math.min(max,value));
+}
+
+function resetMediaEdit(file=null){
+  if(mediaEdit.url&&mediaEdit.file!==file){
+    try{URL.revokeObjectURL(mediaEdit.url);}catch{}
+  }
+  mediaEdit={
+    file:file||null,
+    url:file?URL.createObjectURL(file):'',
+    scale:1,
+    offsetX:0,
+    offsetY:0,
+    fit:'cover',
+    rotation:0
+  };
+}
+
+function mediaTransformCss(){
+  return `object-fit:${mediaEdit.fit};transform:translate3d(${mediaEdit.offsetX}%,${mediaEdit.offsetY}%,0) scale(${mediaEdit.scale}) rotate(${mediaEdit.rotation}deg);transform-origin:center center;`;
+}
+
+function updateMediaEditorMeta(){
+  const title=$('#mediaEditorBookTitle');
+  const author=$('#mediaEditorBookAuthor');
+  const cover=$('#mediaEditorBookCover');
+  const rating=$('#mediaEditorRating');
+  if(!title&&!author&&!cover&&!rating)return;
+
+  const parts=selectedBookParts();
+  if(title)title.textContent=parts.title||'Choose a book';
+  if(author)author.textContent=parts.author||'';
+  if(cover){
+    const source=$('#selectedBookCover img');
+    if(source){
+      cover.style.backgroundImage='url("'+source.src.replace(/"/g,'\"')+'")';
+      cover.classList.add('has-cover');
+      cover.textContent='';
+    }else{
+      cover.style.backgroundImage='';
+      cover.classList.remove('has-cover');
+      cover.textContent=(parts.title||'B').trim().charAt(0).toUpperCase()||'B';
+    }
+  }
+  const value=Number($('#ratingValue')?.value||0);
+  if(rating){
+    rating.textContent=value?`★ ${value.toFixed(1)}`:'';
+    rating.hidden=!value;
+  }
+}
+
+function updateMediaEditorTransform(){
+  const img=$('#mediaEditorImage');
+  if(img){
+    img.style.objectFit=mediaEdit.fit;
+    img.style.transform=`translate3d(${mediaEdit.offsetX}%,${mediaEdit.offsetY}%,0) scale(${mediaEdit.scale}) rotate(${mediaEdit.rotation}deg)`;
+  }
+  const zoom=$('#mediaZoom');
+  if(zoom)zoom.value=String(mediaEdit.scale);
+  const zoomValue=$('#mediaZoomValue');
+  if(zoomValue)zoomValue.textContent=Math.round(mediaEdit.scale*100)+'%';
+  document.querySelectorAll('[data-media-fit]').forEach(btn=>btn.classList.toggle('active',btn.dataset.mediaFit===mediaEdit.fit));
+}
+
+function renderPhotoEditor(file,reset=true){
+  if(!file||!file.type.startsWith('image/'))return;
+  if(reset||mediaEdit.file!==file)resetMediaEdit(file);
+
+  const preview=$('#mediaPreview');
+  const prompt=$('#uploadPrompt');
+  const upload=$('#mediaFile')?.closest('.upload-zone');
+  if(!preview||!upload)return;
+
+  prompt?.setAttribute('hidden','');
+  preview.hidden=false;
+  upload.removeAttribute('for');
+  upload.classList.add('photo-editor-open');
+
+  const ratio=feedCardSize().ratio;
+  preview.classList.add('media-editor-preview');
+  preview.innerHTML=`
+    <div class="media-editor-heading">
+      <span><strong>Position your photo</strong><small>Drag the image to move it inside the post.</small></span>
+      <button type="button" id="mediaChangePhoto">Change photo</button>
+    </div>
+    <div class="media-editor-screen" id="mediaCropSurface" style="aspect-ratio:${ratio}">
+      <img id="mediaEditorImage" class="media-editor-image" src="${mediaEdit.url}" alt="Photo crop preview" draggable="false" />
+      <div class="media-editor-shade"></div>
+      <div class="media-editor-book-chip">
+        <i id="mediaEditorBookCover">B</i>
+        <span><strong id="mediaEditorBookTitle">Choose a book</strong><small id="mediaEditorBookAuthor"></small></span>
+        <em id="mediaEditorRating" hidden></em>
+      </div>
+      <div class="media-editor-action-rail" aria-hidden="true">
+        <span>♥</span><span>◌</span><span>＋</span><span>↗</span>
+      </div>
+      <div class="media-editor-drag-hint">Drag to reposition</div>
+    </div>
+    <div class="media-editor-tools">
+      <div class="media-zoom-row">
+        <span>Zoom</span>
+        <input id="mediaZoom" type="range" min="1" max="3" step="0.01" value="${mediaEdit.scale}" />
+        <b id="mediaZoomValue">100%</b>
+      </div>
+      <div class="media-fit-row">
+        <button type="button" data-media-fit="cover">Fill screen</button>
+        <button type="button" data-media-fit="contain">Fit whole photo</button>
+      </div>
+      <div class="media-tool-actions">
+        <button type="button" id="mediaRotate">↻ Rotate</button>
+        <button type="button" id="mediaReset">Reset</button>
+      </div>
+    </div>`;
+
+  updateMediaEditorTransform();
+  updateMediaEditorMeta();
 }
 
 function buildCreateUI(){
@@ -372,10 +496,10 @@ async function buildFinalReviewPreview(){
   }else{
     const file=$('#mediaFile')?.files?.[0];
     if(file){
-      const url=URL.createObjectURL(file);
+      const url=(selectedStyle==='photo'&&mediaEdit.file===file&&mediaEdit.url)?mediaEdit.url:URL.createObjectURL(file);
       mediaHtml=selectedStyle==='video'
         ? '<video class="feed-media" src="'+url+'" muted loop playsinline autoplay></video>'
-        : '<img class="feed-media" src="'+url+'" alt="">';
+        : '<img class="feed-media" src="'+url+'" alt="" style="'+mediaTransformCss()+'">';
     }
   }
 
@@ -488,6 +612,95 @@ function bindCreateUI(){
     $('#profileCoverClear').hidden=true;
   });
 
+  $('#mediaFile')?.addEventListener('change',e=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    if(file.size>50*1024*1024){
+      toast('Media must be under 50 MB');
+      e.target.value='';
+      return;
+    }
+    if(selectedStyle==='photo'&&file.type.startsWith('image/')){
+      setTimeout(()=>renderPhotoEditor(file,true),0);
+    }else{
+      const upload=e.target.closest('.upload-zone');
+      upload?.classList.remove('photo-editor-open');
+      upload?.setAttribute('for','mediaFile');
+      resetMediaEdit(null);
+    }
+  });
+
+  $('#mediaPreview')?.addEventListener('input',e=>{
+    if(e.target.id==='mediaZoom'){
+      mediaEdit.scale=clamp(Number(e.target.value)||1,1,3);
+      updateMediaEditorTransform();
+    }
+  });
+
+  $('#mediaPreview')?.addEventListener('click',e=>{
+    const fit=e.target.closest('[data-media-fit]');
+    if(fit){
+      e.preventDefault();
+      e.stopPropagation();
+      mediaEdit.fit=fit.dataset.mediaFit==='contain'?'contain':'cover';
+      mediaEdit.scale=1;
+      mediaEdit.offsetX=0;
+      mediaEdit.offsetY=0;
+      updateMediaEditorTransform();
+      return;
+    }
+    if(e.target.closest('#mediaRotate')){
+      e.preventDefault();
+      e.stopPropagation();
+      mediaEdit.rotation=(mediaEdit.rotation+90)%360;
+      updateMediaEditorTransform();
+      return;
+    }
+    if(e.target.closest('#mediaReset')){
+      e.preventDefault();
+      e.stopPropagation();
+      const file=mediaEdit.file;
+      resetMediaEdit(file);
+      renderPhotoEditor(file,false);
+      return;
+    }
+    if(e.target.closest('#mediaChangePhoto')){
+      e.preventDefault();
+      e.stopPropagation();
+      $('#mediaFile')?.click();
+    }
+  });
+
+  $('#mediaPreview')?.addEventListener('pointerdown',e=>{
+    const surface=e.target.closest('#mediaCropSurface');
+    if(!surface)return;
+    e.preventDefault();
+    mediaEditorDragging=true;
+    mediaEditorPointer=e.pointerId;
+    mediaEditorStart={x:e.clientX,y:e.clientY,offsetX:mediaEdit.offsetX,offsetY:mediaEdit.offsetY};
+    surface.setPointerCapture?.(e.pointerId);
+    surface.classList.add('dragging');
+  });
+  $('#mediaPreview')?.addEventListener('pointermove',e=>{
+    if(!mediaEditorDragging||e.pointerId!==mediaEditorPointer)return;
+    const surface=e.target.closest('#mediaCropSurface')||$('#mediaCropSurface');
+    if(!surface)return;
+    const rect=surface.getBoundingClientRect();
+    const dx=((e.clientX-mediaEditorStart.x)/Math.max(1,rect.width))*100;
+    const dy=((e.clientY-mediaEditorStart.y)/Math.max(1,rect.height))*100;
+    mediaEdit.offsetX=clamp(mediaEditorStart.offsetX+dx,-55,55);
+    mediaEdit.offsetY=clamp(mediaEditorStart.offsetY+dy,-55,55);
+    updateMediaEditorTransform();
+  });
+  const endMediaDrag=()=>{
+    if(!mediaEditorDragging)return;
+    mediaEditorDragging=false;
+    mediaEditorPointer=null;
+    $('#mediaCropSurface')?.classList.remove('dragging');
+  };
+  $('#mediaPreview')?.addEventListener('pointerup',endMediaDrag);
+  $('#mediaPreview')?.addEventListener('pointercancel',endMediaDrag);
+
   document.querySelectorAll('[data-post-style]').forEach(btn=>btn.addEventListener('click',()=>setStyle(btn.dataset.postStyle)));
   document.querySelectorAll('[data-bg]').forEach(btn=>btn.addEventListener('click',()=>{selectedBg=btn.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('active',x===btn));selectedText=bgThemes[selectedBg].text;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x.dataset.colour===selectedText));updateReviewCardPreview();}));
   document.querySelectorAll('[data-colour]').forEach(btn=>btn.addEventListener('click',()=>{selectedText=btn.dataset.colour;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x===btn));updateReviewCardPreview();}));
@@ -537,6 +750,7 @@ function setRating(value){
   const display=$('#ratingDisplay');if(display)display.textContent=value===0?'0':value.toFixed(1);
   $('#ratingDrag')?.setAttribute('aria-valuenow',String(value));
   document.querySelectorAll('.rating-star').forEach((star,i)=>{const fill=star.querySelector('i');const portion=Math.max(0,Math.min(1,value-i));fill.style.width=`${portion*100}%`;});
+  updateMediaEditorMeta();
 }
 
 function clearRating(){
@@ -556,6 +770,14 @@ function setStyle(style){
   if(file)file.accept=style==='photo'?'image/jpeg,image/png,image/webp':'video/mp4,video/webm,video/quicktime';
   const prompt=$('#uploadPrompt');
   if(prompt){prompt.innerHTML=style==='photo'?'<strong>＋ Add photo</strong><span>JPEG, PNG or WebP up to 50 MB</span>':'<strong>＋ Add video</strong><span>MP4, WebM or MOV up to 50 MB</span>';}
+  const currentFile=file?.files?.[0];
+  if(style==='photo'&&currentFile?.type?.startsWith('image/')){
+    setTimeout(()=>renderPhotoEditor(currentFile,mediaEdit.file!==currentFile),0);
+  }else if(style==='video'){
+    const upload=file?.closest('.upload-zone');
+    upload?.classList.remove('photo-editor-open');
+    upload?.setAttribute('for','mediaFile');
+  }
 }
 
 function selectedBookParts(){
@@ -624,7 +846,14 @@ async function publishNewFlow(e){
     else if(file){const ext=(file.name.split('.').pop()||'bin').toLowerCase();mediaUrl=await uploadBlob(file,session.user.id,ext,file.type);postType=selectedStyle;}
     if(coverFile){const coverExt=(coverFile.name.split('.').pop()||'jpg').toLowerCase();thumbnailUrl=await uploadBlob(coverFile,session.user.id,coverExt,coverFile.type||'image/jpeg');}
     const caption=selectedStyle==='review-card'?[hook,review].filter(Boolean).join('\n\n'):hook;
-    const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,thumbnail_url:thumbnailUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published'}).select().single();if(error)throw error;
+    const positioning=selectedStyle==='photo'?{
+      media_scale:mediaEdit.scale,
+      media_offset_x:mediaEdit.offsetX,
+      media_offset_y:mediaEdit.offsetY,
+      media_fit:mediaEdit.fit,
+      media_rotation:mediaEdit.rotation
+    }:{media_scale:1,media_offset_x:0,media_offset_y:0,media_fit:'cover',media_rotation:0};
+    const {data:post,error}=await supabase.from('blurb_posts').insert({user_id:session.user.id,book_id:bookId,post_type:postType,media_url:mediaUrl,thumbnail_url:thumbnailUrl,caption,rating,contains_spoilers:$('#spoilerToggle')?.checked||false,status:'published',...positioning}).select().single();if(error)throw error;
     const tags=[
       ...selectedHashtags.slice(0,5).map(tag=>'#'+tag),
       ...selectedTropes
