@@ -1,4 +1,4 @@
-import { defaultEditorState, normalizeEditorState } from './editor-state.js?v=1';
+import { defaultEditorState, normalizeEditorState } from './editor-state.js?v=2';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const uid=()=>globalThis.crypto?.randomUUID?.()||('layer-'+Date.now()+'-'+Math.random().toString(36).slice(2));
@@ -144,11 +144,11 @@ export function createMediaStudio({
   function renderOverlays(){
     overlayLayer.innerHTML=state.overlays.map(o=>`
       <div
-        class="studio-text-layer font-${o.font} bg-${o.background}${o.id===selectedOverlayId?' selected':''}"
+        class="studio-text-layer${o.id===selectedOverlayId?' selected':''}"
         data-overlay-id="${escapeHtml(o.id)}"
         style="left:${o.x}%;top:${o.y}%;--layer-scale:${o.scale};--layer-rotation:${o.rotation}deg;--layer-color:${o.color};--layer-size:${o.size}px;text-align:${o.align}"
       >
-        <span data-overlay-content>${escapeHtml(o.text)}</span>
+        <span class="studio-text-bubble font-${o.font} bg-${o.background}" data-overlay-content>${escapeHtml(o.text)}</span>
         ${o.id===selectedOverlayId?'<button type="button" class="studio-layer-delete-handle" data-overlay-delete aria-label="Delete text">×</button>':''}
       </div>`).join('');
   }
@@ -185,28 +185,46 @@ export function createMediaStudio({
             <textarea rows="2" maxlength="180" data-layer-text aria-label="Overlay text">${escapeHtml(selected.text)}</textarea>
             <span>Text</span>
           </div>
-          <div class="studio-control-strip">
-            <div class="studio-option-row studio-font-row">
-              <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
-              <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
-              <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
-            </div>
-            <div class="studio-align-row" aria-label="Text alignment">
-              <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left"><span class="align-glyph align-left"><i></i><i></i><i></i></span></button>
-              <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre"><span class="align-glyph align-centre"><i></i><i></i><i></i></span></button>
-              <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right"><span class="align-glyph align-right"><i></i><i></i><i></i></span></button>
-            </div>
-            <div class="studio-colour-row">
-              ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
-            </div>
-          </div>
-          <div class="studio-control-strip studio-control-strip-bottom">
-            <div class="studio-option-row">
-              <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">Clear</button>
-              <button type="button" data-layer-bg="soft" class="${selected.background==='soft'?'active':''}">Glass</button>
-              <button type="button" data-layer-bg="solid" class="${selected.background==='solid'?'active':''}">Paper</button>
-            </div>
-            <label class="studio-range studio-size-range"><span>A</span><input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size /><b>A</b></label>
+
+          <div class="studio-text-settings-grid">
+            <section class="studio-tool-group">
+              <span class="studio-tool-label">Typeface</span>
+              <div class="studio-option-row studio-font-row">
+                <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
+                <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
+                <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
+              </div>
+            </section>
+
+            <section class="studio-tool-group">
+              <span class="studio-tool-label">Alignment</span>
+              <div class="studio-align-row" aria-label="Text alignment">
+                <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left"><span class="align-glyph align-left"><i></i><i></i><i></i></span></button>
+                <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre"><span class="align-glyph align-centre"><i></i><i></i><i></i></span></button>
+                <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right"><span class="align-glyph align-right"><i></i><i></i><i></i></span></button>
+              </div>
+            </section>
+
+            <section class="studio-tool-group studio-tool-group-wide">
+              <span class="studio-tool-label">Colour</span>
+              <div class="studio-colour-row">
+                ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
+              </div>
+            </section>
+
+            <section class="studio-tool-group">
+              <span class="studio-tool-label">Background</span>
+              <div class="studio-option-row studio-background-row">
+                <button type="button" data-layer-bg="none" class="${selected.background==='none'?'active':''}">Clear</button>
+                <button type="button" data-layer-bg="soft" class="${selected.background==='soft'?'active':''}">Glass</button>
+                <button type="button" data-layer-bg="solid" class="${selected.background==='solid'?'active':''}">Paper</button>
+              </div>
+            </section>
+
+            <section class="studio-tool-group">
+              <span class="studio-tool-label">Size</span>
+              <label class="studio-range studio-size-range"><span>A</span><input type="range" min="12" max="52" step="1" value="${selected.size}" data-layer-size /><b>A</b></label>
+            </section>
           </div>
         </div>`;
       return;
