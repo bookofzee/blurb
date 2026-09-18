@@ -256,7 +256,14 @@ async function renderProfile(){
   root.innerHTML=`<div class="profile-shell">
     <div class="profile-settings-wrap">
       <button class="profile-settings-button" id="profileSettingsButton" type="button" aria-label="Profile settings" aria-expanded="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="gear-shell" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle class="gear-centre" cx="12" cy="12" r="3"/></svg>
+        <svg class="profile-cog-art" viewBox="0 0 64 64" aria-hidden="true">
+          <defs><linearGradient id="profileCogBronze" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd2a4"/><stop offset=".38" stop-color="#dc8950"/><stop offset=".75" stop-color="#a55228"/><stop offset="1" stop-color="#713517"/></linearGradient><radialGradient id="profileCogIvory"><stop offset="0" stop-color="#fffefa"/><stop offset="1" stop-color="#f0dcc3"/></radialGradient></defs>
+          <path class="cog-shadow" d="M35 6h-6l-2 7a21 21 0 0 0-4 2l-7-2-4 5 4 6a21 21 0 0 0-1 5l-6 4 2 6 7 1a21 21 0 0 0 3 4l-1 7 6 3 5-5a21 21 0 0 0 5 0l5 5 6-3-1-7a21 21 0 0 0 3-4l7-1 2-6-6-4a21 21 0 0 0-1-5l4-6-4-5-7 2a21 21 0 0 0-4-2Z"/>
+          <path fill="url(#profileCogBronze)" d="M35 6h-6l-2 7a21 21 0 0 0-4 2l-7-2-4 5 4 6a21 21 0 0 0-1 5l-6 4 2 6 7 1a21 21 0 0 0 3 4l-1 7 6 3 5-5a21 21 0 0 0 5 0l5 5 6-3-1-7a21 21 0 0 0 3-4l7-1 2-6-6-4a21 21 0 0 0-1-5l4-6-4-5-7 2a21 21 0 0 0-4-2Z"/>
+          <circle fill="url(#profileCogIvory)" cx="32" cy="32" r="12"/>
+          <circle class="cog-line" cx="32" cy="32" r="12"/>
+          <circle fill="url(#profileCogBronze)" cx="32" cy="32" r="5"/>
+        </svg>
       </button>
       <div class="profile-settings-menu" id="profileSettingsMenu" hidden>
         <button type="button" id="editProfileButton">Edit profile</button>
