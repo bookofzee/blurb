@@ -8,6 +8,17 @@ function distance(a,b){
   return Math.hypot(b.x-a.x,b.y-a.y);
 }
 
+function angle(a,b){
+  return Math.atan2(b.y-a.y,b.x-a.x);
+}
+
+function normalizeDegrees(value){
+  let n=Number(value)||0;
+  while(n>180)n-=360;
+  while(n<-180)n+=360;
+  return n;
+}
+
 export function createMediaStudio({
   mount,
   file,
@@ -21,6 +32,7 @@ export function createMediaStudio({
   if(!mount||!file)return null;
 
   let state=normalizeEditorState(initialState||defaultEditorState());
+  state.layout={showBook:true,showRating:true,actions:'right'};
   let activeTab='media';
   let selectedOverlayId=null;
   let mediaUrl=URL.createObjectURL(file);
@@ -60,7 +72,6 @@ export function createMediaStudio({
       <nav class="studio-tabs" aria-label="Editor tools">
         <button type="button" class="active" data-studio-tab="media"><span>⌘</span>Media</button>
         <button type="button" data-studio-tab="text"><span>Aa</span>Text</button>
-        <button type="button" data-studio-tab="layout"><span>▦</span>Layout</button>
         <button type="button" data-studio-tab="look"><span>✦</span>Look</button>
         ${type==='video'?'<button type="button" data-studio-tab="video"><span>▶</span>Video</button>':''}
       </nav>
@@ -148,13 +159,13 @@ export function createMediaStudio({
 
     if(activeTab==='media'){
       panel.innerHTML=`
-        <div class="studio-panel-copy"><strong>Move it directly</strong><small>Drag to reposition · pinch or scroll to resize · double tap to fit/fill.</small></div>
+        <div class="studio-panel-copy"><strong>Move it directly</strong><small>Drag to position · pinch to resize and rotate · double tap to fit/fill.</small></div>
         <div class="studio-quick-row">
           <button type="button" data-media-fit="cover" class="${state.media.fit==='cover'?'active':''}">Fill</button>
           <button type="button" data-media-fit="contain" class="${state.media.fit==='contain'?'active':''}">Fit</button>
-          <button type="button" data-media-rotate>Rotate</button>
           <button type="button" data-media-reset>Reset</button>
-        </div>`;
+        </div>
+        <label class="studio-rotation-range"><span>Rotate</span><input type="range" min="-180" max="180" step="1" value="${normalizeDegrees(state.media.rotation)}" data-media-rotation /><b>${Math.round(normalizeDegrees(state.media.rotation))}°</b></label>`;
       return;
     }
 
@@ -163,13 +174,9 @@ export function createMediaStudio({
         panel.innerHTML=`
           <div class="studio-add-text-row">
             <button type="button" class="studio-add-text" data-add-text>＋ Add text</button>
-            <span>Place headings, quotes or reactions anywhere on the post.</span>
+            <span>Add text, then drag it anywhere on your post.</span>
           </div>
-          <div class="studio-text-presets">
-            <button type="button" data-add-preset="heading">Heading</button>
-            <button type="button" data-add-preset="quote">“ Quote ”</button>
-            <button type="button" data-add-preset="tag">Tag</button>
-          </div>`;
+;
         return;
       }
       const colours=['#ffffff','#f7ead4','#c96832','#241a17','#e8bfd0','#d9efe3'];
@@ -184,6 +191,11 @@ export function createMediaStudio({
               <button type="button" data-layer-font="serif" class="${selected.font==='serif'?'active':''}">Serif</button>
               <button type="button" data-layer-font="clean" class="${selected.font==='clean'?'active':''}">Clean</button>
               <button type="button" data-layer-font="bold" class="${selected.font==='bold'?'active':''}">Bold</button>
+            </div>
+            <div class="studio-align-row" aria-label="Text alignment">
+              <button type="button" data-layer-align="left" class="${selected.align==='left'?'active':''}" aria-label="Align left">≡</button>
+              <button type="button" data-layer-align="center" class="${selected.align==='center'?'active':''}" aria-label="Align centre">≡</button>
+              <button type="button" data-layer-align="right" class="${selected.align==='right'?'active':''}" aria-label="Align right">≡</button>
             </div>
             <div class="studio-colour-row">
               ${colours.map(c=>`<button type="button" data-layer-colour="${c}" class="${selected.color.toLowerCase()===c?'active':''}" style="background:${c}" aria-label="Text colour"></button>`).join('')}
@@ -201,16 +213,6 @@ export function createMediaStudio({
       return;
     }
 
-    if(activeTab==='layout'){
-      panel.innerHTML=`
-        <div class="studio-toggle-grid">
-          <button type="button" data-layout-book class="${state.layout.showBook?'active':''}"><span>Book card</span><small>${state.layout.showBook?'Shown':'Hidden'}</small></button>
-          <button type="button" data-layout-rating class="${state.layout.showRating?'active':''}"><span>Rating</span><small>${state.layout.showRating?'Shown':'Hidden'}</small></button>
-          <button type="button" data-layout-actions="right" class="${state.layout.actions==='right'?'active':''}"><span>Actions</span><small>Right</small></button>
-          <button type="button" data-layout-actions="left" class="${state.layout.actions==='left'?'active':''}"><span>Actions</span><small>Left</small></button>
-        </div>`;
-      return;
-    }
 
     if(activeTab==='look'){
       panel.innerHTML=`
@@ -237,13 +239,14 @@ export function createMediaStudio({
     renderPanel();
   }
 
-  function addOverlay(preset='heading'){
+  function addOverlay(preset='text'){
     const presetMap={
+      text:{text:'Add text',font:'serif',size:28,background:'none',y:30},
       heading:{text:'Add a heading',font:'bold',size:34,background:'none',y:24},
       quote:{text:'“Add a quote”',font:'serif',size:30,background:'soft',y:38},
       tag:{text:'BOOK THOUGHTS',font:'clean',size:18,background:'solid',y:18}
     };
-    const p=presetMap[preset]||presetMap.heading;
+    const p=presetMap[preset]||presetMap.text;
     const layer={id:uid(),text:p.text,x:50,y:p.y,scale:1,rotation:0,font:p.font,color:'#ffffff',background:p.background,size:p.size,align:'center'};
     state.overlays.push(layer);
     selectedOverlayId=layer.id;
@@ -288,7 +291,7 @@ export function createMediaStudio({
       return;
     }
     if(e.target.closest('[data-add-text]')){
-      addOverlay('heading');
+      addOverlay('text');
       return;
     }
     const preset=e.target.closest('[data-add-preset]');
@@ -300,24 +303,10 @@ export function createMediaStudio({
       state.media.scale=1;state.media.x=0;state.media.y=0;
       updateAll();emit();return;
     }
-    if(e.target.closest('[data-media-rotate]')){
-      state.media.rotation=(state.media.rotation+90)%360;
-      updateAll();emit();return;
-    }
     if(e.target.closest('[data-media-reset]')){
       const fresh=defaultEditorState();
       state.media=fresh.media;
       updateAll();emit();return;
-    }
-    if(e.target.closest('[data-layout-book]')){
-      state.layout.showBook=!state.layout.showBook;updateAll();emit();return;
-    }
-    if(e.target.closest('[data-layout-rating]')){
-      state.layout.showRating=!state.layout.showRating;updateAll();emit();return;
-    }
-    const actions=e.target.closest('[data-layout-actions]');
-    if(actions){
-      state.layout.actions=actions.dataset.layoutActions==='left'?'left':'right';updateAll();emit();return;
     }
     if(e.target.closest('[data-look-vignette]')){
       state.media.vignette=!state.media.vignette;updateAll();emit();return;
@@ -328,6 +317,8 @@ export function createMediaStudio({
     if(colour){changeSelected(layer=>layer.color=colour.dataset.layerColour);return;}
     const bg=e.target.closest('[data-layer-bg]');
     if(bg){changeSelected(layer=>layer.background=bg.dataset.layerBg);return;}
+    const align=e.target.closest('[data-layer-align]');
+    if(align){changeSelected(layer=>layer.align=align.dataset.layerAlign);return;}
     if(e.target.closest('[data-video-play]')&&type==='video'){
       media.paused?media.play().catch(()=>{}):media.pause();
       renderPanel();return;
@@ -369,6 +360,12 @@ export function createMediaStudio({
       if(live)live.style.setProperty('--layer-size',layer.size+'px');
       emit();
       return;
+    }
+    if(e.target.matches('[data-media-rotation]')){
+      state.media.rotation=normalizeDegrees(Number(e.target.value)||0);
+      const readout=e.target.closest('.studio-rotation-range')?.querySelector('b');
+      if(readout)readout.textContent=Math.round(state.media.rotation)+'°';
+      renderMedia();emit();return;
     }
     if(e.target.matches('[data-look-dim]')){
       state.media.dim=clamp(Number(e.target.value)||0,0,.55);renderMedia();emit();return;
@@ -415,7 +412,7 @@ export function createMediaStudio({
       gesture={kind:'drag',pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,x:state.media.x,y:state.media.y};
     }else if(pointers.size===2){
       const [a,b]=[...pointers.values()];
-      gesture={kind:'pinch',distance:Math.max(1,distance(a,b)),scale:state.media.scale};
+      gesture={kind:'pinch',distance:Math.max(1,distance(a,b)),scale:state.media.scale,angle:angle(a,b),rotation:state.media.rotation};
     }
   });
 
@@ -434,8 +431,9 @@ export function createMediaStudio({
 
     if(pointers.size>=2){
       const [a,b]=[...pointers.values()];
-      if(gesture?.kind!=='pinch')gesture={kind:'pinch',distance:Math.max(1,distance(a,b)),scale:state.media.scale};
+      if(gesture?.kind!=='pinch')gesture={kind:'pinch',distance:Math.max(1,distance(a,b)),scale:state.media.scale,angle:angle(a,b),rotation:state.media.rotation};
       state.media.scale=clamp(gesture.scale*(distance(a,b)/gesture.distance),.5,3);
+      state.media.rotation=normalizeDegrees(gesture.rotation+((angle(a,b)-gesture.angle)*(180/Math.PI)));
       renderMedia();emit();return;
     }
 
