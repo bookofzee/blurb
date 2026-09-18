@@ -7,9 +7,12 @@ const bgThemes={
   midnight:{bg:['#52404d','#151219'],text:'#fff6ea',ornament:'☾  ✦  ☽'},
   forest:{bg:['#23483b','#10281f'],text:'#f6eedf',ornament:'❦  ✧  ❦'},
   rose:{bg:['#e6c6bb','#a66f69'],text:'#3b2424',ornament:'✦  ♡  ✦'},
-  ink:{bg:['#d8d2c6','#655e58'],text:'#231f1d',ornament:'◇  ✦  ◇'}
+  ink:{bg:['#d8d2c6','#655e58'],text:'#231f1d',ornament:'◇  ✦  ◇'},
+  wine:{bg:['#6e3947','#2d161d'],text:'#fff1e7',ornament:'✦  ❧  ✦'},
+  navy:{bg:['#3f5872','#172331'],text:'#f4eadc',ornament:'☾  ✧  ☽'},
+  cocoa:{bg:['#9a725c','#493126'],text:'#fff4e6',ornament:'✦  ❦  ✦'}
 };
-const textColours=['#3b2a22','#fff6ea','#f4d9ae','#2e1917','#d9efe3'];
+const textColours=['#3b2a22','#fff6ea','#f4d9ae','#2e1917','#d9efe3','#8d4a27','#6f324c','#263d5b'];
 let selectedStyle='review-card';
 let selectedBg='parchment';
 let selectedText=bgThemes.parchment.text;
