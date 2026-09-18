@@ -130,3 +130,50 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   .add-book-grid{grid-template-columns:1fr}
   #bookSheet.book-modal .sheet-list{max-height:38dvh}
 }
+
+#bookSheet.book-modal{position:fixed}
+#bookSheet.book-modal.adding-book #bookSheetSearch,
+#bookSheet.book-modal.adding-book #bookSheetList{
+  opacity:.24;
+  filter:blur(.6px);
+  pointer-events:none;
+  transition:opacity .16s ease,filter .16s ease;
+}
+#bookSheet.book-modal .add-book-panel{position:relative;z-index:6}
+#bookSheet.book-modal .add-book-form{
+  position:absolute;
+  z-index:12;
+  left:0;
+  right:0;
+  bottom:52px;
+  margin:0;
+  padding:18px;
+  border:1px solid rgba(111,77,61,.16);
+  border-radius:16px;
+  background:#fffaf3;
+  box-shadow:0 20px 52px rgba(45,27,19,.24);
+  max-height:min(54dvh,460px);
+  overflow:auto;
+}
+#bookSheet.book-modal .add-book-heading{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:22px;
+  line-height:1;
+  color:#3b2920;
+  margin:0 0 14px;
+}
+#bookSheet.book-modal.adding-book .add-book-toggle{
+  position:relative;
+  z-index:14;
+  background:#f3e5d8;
+  border-style:solid;
+}
+@media(max-width:420px){
+  #bookSheet.book-modal .add-book-form{
+    left:0;
+    right:0;
+    bottom:50px;
+    max-height:58dvh;
+    padding:15px;
+  }
+}
