@@ -355,7 +355,7 @@ export function createMediaStudio({
   canvas.addEventListener('wheel',e=>{
     if(e.target.closest('[data-overlay-id]'))return;
     e.preventDefault();
-    state.media.scale=clamp(state.media.scale+(e.deltaY<0?.08:-.08),.5,3);
+    state.media.scale=clamp(state.media.scale+(e.deltaY<0 ? .08 : -.08),.5,3);
     renderMedia();emit();
   },{passive:false});
 
