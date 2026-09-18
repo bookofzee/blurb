@@ -183,3 +183,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .add-book-identifier>span em{font-style:normal;font-weight:600;color:#a78d7d}
 .add-book-identifier .text-input{height:42px;margin:0!important}
 .add-book-identifier small{display:block;margin-top:5px;font-size:8px;color:#9a7e6d}
+
+/* Feed overlay copy stays legible on every image/video. */
+.feed-card .feed-copy > .caption{
+  color:#fff!important;
+  text-shadow:0 1px 4px rgba(0,0,0,.72);
+}
+.feed-card .feed-copy > .tags .tag{
+  color:#fff!important;
+  text-shadow:0 1px 4px rgba(0,0,0,.72);
+}
