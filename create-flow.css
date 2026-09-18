@@ -256,3 +256,19 @@
 .photo-editor-panel{margin-top:10px}
 .photo-editor-panel[hidden]{display:none!important}
 .create-flow .upload-zone.photo-editor-source-hidden{display:none!important}
+
+/* Four-step Create flow */
+.create-stepper{grid-template-columns:auto 1fr auto 1fr auto 1fr auto}
+.post-editor-mount{width:100%}
+.post-editor-mount[hidden]{display:none}
+.editor-step-actions{margin-top:16px}
+.editor-missing-media{padding:28px 16px;border:1px dashed rgba(201,104,50,.28);border-radius:14px;background:#fffdf8;text-align:center;color:#8d6d5d;font-size:10px}
+.create-step[data-create-step="2"] #reviewCardBuilder{margin-top:0}
+.create-step[data-create-step="2"] #reviewOnlyFields{margin-top:14px}
+.create-step[data-create-step="3"] .profile-cover-field{margin-top:18px}
+.create-step[data-create-step="4"] .review-profile-cover{width:min(100%,300px);margin-left:auto;margin-right:auto}
+.create-step[data-create-step="4"] .create-final-actions{width:min(100%,420px);margin-left:auto;margin-right:auto;margin-top:14px}
+@media(max-width:420px){
+  .create-stepper{gap:5px}
+  .create-stepper span{font-size:7px}
+}
