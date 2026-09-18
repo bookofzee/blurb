@@ -99,3 +99,121 @@
   .create-stepper span{font-size:8px}
   .trope-choice{padding:8px 10px}
 }
+
+/* Step 3 uses the real feed-card layout, scaled down as one mini screen. */
+.mini-feed-preview-shell{
+  position:relative;
+  width:min(100%,300px);
+  margin:14px auto 0;
+  overflow:hidden;
+  border-radius:18px;
+  background:#1d1614;
+  box-shadow:0 14px 36px rgba(55,33,23,.2),0 0 0 1px rgba(111,77,61,.13);
+}
+.mini-feed-preview-stage{
+  position:absolute;
+  top:0;
+  left:0;
+  transform-origin:top left;
+  overflow:hidden;
+  background:#161012;
+}
+.mini-live-feed-card{
+  width:100%;
+  height:100%!important;
+  min-height:0!important;
+  color:#fff;
+  scroll-snap-align:none!important;
+}
+.mini-live-feed-card .feed-copy{bottom:20px}
+.mini-live-feed-card .creator-row{display:none!important}
+.mini-live-feed-card .book-chip{
+  display:inline-grid!important;
+  grid-template-columns:27px minmax(0,1fr) auto!important;
+  align-items:center!important;
+  column-gap:10px!important;
+  row-gap:2px!important;
+  background:rgba(255,250,243,.97)!important;
+  border:1px solid rgba(255,255,255,.72)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.14)!important;
+}
+.mini-live-feed-card .book-chip .mini-cover{grid-column:1;grid-row:1 / span 2}
+.mini-live-feed-card .book-chip>span:not(.chip-rating){
+  grid-column:2;
+  min-width:0;
+  display:flex!important;
+  flex-direction:column;
+  align-items:flex-start!important;
+  justify-content:center;
+  text-align:left!important;
+}
+.mini-live-feed-card .book-chip strong{color:#34231d!important}
+.mini-live-feed-card .book-chip small{color:#8d7366!important}
+.mini-live-feed-card .chip-rating{
+  position:relative;
+  grid-column:3;
+  grid-row:1 / span 2;
+  display:flex;
+  align-items:center;
+  align-self:stretch;
+  min-width:72px;
+  margin-left:6px;
+  padding-left:14px;
+}
+.mini-live-feed-card .chip-rating:before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:24%;
+  bottom:24%;
+  width:1px;
+  background:rgba(111,56,31,.17);
+}
+.mini-live-feed-card .chip-rating .rating-line{
+  margin:0!important;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:#7a4b36!important;
+}
+.mini-live-feed-card .single-rating-star,
+.mini-live-feed-card .single-rating-star svg{width:16px;height:16px;display:block;color:#7a4b36;fill:#7a4b36}
+.mini-live-feed-card .single-rating-value{font-size:12px;font-weight:800;color:#7a4b36}
+.mini-live-feed-card .feed-actions{gap:18px}
+.mini-live-feed-card .feed-profile-avatar{position:relative;width:50px;display:flex;justify-content:center;align-items:center;margin-bottom:2px}
+.mini-live-feed-card .feed-profile-avatar .avatar{width:42px;height:42px;margin:0;border:2px solid rgba(255,255,255,.78);box-shadow:0 7px 18px rgba(0,0,0,.28)}
+.mini-live-feed-card .action-button .action-icon,
+.mini-live-feed-card .add-main .action-icon{
+  width:40px!important;
+  height:38px!important;
+  border-radius:0!important;
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:none!important;
+  text-shadow:none!important;
+  display:grid!important;
+  place-items:center!important;
+  color:#fff;
+}
+.mini-live-feed-card .action-button .action-icon{font-size:31px!important}
+.mini-live-feed-card .add-main .action-icon{font-size:34px!important}
+.mini-live-feed-card .action-icon svg{width:29px;height:29px;display:block;stroke:currentColor;fill:none;stroke-width:2.45;stroke-linecap:round;stroke-linejoin:round}
+.mini-live-feed-card .action-button>span:last-child,
+.mini-live-feed-card .add-main>span:last-child{font-weight:900!important}
+.mini-live-feed-card .add-action-wrap{position:relative;display:flex;flex-direction:column;align-items:center;min-width:50px}
+.mini-live-feed-card .add-main{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:white;min-width:50px}
+.review-spoiler-note{
+  width:min(100%,300px);
+  margin:9px auto 0;
+  padding:9px 10px;
+  border-radius:10px;
+  background:#fff0e5;
+  color:#9f4e2a;
+  font-size:8px;
+  font-weight:850;
+  text-align:center;
+}
+.review-spoiler-note[hidden]{display:none}
+.create-step[data-create-step="3"] .review-profile-cover{width:min(100%,300px);margin-left:auto;margin-right:auto}
+.create-step[data-create-step="3"] .create-final-actions{width:min(100%,420px);margin-left:auto;margin-right:auto}
