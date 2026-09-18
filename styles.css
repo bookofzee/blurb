@@ -177,3 +177,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     padding:15px;
   }
 }
+
+.add-book-identifier{display:block;margin-top:10px}
+.add-book-identifier>span{display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:850;color:#7e6254;margin:0 0 5px}
+.add-book-identifier>span em{font-style:normal;font-weight:600;color:#a78d7d}
+.add-book-identifier .text-input{height:42px;margin:0!important}
+.add-book-identifier small{display:block;margin-top:5px;font-size:8px;color:#9a7e6d}
