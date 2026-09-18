@@ -152,23 +152,101 @@ function updateMediaEditorTransform(){
   document.querySelectorAll('[data-media-fit]').forEach(btn=>btn.classList.toggle('active',btn.dataset.mediaFit===mediaEdit.fit));
 }
 
+function ensurePhotoEditorPanel(upload){
+  let panel=$('#photoEditorPanel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='photoEditorPanel';
+    panel.className='photo-editor-panel media-editor-preview';
+    panel.hidden=true;
+    upload.insertAdjacentElement('afterend',panel);
+  }
+  if(!panel.dataset.bound){
+    panel.dataset.bound='1';
+
+    panel.addEventListener('input',e=>{
+      if(e.target.id==='mediaZoom'){
+        mediaEdit.scale=clamp(Number(e.target.value)||1,1,3);
+        updateMediaEditorTransform();
+      }
+    });
+
+    panel.addEventListener('click',e=>{
+      const fit=e.target.closest('[data-media-fit]');
+      if(fit){
+        e.preventDefault();
+        mediaEdit.fit=fit.dataset.mediaFit==='contain'?'contain':'cover';
+        mediaEdit.scale=1;
+        mediaEdit.offsetX=0;
+        mediaEdit.offsetY=0;
+        updateMediaEditorTransform();
+        return;
+      }
+      if(e.target.closest('#mediaRotate')){
+        e.preventDefault();
+        mediaEdit.rotation=(mediaEdit.rotation+90)%360;
+        updateMediaEditorTransform();
+        return;
+      }
+      if(e.target.closest('#mediaReset')){
+        e.preventDefault();
+        const file=mediaEdit.file;
+        resetMediaEdit(file);
+        renderPhotoEditor(file,false);
+        return;
+      }
+      if(e.target.closest('#mediaChangePhoto')){
+        e.preventDefault();
+        $('#mediaFile')?.click();
+      }
+    });
+
+    panel.addEventListener('pointerdown',e=>{
+      const surface=e.target.closest('#mediaCropSurface');
+      if(!surface)return;
+      e.preventDefault();
+      mediaEditorDragging=true;
+      mediaEditorPointer=e.pointerId;
+      mediaEditorStart={x:e.clientX,y:e.clientY,offsetX:mediaEdit.offsetX,offsetY:mediaEdit.offsetY};
+      surface.setPointerCapture?.(e.pointerId);
+      surface.classList.add('dragging');
+    });
+    panel.addEventListener('pointermove',e=>{
+      if(!mediaEditorDragging||e.pointerId!==mediaEditorPointer)return;
+      const surface=e.target.closest('#mediaCropSurface')||$('#mediaCropSurface');
+      if(!surface)return;
+      const rect=surface.getBoundingClientRect();
+      const dx=((e.clientX-mediaEditorStart.x)/Math.max(1,rect.width))*100;
+      const dy=((e.clientY-mediaEditorStart.y)/Math.max(1,rect.height))*100;
+      mediaEdit.offsetX=clamp(mediaEditorStart.offsetX+dx,-55,55);
+      mediaEdit.offsetY=clamp(mediaEditorStart.offsetY+dy,-55,55);
+      updateMediaEditorTransform();
+    });
+    const endDrag=()=>{
+      if(!mediaEditorDragging)return;
+      mediaEditorDragging=false;
+      mediaEditorPointer=null;
+      $('#mediaCropSurface')?.classList.remove('dragging');
+    };
+    panel.addEventListener('pointerup',endDrag);
+    panel.addEventListener('pointercancel',endDrag);
+  }
+  return panel;
+}
+
 function renderPhotoEditor(file,reset=true){
   if(!file||!file.type.startsWith('image/'))return;
   if(reset||mediaEdit.file!==file)resetMediaEdit(file);
 
-  const preview=$('#mediaPreview');
-  const prompt=$('#uploadPrompt');
   const upload=$('#mediaFile')?.closest('.upload-zone');
-  if(!preview||!upload)return;
+  if(!upload)return;
+  const panel=ensurePhotoEditorPanel(upload);
 
-  prompt?.setAttribute('hidden','');
-  preview.hidden=false;
-  upload.removeAttribute('for');
-  upload.classList.add('photo-editor-open');
+  upload.classList.add('photo-editor-source-hidden');
+  panel.hidden=false;
 
   const ratio=feedCardSize().ratio;
-  preview.classList.add('media-editor-preview');
-  preview.innerHTML=`
+  panel.innerHTML=`
     <div class="media-editor-heading">
       <span><strong>Position your photo</strong><small>Drag the image to move it inside the post.</small></span>
       <button type="button" id="mediaChangePhoto">Change photo</button>
@@ -624,82 +702,12 @@ function bindCreateUI(){
       setTimeout(()=>renderPhotoEditor(file,true),0);
     }else{
       const upload=e.target.closest('.upload-zone');
-      upload?.classList.remove('photo-editor-open');
-      upload?.setAttribute('for','mediaFile');
+      upload?.classList.remove('photo-editor-source-hidden');
+      const panel=$('#photoEditorPanel');
+      if(panel)panel.hidden=true;
       resetMediaEdit(null);
     }
   });
-
-  $('#mediaPreview')?.addEventListener('input',e=>{
-    if(e.target.id==='mediaZoom'){
-      mediaEdit.scale=clamp(Number(e.target.value)||1,1,3);
-      updateMediaEditorTransform();
-    }
-  });
-
-  $('#mediaPreview')?.addEventListener('click',e=>{
-    const fit=e.target.closest('[data-media-fit]');
-    if(fit){
-      e.preventDefault();
-      e.stopPropagation();
-      mediaEdit.fit=fit.dataset.mediaFit==='contain'?'contain':'cover';
-      mediaEdit.scale=1;
-      mediaEdit.offsetX=0;
-      mediaEdit.offsetY=0;
-      updateMediaEditorTransform();
-      return;
-    }
-    if(e.target.closest('#mediaRotate')){
-      e.preventDefault();
-      e.stopPropagation();
-      mediaEdit.rotation=(mediaEdit.rotation+90)%360;
-      updateMediaEditorTransform();
-      return;
-    }
-    if(e.target.closest('#mediaReset')){
-      e.preventDefault();
-      e.stopPropagation();
-      const file=mediaEdit.file;
-      resetMediaEdit(file);
-      renderPhotoEditor(file,false);
-      return;
-    }
-    if(e.target.closest('#mediaChangePhoto')){
-      e.preventDefault();
-      e.stopPropagation();
-      $('#mediaFile')?.click();
-    }
-  });
-
-  $('#mediaPreview')?.addEventListener('pointerdown',e=>{
-    const surface=e.target.closest('#mediaCropSurface');
-    if(!surface)return;
-    e.preventDefault();
-    mediaEditorDragging=true;
-    mediaEditorPointer=e.pointerId;
-    mediaEditorStart={x:e.clientX,y:e.clientY,offsetX:mediaEdit.offsetX,offsetY:mediaEdit.offsetY};
-    surface.setPointerCapture?.(e.pointerId);
-    surface.classList.add('dragging');
-  });
-  $('#mediaPreview')?.addEventListener('pointermove',e=>{
-    if(!mediaEditorDragging||e.pointerId!==mediaEditorPointer)return;
-    const surface=e.target.closest('#mediaCropSurface')||$('#mediaCropSurface');
-    if(!surface)return;
-    const rect=surface.getBoundingClientRect();
-    const dx=((e.clientX-mediaEditorStart.x)/Math.max(1,rect.width))*100;
-    const dy=((e.clientY-mediaEditorStart.y)/Math.max(1,rect.height))*100;
-    mediaEdit.offsetX=clamp(mediaEditorStart.offsetX+dx,-55,55);
-    mediaEdit.offsetY=clamp(mediaEditorStart.offsetY+dy,-55,55);
-    updateMediaEditorTransform();
-  });
-  const endMediaDrag=()=>{
-    if(!mediaEditorDragging)return;
-    mediaEditorDragging=false;
-    mediaEditorPointer=null;
-    $('#mediaCropSurface')?.classList.remove('dragging');
-  };
-  $('#mediaPreview')?.addEventListener('pointerup',endMediaDrag);
-  $('#mediaPreview')?.addEventListener('pointercancel',endMediaDrag);
 
   document.querySelectorAll('[data-post-style]').forEach(btn=>btn.addEventListener('click',()=>setStyle(btn.dataset.postStyle)));
   document.querySelectorAll('[data-bg]').forEach(btn=>btn.addEventListener('click',()=>{selectedBg=btn.dataset.bg;document.querySelectorAll('[data-bg]').forEach(x=>x.classList.toggle('active',x===btn));selectedText=bgThemes[selectedBg].text;document.querySelectorAll('[data-colour]').forEach(x=>x.classList.toggle('active',x.dataset.colour===selectedText));updateReviewCardPreview();}));
@@ -771,12 +779,17 @@ function setStyle(style){
   const prompt=$('#uploadPrompt');
   if(prompt){prompt.innerHTML=style==='photo'?'<strong>＋ Add photo</strong><span>JPEG, PNG or WebP up to 50 MB</span>':'<strong>＋ Add video</strong><span>MP4, WebM or MOV up to 50 MB</span>';}
   const currentFile=file?.files?.[0];
+  const panel=$('#photoEditorPanel');
   if(style==='photo'&&currentFile?.type?.startsWith('image/')){
     setTimeout(()=>renderPhotoEditor(currentFile,mediaEdit.file!==currentFile),0);
+  }else if(style==='photo'){
+    upload?.classList.remove('photo-editor-source-hidden');
+    if(panel)panel.hidden=true;
   }else if(style==='video'){
-    const upload=file?.closest('.upload-zone');
-    upload?.classList.remove('photo-editor-open');
-    upload?.setAttribute('for','mediaFile');
+    upload?.classList.remove('photo-editor-source-hidden');
+    if(panel)panel.hidden=true;
+  }else if(panel){
+    panel.hidden=true;
   }
 }
 
