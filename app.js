@@ -37,6 +37,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const escapeHtml = (value='') => String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const initials = (name='B') => name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+const clamp = (value,min,max) => Math.max(min,Math.min(max,value));
 const compactNum = n => Intl.NumberFormat('en-GB',{notation:'compact',maximumFractionDigits:1}).format(n||0);
 const timeAgo = iso => { const s=Math.max(1,(Date.now()-new Date(iso).getTime())/1000); if(s<60)return 'now'; if(s<3600)return `${Math.floor(s/60)}m`; if(s<86400)return `${Math.floor(s/3600)}h`; return `${Math.floor(s/86400)}d`; };
 const paletteFor = key => palettes[Math.abs([...String(key)].reduce((a,c)=>a+c.charCodeAt(0),0))%palettes.length];
@@ -87,19 +88,21 @@ async function loadBooks(){
 }
 
 async function loadPosts(){
-  const {data,error}=await supabase.from('blurb_posts').select('id,user_id,book_id,post_type,media_url,thumbnail_url,caption,rating,contains_spoilers,created_at,blurb_books(id,title,author,genres,source_id)').eq('status','published').order('created_at',{ascending:false}).limit(30);
+  const {data,error}=await supabase.from('blurb_posts').select('id,user_id,book_id,post_type,media_url,thumbnail_url,media_scale,media_offset_x,media_offset_y,media_fit,media_rotation,caption,rating,contains_spoilers,created_at,blurb_books(id,title,author,genres,source_id)').eq('status','published').order('created_at',{ascending:false}).limit(30);
   if(error || !data?.length){ state.posts=[]; renderFeed(); return; }
   const ids=[...new Set(data.map(p=>p.user_id))];
   const postIds=data.map(p=>p.id);
-  const [{data:profiles},{data:likes},{data:comments}]=await Promise.all([
+  const [{data:profiles},{data:likes},{data:comments},{data:postTags}]=await Promise.all([
     supabase.from('blurb_profiles').select('id,username,display_name,avatar_url').in('id',ids),
     supabase.from('blurb_likes').select('post_id,user_id').in('post_id',postIds),
-    supabase.from('blurb_comments').select('post_id').in('post_id',postIds)
+    supabase.from('blurb_comments').select('post_id').in('post_id',postIds),
+    supabase.from('blurb_post_tags').select('post_id,tag').in('post_id',postIds)
   ]);
   const pMap=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
   const likesBy={}; (likes||[]).forEach(x=>(likesBy[x.post_id]??=[]).push(x.user_id));
   const commentsBy={}; (comments||[]).forEach(x=>commentsBy[x.post_id]=(commentsBy[x.post_id]||0)+1);
-  state.posts=data.map(p=>({...p,profile:pMap[p.user_id]||{},likes:likesBy[p.id]?.length||0,liked:state.user?likesBy[p.id]?.includes(state.user.id):false,comments:commentsBy[p.id]||0,tags:[]}));
+  const tagsBy={}; (postTags||[]).forEach(x=>(tagsBy[x.post_id]??=[]).push(x.tag));
+  state.posts=data.map(p=>({...p,profile:pMap[p.user_id]||{},likes:likesBy[p.id]?.length||0,liked:state.user?likesBy[p.id]?.includes(state.user.id):false,comments:commentsBy[p.id]||0,tags:tagsBy[p.id]||[]}));
   renderFeed();
 }
 
@@ -134,8 +137,14 @@ function feedCard(post,i){
   const [a,b,g]=paletteFor(book.title||post.id);
   const username=profile.username||profile.display_name||'reader';
   const displayName=profile.display_name||username;
-  const tags=(post.tags?.length?post.tags:book.genres||[]).slice(0,3);
-  const media=post.media_url ? (post.post_type==='video'?`<video class="feed-media" src="${escapeHtml(post.media_url)}" playsinline muted loop preload="metadata"></video>`:`<img class="feed-media" src="${escapeHtml(post.media_url)}" alt="${escapeHtml(book.title||'Book review')}" />`) : `<div class="cover-stage"><div class="cover-art" style="--cover-a:${a};--cover-b:${b}"><div class="cover-mark">${escapeHtml(book.title||'A book worth talking about')}</div><div class="cover-author">${escapeHtml(book.author||'BLURB')}</div></div></div>`;
+  const tags=(post.tags?.length?post.tags:book.genres||[]).slice(0,8);
+  const mediaScale=clamp(Number(post.media_scale)||1,1,3);
+  const mediaOffsetX=clamp(Number(post.media_offset_x)||0,-55,55);
+  const mediaOffsetY=clamp(Number(post.media_offset_y)||0,-55,55);
+  const mediaFit=post.media_fit==='contain'?'contain':'cover';
+  const mediaRotation=((Number(post.media_rotation)||0)%360+360)%360;
+  const mediaStyle=`object-fit:${mediaFit};transform:translate3d(${mediaOffsetX}%,${mediaOffsetY}%,0) scale(${mediaScale}) rotate(${mediaRotation}deg);transform-origin:center center;`;
+  const media=post.media_url ? (post.post_type==='video'?`<video class="feed-media" src="${escapeHtml(post.media_url)}" playsinline muted loop preload="metadata"></video>`:`<img class="feed-media" src="${escapeHtml(post.media_url)}" alt="${escapeHtml(book.title||'Book review')}" style="${mediaStyle}" />`) : `<div class="cover-stage"><div class="cover-art" style="--cover-a:${a};--cover-b:${b}"><div class="cover-mark">${escapeHtml(book.title||'A book worth talking about')}</div><div class="cover-author">${escapeHtml(book.author||'BLURB')}</div></div></div>`;
   const spoiler=post.contains_spoilers?`<div class="spoiler-cover">
     <div class="spoiler-panel">
       <span class="spoiler-chip">Spoiler</span>
@@ -154,7 +163,7 @@ function feedCard(post,i){
       <div class="creator-row"><div class="avatar">${profile.avatar_url?`<img src="${escapeHtml(profile.avatar_url)}" alt="" />`:initials(displayName)}</div><strong>@${escapeHtml(username)}</strong>${post.demo?'':`<button class="follow-mini" data-follow="${post.user_id}">Follow</button>`}</div>
       ${post.rating?`<div class="rating-line">${ratingStars(Number(post.rating))} <span>${Number(post.rating).toFixed(1)}</span></div>`:''}
       <p class="caption">${escapeHtml(post.caption)}</p>
-      <div class="tags">${tags.map(t=>`<span class="tag">${escapeHtml(String(t).replace(/^#/,''))}</span>`).join('')}</div>
+      <div class="tags">${tags.map(t=>`<span class="tag ${String(t).startsWith('#')?'hashtag':'trope'}">${escapeHtml(String(t).replace(/^#/,''))}</span>`).join('')}</div>
       <button class="book-chip" data-book="${book.id||''}" style="--cover-a:${a};--cover-b:${b}"><i class="mini-cover"></i><span><strong>${escapeHtml(book.title||'Untitled')}</strong><small>${escapeHtml(book.author||'')}</small></span></button>
     </div>
     <div class="feed-actions">
