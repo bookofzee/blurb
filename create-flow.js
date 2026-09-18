@@ -23,6 +23,45 @@ const $=s=>document.querySelector(s);
 function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1900);}
 function setStatus(message,error=false){const el=$('#createStatus');if(!el)return;el.textContent=message;el.className=`form-status${error?' error':''}`;}
 
+let selectedBookSyncTimer=null;
+async function syncSelectedBookPreview(){
+  clearTimeout(selectedBookSyncTimer);
+  selectedBookSyncTimer=setTimeout(async()=>{
+    const id=$('#selectedBookId')?.value;
+    const label=$('#selectedBookLabel');
+    const author=$('#selectedBookAuthor');
+    const cover=$('#selectedBookCover');
+    if(!label||!author||!cover)return;
+
+    if(!id){
+      if(label.textContent!=='Choose a book')label.textContent='Choose a book';
+      author.textContent='Search for the book you’re posting about';
+      cover.innerHTML='<span class="selected-book-placeholder">B</span>';
+      cover.classList.remove('has-cover');
+      return;
+    }
+
+    const {data}=await supabase.from('blurb_books')
+      .select('title,author,cover_url')
+      .eq('id',id)
+      .maybeSingle();
+
+    if(!data)return;
+    if(label.textContent!==data.title)label.textContent=data.title||'Untitled';
+    author.textContent=data.author||'';
+    if(data.cover_url){
+      const safe=String(data.cover_url).replace(/"/g,'&quot;');
+      cover.innerHTML='<img src="'+safe+'" alt="" />';
+      cover.classList.add('has-cover');
+    }else{
+      const initial=(data.title||'B').trim().charAt(0).toUpperCase()||'B';
+      cover.innerHTML='<span class="selected-book-placeholder">'+initial+'</span>';
+      cover.classList.remove('has-cover');
+    }
+    updateReviewCardPreview();
+  },60);
+}
+
 function feedCardSize(){
   const shell=$('#app');
   const nav=document.querySelector('.bottom-nav');
@@ -41,6 +80,19 @@ function buildCreateUI(){
   if(!form||form.dataset.flowUpgraded)return;
   form.dataset.flowUpgraded='1';
   form.classList.add('create-flow');
+
+  const bookButton=$('#bookPickerButton');
+  if(bookButton&&!bookButton.dataset.previewUpgraded){
+    bookButton.dataset.previewUpgraded='1';
+    bookButton.classList.add('book-picker-card');
+    bookButton.innerHTML=`
+      <span class="selected-book-cover" id="selectedBookCover"><span class="selected-book-placeholder">B</span></span>
+      <span class="selected-book-copy">
+        <strong id="selectedBookLabel">Choose a book</strong>
+        <small id="selectedBookAuthor">Search for the book you’re posting about</small>
+      </span>
+      <span class="book-picker-arrow" aria-hidden="true">›</span>`;
+  }
 
   const ratingLabel=$('#ratingPicker')?.previousElementSibling;
   if(ratingLabel)ratingLabel.innerHTML='Your rating <span class="optional">optional</span>';
@@ -220,7 +272,14 @@ function bindCreateUI(){
 
   $('#caption')?.addEventListener('input',e=>{const c=$('#captionCount');if(c)c.textContent=e.target.value.length;});
   $('#reviewText')?.addEventListener('input',e=>{const c=$('#reviewCount');if(c)c.textContent=e.target.value.length;updateReviewCardPreview();});
-  $('#selectedBookLabel')?.addEventListener('DOMSubtreeModified',updateReviewCardPreview);
+  const selectedLabel=$('#selectedBookLabel');
+  if(selectedLabel){
+    new MutationObserver(()=>syncSelectedBookPreview()).observe(selectedLabel,{childList:true,characterData:true,subtree:true});
+  }
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-pick-book],[data-live-pick]'))setTimeout(syncSelectedBookPreview,180);
+  });
+  syncSelectedBookPreview();
 
   $('#profileCoverFile')?.addEventListener('change',e=>{
     const file=e.target.files?.[0];
@@ -286,9 +345,9 @@ function setStyle(style){
 }
 
 function selectedBookParts(){
-  const label=$('#selectedBookLabel')?.textContent?.trim()||'Choose a book';
-  const parts=label.split(' — ');
-  return {title:parts[0]||'Choose a book',author:parts.slice(1).join(' — ')||''};
+  const title=$('#selectedBookLabel')?.textContent?.trim()||'Choose a book';
+  const author=$('#selectedBookAuthor')?.textContent?.trim()||'';
+  return {title,author:author==='Search for the book you’re posting about'?'':author};
 }
 
 function updateReviewCardPreview(){
