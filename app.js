@@ -704,11 +704,11 @@ function paintProfileCrop(modal,kind){
     state.x=Math.max(-maxX,Math.min(maxX,state.x));
     state.y=Math.max(-maxY,Math.min(maxY,state.y));
 
-    img.style.width=renderedW+'px';
-    img.style.height=renderedH+'px';
-    img.style.left='calc(50% + '+state.x+'px)';
-    img.style.top='calc(50% + '+state.y+'px)';
-    img.style.transform='translate(-50%,-50%)';
+    img.style.setProperty('width',renderedW+'px','important');
+    img.style.setProperty('height',renderedH+'px','important');
+    img.style.setProperty('left','calc(50% + '+state.x+'px)','important');
+    img.style.setProperty('top','calc(50% + '+state.y+'px)','important');
+    img.style.setProperty('transform','translate(-50%,-50%)','important');
   };
 
   if(img.complete&&img.naturalWidth)apply();
