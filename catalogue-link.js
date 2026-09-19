@@ -865,6 +865,21 @@ async function loadCatalogue(){
       console.warn('Could not load catalogue overrides',err);
     }
 
+    try{
+      const {data:synopsisRows,error:synopsisError}=await supabase
+        .from('blurb_catalogue_synopsis')
+        .select('source_id,synopsis');
+      if(!synopsisError&&synopsisRows?.length){
+        const synopsisMap=new Map(synopsisRows.map(row=>[String(row.source_id),String(row.synopsis||'').trim()]));
+        books=books.map(book=>{
+          const synopsis=synopsisMap.get(String(book.id));
+          return synopsis&&!book.description?{...book,description:synopsis}:book;
+        });
+      }
+    }catch(err){
+      console.warn('Could not load Blurb synopsis cache',err);
+    }
+
     bySource=new Map(books.map(b=>[b.id,b]));
     byKey=new Map(books.map(b=>[`${norm(b.title)}|${norm(b.author)}`,b]));
     try{
