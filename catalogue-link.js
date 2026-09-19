@@ -54,7 +54,7 @@ async function ensureLocalBook(book){
   if(!sourceId)return null;
 
   const {data:existing}=await supabase.from('blurb_books')
-    .select('id,source,source_id,title,author,cover_url')
+    .select('id,source,source_id,title,author,cover_url,description')
     .eq('source','book_of_zee_prod')
     .eq('source_id',sourceId)
     .maybeSingle();
@@ -69,6 +69,7 @@ async function ensureLocalBook(book){
     title:book.title,
     author:book.author,
     cover_url:book.cover_url||null,
+    description:book.description||null,
     genres:[]
   }).select('id,source,source_id,title,author,cover_url').single();
 
@@ -86,11 +87,24 @@ async function ensureLocalBook(book){
   return data;
 }
 
-async function addLiveBookToTbr(book){
+async function findExistingLocalBook(book){
+  if(!book)return null;
+  const sourceId=String(book.id||book.source_id||'');
+  if(!sourceId)return null;
+  const {data}=await supabase.from('blurb_books')
+    .select('id,source_id,title,author,cover_url,description')
+    .eq('source','book_of_zee_prod')
+    .eq('source_id',sourceId)
+    .maybeSingle();
+  return data||null;
+}
+
+async function setLiveBookStatus(book,status){
+  const labels={tbr:'TBR',reading:'Reading',read:'Read',dnf:'DNF'};
   const local=await ensureLocalBook(book);
-  if(!local)return;
+  if(!local)return false;
   const {data:{session}}=await supabase.auth.getSession();
-  if(!session?.user)return;
+  if(!session?.user){toast('Sign in to save this book');return false;}
   const {data:existing}=await supabase.from('blurb_library')
     .select('is_favourite')
     .eq('user_id',session.user.id)
@@ -99,28 +113,208 @@ async function addLiveBookToTbr(book){
   const {error}=await supabase.from('blurb_library').upsert({
     user_id:session.user.id,
     book_id:local.id,
-    reading_status:'tbr',
+    reading_status:status,
     is_favourite:existing?.is_favourite||false,
     updated_at:new Date().toISOString()
   },{onConflict:'user_id,book_id'});
-  toast(error?'Couldn’t update your library':'Added to your TBR');
+  if(error){toast('Couldn’t update your library');return false;}
+  toast(`Moved to ${labels[status]||status}`);
+  return true;
 }
 
-function bindTbrActions(root){
-  root?.querySelectorAll('[data-live-tbr]').forEach(el=>el.addEventListener('click',e=>{
-    e.preventDefault();
-    e.stopPropagation();
-    addLiveBookToTbr(bySource.get(el.dataset.liveTbr));
-  }));
+async function removeLiveBookStatus(book){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.user){toast('Sign in to update your library');return false;}
+  const local=await findExistingLocalBook(book);
+  if(!local)return true;
+  const {error}=await supabase.from('blurb_library')
+    .delete()
+    .eq('user_id',session.user.id)
+    .eq('book_id',local.id);
+  if(error){toast('Couldn’t remove that book');return false;}
+  toast('Removed from your library');
+  return true;
 }
+
+function bookSynopsis(book){
+  const text=String(book?.description||book?.synopsis||book?.summary||book?.blurb||'').trim();
+  return text||'No synopsis has been added for this book yet.';
+}
+
+function ensureBookFlipModal(){
+  let modal=document.querySelector('#bookFlipModal');
+  if(modal)return modal;
+  modal=document.createElement('div');
+  modal.id='bookFlipModal';
+  modal.className='book-flip-modal';
+  modal.hidden=true;
+  modal.innerHTML=`
+    <div class="book-flip-backdrop" data-book-flip-close></div>
+    <div class="book-flip-stage" id="bookFlipStage">
+      <div class="book-flip-card" id="bookFlipCard">
+        <section class="book-flip-face book-flip-front" id="bookFlipFront"></section>
+        <section class="book-flip-face book-flip-back" id="bookFlipBack"></section>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click',async e=>{
+    if(e.target.closest('[data-book-flip-close]')){
+      closeBookFlip();
+      return;
+    }
+    if(e.target.closest('[data-book-flip-cover]')){
+      modal.classList.remove('flipped');
+      return;
+    }
+    const statusButton=e.target.closest('[data-book-status]');
+    if(statusButton){
+      const book=bySource.get(modal.dataset.bookId||'');
+      if(!book)return;
+      statusButton.disabled=true;
+      const ok=await setLiveBookStatus(book,statusButton.dataset.bookStatus);
+      statusButton.disabled=false;
+      if(ok)await refreshBookFlipStatus(book);
+      return;
+    }
+    if(e.target.closest('[data-book-remove]')){
+      const book=bySource.get(modal.dataset.bookId||'');
+      if(!book)return;
+      const ok=await removeLiveBookStatus(book);
+      if(ok)await refreshBookFlipStatus(book);
+    }
+  });
+  return modal;
+}
+
+async function refreshBookFlipStatus(book){
+  const modal=document.querySelector('#bookFlipModal');
+  if(!modal||modal.hidden||modal.dataset.bookId!==String(book.id))return;
+  const statusNote=modal.querySelector('#bookFlipStatusNote');
+  const remove=modal.querySelector('[data-book-remove]');
+  modal.querySelectorAll('[data-book-status]').forEach(btn=>btn.classList.remove('active'));
+
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.user){
+    if(statusNote)statusNote.textContent='Sign in to save a reading status.';
+    if(remove)remove.hidden=true;
+    return;
+  }
+  const local=await findExistingLocalBook(book);
+  if(!local){
+    if(statusNote)statusNote.textContent='Choose where this belongs in your library.';
+    if(remove)remove.hidden=true;
+    return;
+  }
+  const {data}=await supabase.from('blurb_library')
+    .select('reading_status')
+    .eq('user_id',session.user.id)
+    .eq('book_id',local.id)
+    .maybeSingle();
+  const current=data?.reading_status||'';
+  const active=modal.querySelector(`[data-book-status="${current}"]`);
+  active?.classList.add('active');
+  if(statusNote)statusNote.textContent=current?'Saved in your library.':'Choose where this belongs in your library.';
+  if(remove)remove.hidden=!current;
+}
+
+function closeBookFlip(){
+  const modal=document.querySelector('#bookFlipModal');
+  if(!modal||modal.hidden)return;
+  modal.classList.remove('flipped');
+  setTimeout(()=>modal.classList.remove('expanded'),150);
+  setTimeout(()=>{
+    modal.hidden=true;
+    modal.dataset.bookId='';
+    document.body.classList.remove('book-flip-open');
+  },440);
+}
+
+function openBookFlip(book,coverEl){
+  if(!book||!coverEl)return;
+  const modal=ensureBookFlipModal();
+  const stage=modal.querySelector('#bookFlipStage');
+  const front=modal.querySelector('#bookFlipFront');
+  const back=modal.querySelector('#bookFlipBack');
+  const rect=coverEl.getBoundingClientRect();
+
+  const maxWidth=Math.min(350,window.innerWidth-32);
+  const maxByHeight=Math.max(220,(window.innerHeight-56)*(2/3));
+  const targetWidth=Math.min(maxWidth,maxByHeight);
+  const targetHeight=targetWidth*1.5;
+  const targetLeft=(window.innerWidth-targetWidth)/2;
+  const targetTop=Math.max(18,(window.innerHeight-targetHeight)/2);
+
+  stage.style.setProperty('--flip-from-left',rect.left+'px');
+  stage.style.setProperty('--flip-from-top',rect.top+'px');
+  stage.style.setProperty('--flip-from-width',rect.width+'px');
+  stage.style.setProperty('--flip-from-height',rect.height+'px');
+  stage.style.setProperty('--flip-to-left',targetLeft+'px');
+  stage.style.setProperty('--flip-to-top',targetTop+'px');
+  stage.style.setProperty('--flip-to-width',targetWidth+'px');
+  stage.style.setProperty('--flip-to-height',targetHeight+'px');
+
+  front.innerHTML=book.cover_url
+    ?`<img src="${escapeHtml(book.cover_url)}" alt="${escapeHtml(book.title)} cover" />`
+    :`<div class="book-flip-cover-fallback">${escapeHtml(book.title)}</div>`;
+
+  back.innerHTML=`
+    <div class="book-flip-back-top">
+      <button type="button" class="book-flip-cover-button" data-book-flip-cover aria-label="Show cover">↶</button>
+      <button type="button" class="book-flip-close" data-book-flip-close aria-label="Close">×</button>
+    </div>
+    <div class="book-flip-book-copy">
+      <span class="book-flip-kicker">About the book</span>
+      <h3>${escapeHtml(book.title)}</h3>
+      <p class="book-flip-author">${escapeHtml(book.author)}</p>
+    </div>
+    <div class="book-flip-synopsis">
+      <span>Synopsis</span>
+      <p>${escapeHtml(bookSynopsis(book))}</p>
+    </div>
+    <div class="book-flip-library">
+      <span id="bookFlipStatusNote">Choose where this belongs in your library.</span>
+      <div class="book-flip-status-grid">
+        <button type="button" data-book-status="tbr">TBR</button>
+        <button type="button" data-book-status="reading">Reading</button>
+        <button type="button" data-book-status="read">Read</button>
+        <button type="button" data-book-status="dnf">DNF</button>
+      </div>
+      <button type="button" class="book-flip-remove" data-book-remove hidden>Remove from library</button>
+    </div>`;
+
+  modal.dataset.bookId=String(book.id);
+  modal.hidden=false;
+  modal.classList.remove('expanded','flipped');
+  document.body.classList.add('book-flip-open');
+
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    modal.classList.add('expanded');
+    setTimeout(()=>modal.classList.add('flipped'),340);
+  }));
+  refreshBookFlipStatus(book);
+}
+
+function bindBookFlipActions(root){
+  root?.querySelectorAll('[data-book-flip]').forEach(el=>{
+    if(el.dataset.flipBound==='1')return;
+    el.dataset.flipBound='1';
+    el.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const book=bySource.get(el.dataset.bookFlip);
+      if(book)openBookFlip(book,el);
+    });
+  });
+}
+
 
 function compactBookCard(book,variant='standard'){
   return `<article class="discover-book ${variant}">
-    <div class="discover-cover" style="${coverStyle(book)}">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</div>
+    <button type="button" class="discover-cover book-flip-trigger" data-book-flip="${escapeHtml(book.id)}" style="${coverStyle(book)}" aria-label="View ${escapeHtml(book.title)} details">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</button>
     <div class="discover-book-copy">
       <strong>${escapeHtml(book.title)}</strong>
       <small>${escapeHtml(book.author)}</small>
-      <button type="button" class="discover-tbr" data-live-tbr="${escapeHtml(book.id)}">＋ TBR</button>
     </div>
   </article>`;
 }
@@ -135,15 +329,14 @@ function renderSearchResults(query){
   if(count)count.textContent=`${matches.length}${matches.length===20?'+' : ''} found`;
   grid.className='book-grid';
   grid.innerHTML=matches.map(book=>`
-    <button class="book-card" data-live-book="${escapeHtml(book.id)}">
-      <div class="book-cover" style="${coverStyle(book)}">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</div>
+    <article class="book-card">
+      <button type="button" class="book-cover book-flip-trigger" data-book-flip="${escapeHtml(book.id)}" style="${coverStyle(book)}" aria-label="View ${escapeHtml(book.title)} details">${book.cover_url?'':`<span>${escapeHtml(book.title)}</span>`}</button>
       <div class="book-meta">
         <strong>${escapeHtml(book.title)}</strong>
         <small>${escapeHtml(book.author)}</small>
-        <div class="book-actions-inline"><span class="tiny-button" data-live-tbr="${escapeHtml(book.id)}">＋ TBR</span></div>
       </div>
-    </button>`).join('')||'<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⌕</div><h3>No books found</h3><p>Try another title or author.</p></div>';
-  bindTbrActions(grid);
+    </article>`).join('')||'<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⌕</div><h3>No books found</h3><p>Try another title or author.</p></div>';
+  bindBookFlipActions(grid);
 }
 
 function renderDiscoverHome(){
@@ -175,7 +368,7 @@ function renderDiscoverHome(){
         ${trending.map(book=>compactBookCard(book,'trending')).join('')}
       </div>
     </div>`;
-  bindTbrActions(grid);
+  bindBookFlipActions(grid);
 }
 
 function renderDiscover(){
@@ -433,9 +626,24 @@ async function loadCatalogue(){
     const response=await fetch(CATALOGUE_URL,{headers:{Accept:'application/json'}});
     if(!response.ok)throw new Error(`Catalogue ${response.status}`);
     const payload=await response.json();
-    books=(payload.books||[]).map(b=>({id:String(b.id),title:String(b.title||'Untitled'),author:String(b.author||''),cover_url:b.cover_url||null}));
+    books=(payload.books||[]).map(b=>({
+      id:String(b.id),
+      title:String(b.title||'Untitled'),
+      author:String(b.author||''),
+      cover_url:b.cover_url||null,
+      description:String(b.description||b.synopsis||b.summary||b.blurb||'').trim()
+    }));
     bySource=new Map(books.map(b=>[b.id,b]));
     byKey=new Map(books.map(b=>[`${norm(b.title)}|${norm(b.author)}`,b]));
+    try{
+      const {data:localDescriptions}=await supabase.from('blurb_books')
+        .select('source_id,title,author,description')
+        .not('description','is',null);
+      for(const local of localDescriptions||[]){
+        const match=findBook(local.source_id,local.title,local.author);
+        if(match&&!match.description)match.description=String(local.description||'').trim();
+      }
+    }catch{}
     ready=true;
     renderDiscover();
     paintExistingCovers();
