@@ -128,6 +128,62 @@ function getDemoFeed(){
   });
 }
 
+async function openBlurbPost(postId){
+  if(!postId)return false;
+
+  let post=state.posts.find(p=>String(p.id)===String(postId));
+
+  if(!post&&!String(postId).startsWith('demo-')){
+    const {data,error}=await supabase.from('blurb_posts')
+      .select('id,user_id,book_id,post_type,media_url,thumbnail_url,media_scale,media_offset_x,media_offset_y,media_fit,media_rotation,editor_state,caption,rating,contains_spoilers,created_at,blurb_books(id,title,author,genres,source_id)')
+      .eq('id',postId)
+      .eq('status','published')
+      .maybeSingle();
+
+    if(error||!data)return false;
+
+    const [{data:profile},{data:likes},{data:comments},{data:postTags}]=await Promise.all([
+      supabase.from('blurb_profiles').select('id,username,display_name,avatar_url').eq('id',data.user_id).maybeSingle(),
+      supabase.from('blurb_likes').select('post_id,user_id').eq('post_id',data.id),
+      supabase.from('blurb_comments').select('post_id').eq('post_id',data.id),
+      supabase.from('blurb_post_tags').select('post_id,tag').eq('post_id',data.id)
+    ]);
+
+    post={
+      ...data,
+      profile:profile||{},
+      likes:(likes||[]).length,
+      liked:state.user?(likes||[]).some(x=>x.user_id===state.user.id):false,
+      comments:(comments||[]).length,
+      tags:(postTags||[]).map(x=>x.tag)
+    };
+    state.posts=[post,...state.posts.filter(p=>String(p.id)!==String(post.id))];
+  }
+
+  if(!post)return false;
+
+  state.feedMode='for-you';
+  $('#feedForYou')?.classList.add('active');
+  $('#feedFollowing')?.classList.remove('active');
+  showView('feed');
+  renderFeed();
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const card=document.querySelector(`.feed-card[data-post="${CSS.escape(String(postId))}"]`);
+      if(card){
+        card.scrollIntoView({block:'start',behavior:'auto'});
+        const video=card.querySelector('video');
+        video?.play?.().catch(()=>{});
+      }
+    });
+  });
+
+  return true;
+}
+
+window.openBlurbPost=openBlurbPost;
+
 function renderFeed(){
   let items=state.posts.length?state.posts:getDemoFeed();
   if(state.feedMode==='following'){
