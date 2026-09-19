@@ -222,10 +222,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 }
 
 
-/* Blurb standalone status bar surface
-   Keep the Home Screen webview below the status bar, but use a dark shell
-   so iOS doesn't create a visible cream-to-reel separator. */
-.ios-standalone,
-.ios-standalone body{
-  background:#0f0d12;
+
+/* Crisp iOS status-bar edge
+   iOS Home Screen can draw a soft separator shadow at the top of the webview.
+   Cover only that narrow band so the transition is clean: cream status bar -> reel. */
+.ios-standalone #feedView::before{
+  content:"";
+  position:absolute;
+  z-index:30;
+  top:0;
+  left:0;
+  right:0;
+  height:3px;
+  background:var(--cream);
+  pointer-events:none;
 }
