@@ -800,3 +800,26 @@ body.book-flip-open{overflow:hidden}
     max-height:min(82dvh,760px);
   }
 }
+
+
+/* Library spotlight search */
+.library-search-wrap{
+  margin-top:14px;
+  height:48px;
+  border-radius:16px;
+  background:#fffaf3;
+  border:1px solid rgba(111,77,61,.14);
+  box-shadow:0 8px 22px rgba(70,45,32,.07);
+}
+.library-search-wrap span{
+  color:#c96832;
+  font-size:23px;
+}
+.library-search-wrap input{
+  color:#4b382f;
+  font-weight:650;
+}
+.library-search-wrap input::placeholder{
+  color:#9a7b6c;
+  font-weight:600;
+}
