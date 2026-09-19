@@ -8,7 +8,15 @@ let busy=false;
 let longPressTimer=null;
 function closeTileControls(except=null){
   document.querySelectorAll('.profile-media-tile.controls-open').forEach(tile=>{
-    if(tile!==except)tile.classList.remove('controls-open');
+    if(tile!==except){
+      tile.classList.remove('controls-open');
+      const menu=tile.querySelector('.profile-card-menu-toggle');
+      if(menu){
+        menu.textContent='•••';
+        menu.setAttribute('aria-expanded','false');
+        menu.setAttribute('aria-label','Blurb options');
+      }
+    }
   });
 }
 function bindProfileTile(tile){
@@ -28,7 +36,12 @@ function bindProfileTile(tile){
 
     if(tile.classList.contains('controls-open')){
       tile.classList.remove('controls-open');
-      tile.querySelector('.profile-card-menu-toggle')?.setAttribute('aria-expanded','false');
+      const menu=tile.querySelector('.profile-card-menu-toggle');
+      if(menu){
+        menu.textContent='•••';
+        menu.setAttribute('aria-expanded','false');
+        menu.setAttribute('aria-label','Blurb options');
+      }
       return;
     }
 
@@ -424,11 +437,15 @@ function bindProfileCardControls(grid,posts,session,tab){
       tile.classList.remove('controls-open');
       void tile.offsetWidth;
       tile.classList.add('controls-open');
+      button.textContent='×';
       button.setAttribute('aria-expanded','true');
+      button.setAttribute('aria-label','Cancel');
       navigator.vibrate?.(12);
     }else{
       tile.classList.remove('controls-open');
+      button.textContent='•••';
       button.setAttribute('aria-expanded','false');
+      button.setAttribute('aria-label','Blurb options');
     }
   }));
 
@@ -439,7 +456,12 @@ function bindProfileCardControls(grid,posts,session,tab){
     const post=postMap.get(String(id));
     if(!post)return;
     tile?.classList.remove('controls-open');
-    tile?.querySelector('.profile-card-menu-toggle')?.setAttribute('aria-expanded','false');
+    const menu=tile?.querySelector('.profile-card-menu-toggle');
+    if(menu){
+      menu.textContent='•••';
+      menu.setAttribute('aria-expanded','false');
+      menu.setAttribute('aria-label','Blurb options');
+    }
     openProfileEditModal(post,session,grid);
   }));
 
