@@ -517,42 +517,70 @@ function bindEmptySignIn(){ $('[data-empty-signin]')?.addEventListener('click',(
 
 async function renderProfile(){
   const root=$('#profileContent');
-  if(!state.user){ root.innerHTML=`<div class="empty-state" style="padding-top:110px"><div class="empty-icon">◉</div><h3>Your reader profile</h3><p>Post reviews, follow readers and keep your book life in one place.</p><button class="secondary-button" data-profile-signin>Sign in or create account</button></div>`; $('[data-profile-signin]')?.addEventListener('click',()=>openSheet('authSheet')); return; }
+  if(!state.user){
+    root.innerHTML=`<div class="empty-state" style="padding-top:110px"><div class="empty-icon">◉</div><h3>Your reader profile</h3><p>Post reviews, follow readers and keep your book life in one place.</p><button class="secondary-button" data-profile-signin>Sign in or create account</button></div>`;
+    $('[data-profile-signin]')?.addEventListener('click',()=>openSheet('authSheet'));
+    return;
+  }
+
   await ensureProfile();
-  const [{count:postCount},{count:followerCount},{count:followingCount},{data:posts}]=await Promise.all([
-    supabase.from('blurb_posts').select('*',{count:'exact',head:true}).eq('user_id',state.user.id),
+
+  const [{count:postCount},{count:followerCount},{count:followingCount}]=await Promise.all([
+    supabase.from('blurb_posts').select('*',{count:'exact',head:true}).eq('user_id',state.user.id).eq('status','published'),
     supabase.from('blurb_follows').select('*',{count:'exact',head:true}).eq('following_id',state.user.id),
-    supabase.from('blurb_follows').select('*',{count:'exact',head:true}).eq('follower_id',state.user.id),
-    supabase.from('blurb_posts').select('id,caption,book_id,blurb_books(title)').eq('user_id',state.user.id).order('created_at',{ascending:false}).limit(9)
+    supabase.from('blurb_follows').select('*',{count:'exact',head:true}).eq('follower_id',state.user.id)
   ]);
-  const p=state.profile||{}; const name=p.display_name||p.username||state.user.email?.split('@')[0]||'Reader';
-  root.innerHTML=`<div class="profile-shell">
-    <div class="profile-settings-wrap">
-      <button class="profile-settings-button" id="profileSettingsButton" type="button" aria-label="Profile settings" aria-expanded="false">
-        <img class="profile-settings-png" src="https://res.cloudinary.com/pfswmydz/image/upload/blurb-settings.png" alt="" />
-      </button>
-      <div class="profile-settings-menu" id="profileSettingsMenu" hidden>
-        <button type="button" id="editProfileButton">Edit profile</button>
-        <button type="button" id="signOutButton" class="danger">Sign out</button>
+
+  const p=state.profile||{};
+  const name=p.display_name||p.username||state.user.email?.split('@')[0]||'Reader';
+  const bannerStyle=p.banner_url?` style="background-image:url('${escapeHtml(p.banner_url)}')"`:'';
+
+  root.innerHTML=`
+    <div class="profile-shell">
+      <div class="profile-banner ${p.banner_url?'has-image':''}"${bannerStyle}>
+        <div class="profile-banner-books" aria-hidden="true"></div>
       </div>
-    </div>
-    <div class="profile-hero">
-      <div class="profile-intro">
-        <div class="profile-avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div>
-        <div class="profile-identity">
+
+      <section class="profile-panel">
+        <div class="profile-avatar-wrap">
+          <div class="profile-avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div>
+        </div>
+
+        <div class="profile-top-actions">
+          <button class="profile-edit-main" id="profileEditButton" type="button">Edit profile</button>
+          <div class="profile-settings-wrap">
+            <button class="profile-settings-button" id="profileSettingsButton" type="button" aria-label="Profile settings" aria-expanded="false">
+              <img class="profile-settings-png" src="https://res.cloudinary.com/pfswmydz/image/upload/blurb-settings.png" alt="" />
+            </button>
+            <div class="profile-settings-menu" id="profileSettingsMenu" hidden>
+              <button type="button" id="editProfileMenuButton">Edit profile</button>
+              <button type="button" id="signOutButton" class="danger">Sign out</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-copy">
           <h1>${escapeHtml(name)}</h1>
           <div class="profile-username">@${escapeHtml(p.username||'choose_a_username')}</div>
+          <p class="profile-bio">${escapeHtml(p.bio||'Books, reviews and whatever I’m currently obsessed with.')}</p>
         </div>
-      </div>
-      <p class="profile-bio">${escapeHtml(p.bio||'Books, reviews and whatever I’m currently obsessed with.')}</p>
-      <div class="profile-stats">
-        <div class="profile-stat"><strong>${postCount||0}</strong><span>Blurbs</span></div>
-        <div class="profile-stat"><strong>${followerCount||0}</strong><span>Followers</span></div>
-        <div class="profile-stat"><strong>${followingCount||0}</strong><span>Following</span></div>
-      </div>
+
+        <div class="profile-stats">
+          <button class="profile-stat" type="button" data-profile-stat="blurbs"><strong>${postCount||0}</strong><span>Blurbs</span></button>
+          <button class="profile-stat" type="button" data-profile-stat="followers"><strong>${followerCount||0}</strong><span>Followers</span></button>
+          <button class="profile-stat" type="button" data-profile-stat="following"><strong>${followingCount||0}</strong><span>Following</span></button>
+        </div>
+      </section>
     </div>
-  </div>
-  <div class="profile-tabs"><button class="active">Blurbs</button><button>Liked</button><button>Saved</button></div><div class="profile-grid">${(posts||[]).map(x=>{const [a,b]=paletteFor(x.id);return `<div class="profile-post" style="--card-a:${a};--card-b:${b}">${escapeHtml(x.blurb_books?.title||x.caption||'Blurb')}</div>`;}).join('')}</div>`;
+
+    <div class="profile-tabs" role="tablist" aria-label="Profile content">
+      <button class="active" type="button" role="tab" aria-selected="true" data-profile-tab="blurbs">Blurbs</button>
+      <button type="button" role="tab" aria-selected="false" data-profile-tab="liked">Liked</button>
+      <button type="button" role="tab" aria-selected="false" data-profile-tab="saved">Saved</button>
+    </div>
+    <div class="profile-grid" data-profile-grid><div class="profile-grid-loading">Gathering your Blurbs…</div></div>
+  `;
+
   const settingsButton=$('#profileSettingsButton');
   const settingsMenu=$('#profileSettingsMenu');
   settingsButton?.addEventListener('click',e=>{
@@ -561,21 +589,237 @@ async function renderProfile(){
     settingsMenu.hidden=!opening;
     settingsButton.setAttribute('aria-expanded',String(opening));
   });
+
   root.addEventListener('click',e=>{
-    if(!e.target.closest('.profile-settings-wrap')&&settingsMenu&&!settingsMenu.hidden){settingsMenu.hidden=true;settingsButton?.setAttribute('aria-expanded','false');}
-  },{once:true});
-  $('#signOutButton').addEventListener('click',async()=>{await supabase.auth.signOut();toast('Signed out');showView('feed');});
-  $('#editProfileButton').addEventListener('click',()=>{if(settingsMenu)settingsMenu.hidden=true;editProfile();});
+    if(!e.target.closest('.profile-settings-wrap')&&settingsMenu&&!settingsMenu.hidden){
+      settingsMenu.hidden=true;
+      settingsButton?.setAttribute('aria-expanded','false');
+    }
+  });
+
+  $('#signOutButton')?.addEventListener('click',async()=>{
+    await supabase.auth.signOut();
+    toast('Signed out');
+    showView('feed');
+  });
+
+  const openEditor=()=>{
+    if(settingsMenu)settingsMenu.hidden=true;
+    editProfile();
+  };
+  $('#profileEditButton')?.addEventListener('click',openEditor);
+  $('#editProfileMenuButton')?.addEventListener('click',openEditor);
+
+  window.dispatchEvent(new CustomEvent('blurb-profile-rendered'));
+}
+
+async function uploadProfileAsset(file,kind){
+  if(!state.user||!file)return null;
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const path=`${state.user.id}/profile/${kind}-${crypto.randomUUID?.()||Date.now()}.${ext}`;
+  const {error}=await supabase.storage.from('blurb-media').upload(path,file,{
+    contentType:file.type||'image/jpeg',
+    upsert:false
+  });
+  if(error)throw error;
+  const {data}=supabase.storage.from('blurb-media').getPublicUrl(path);
+  return data?.publicUrl||null;
+}
+
+function ensureProfileDetailsModal(){
+  let modal=document.querySelector('#profileDetailsModal');
+  if(modal)return modal;
+
+  modal=document.createElement('div');
+  modal.id='profileDetailsModal';
+  modal.className='profile-details-modal';
+  modal.hidden=true;
+  modal.innerHTML=`
+    <div class="profile-details-backdrop" data-close-profile-details></div>
+    <section class="profile-details-card" role="dialog" aria-modal="true" aria-labelledby="profileDetailsTitle">
+      <button class="profile-details-close" type="button" data-close-profile-details aria-label="Close">×</button>
+      <p class="profile-details-eyebrow">Your reading corner</p>
+      <h2 id="profileDetailsTitle">Edit profile</h2>
+
+      <div class="profile-asset-editor">
+        <label class="profile-banner-editor">
+          <span class="profile-asset-preview profile-banner-preview" id="profileBannerPreview"></span>
+          <span class="profile-asset-action">Change banner</span>
+          <input id="profileBannerFile" type="file" accept="image/jpeg,image/png,image/webp" />
+        </label>
+        <div class="profile-avatar-editor-wrap">
+          <label class="profile-avatar-editor">
+            <span class="profile-asset-preview profile-avatar-preview" id="profileAvatarPreview"></span>
+            <span class="profile-asset-action">Change photo</span>
+            <input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp" />
+          </label>
+        </div>
+      </div>
+
+      <div class="profile-remove-assets">
+        <button type="button" id="profileRemoveAvatar">Remove photo</button>
+        <button type="button" id="profileRemoveBanner">Remove banner</button>
+      </div>
+
+      <label class="profile-details-label" for="profileDisplayName">Display name</label>
+      <input class="text-input" id="profileDisplayName" maxlength="50" />
+
+      <label class="profile-details-label" for="profileUsername">Username</label>
+      <input class="text-input" id="profileUsername" maxlength="24" autocomplete="off" />
+
+      <label class="profile-details-label" for="profileBio">Bio</label>
+      <textarea class="text-input profile-bio-input" id="profileBio" maxlength="180"></textarea>
+
+      <div class="profile-details-actions">
+        <button class="secondary-button" type="button" data-close-profile-details>Cancel</button>
+        <button class="primary-button" type="button" id="profileDetailsSave">Save profile</button>
+      </div>
+      <p class="form-status" id="profileDetailsStatus"></p>
+    </section>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click',e=>{
+    if(e.target.closest('[data-close-profile-details]'))modal.hidden=true;
+  });
+
+  modal.querySelector('#profileAvatarFile')?.addEventListener('change',e=>{
+    const file=e.target.files?.[0];
+    if(!file||!modal._draft)return;
+    modal._draft.avatarFile=file;
+    modal._draft.avatarUrl=URL.createObjectURL(file);
+    modal._draft.removeAvatar=false;
+    paintProfileDetailsPreview(modal);
+  });
+
+  modal.querySelector('#profileBannerFile')?.addEventListener('change',e=>{
+    const file=e.target.files?.[0];
+    if(!file||!modal._draft)return;
+    modal._draft.bannerFile=file;
+    modal._draft.bannerUrl=URL.createObjectURL(file);
+    modal._draft.removeBanner=false;
+    paintProfileDetailsPreview(modal);
+  });
+
+  modal.querySelector('#profileRemoveAvatar')?.addEventListener('click',()=>{
+    if(!modal._draft)return;
+    modal._draft.avatarFile=null;
+    modal._draft.avatarUrl=null;
+    modal._draft.removeAvatar=true;
+    paintProfileDetailsPreview(modal);
+  });
+
+  modal.querySelector('#profileRemoveBanner')?.addEventListener('click',()=>{
+    if(!modal._draft)return;
+    modal._draft.bannerFile=null;
+    modal._draft.bannerUrl=null;
+    modal._draft.removeBanner=true;
+    paintProfileDetailsPreview(modal);
+  });
+
+  modal.querySelector('#profileDetailsSave')?.addEventListener('click',async()=>{
+    const draft=modal._draft;
+    if(!draft||!state.user)return;
+
+    const username=modal.querySelector('#profileUsername').value.trim().replace(/^@/,'');
+    const displayName=modal.querySelector('#profileDisplayName').value.trim();
+    const bio=modal.querySelector('#profileBio').value.trim();
+    const status=modal.querySelector('#profileDetailsStatus');
+    const save=modal.querySelector('#profileDetailsSave');
+
+    if(username&&!/^[A-Za-z0-9_]{3,24}$/.test(username)){
+      status.textContent='Username must be 3–24 letters, numbers or underscores.';
+      status.className='form-status error';
+      return;
+    }
+
+    save.disabled=true;
+    status.textContent='Saving your profile…';
+    status.className='form-status';
+
+    try{
+      let avatarUrl=draft.removeAvatar?null:(state.profile?.avatar_url||null);
+      let bannerUrl=draft.removeBanner?null:(state.profile?.banner_url||null);
+
+      if(draft.avatarFile)avatarUrl=await uploadProfileAsset(draft.avatarFile,'avatar');
+      if(draft.bannerFile)bannerUrl=await uploadProfileAsset(draft.bannerFile,'banner');
+
+      const {data,error}=await supabase.from('blurb_profiles')
+        .update({
+          username:username||null,
+          display_name:displayName,
+          bio,
+          avatar_url:avatarUrl,
+          banner_url:bannerUrl,
+          updated_at:new Date().toISOString()
+        })
+        .eq('id',state.user.id)
+        .select()
+        .single();
+
+      if(error)throw error;
+
+      state.profile=data;
+      modal.hidden=true;
+      await renderProfile();
+      toast('Profile updated');
+    }catch(error){
+      console.error('Could not update profile',error);
+      status.textContent=String(error?.message||'Couldn’t update profile').includes('duplicate')
+        ? 'That username is already taken.'
+        : 'Couldn’t update profile.';
+      status.className='form-status error';
+    }finally{
+      save.disabled=false;
+    }
+  });
+
+  return modal;
+}
+
+function paintProfileDetailsPreview(modal){
+  const draft=modal._draft||{};
+  const name=modal.querySelector('#profileDisplayName')?.value||state.profile?.display_name||state.profile?.username||'Reader';
+  const avatar=modal.querySelector('#profileAvatarPreview');
+  const banner=modal.querySelector('#profileBannerPreview');
+
+  if(avatar){
+    avatar.innerHTML=draft.avatarUrl
+      ? `<img src="${escapeHtml(draft.avatarUrl)}" alt="" />`
+      : `<span>${escapeHtml(initials(name))}</span>`;
+  }
+
+  if(banner){
+    banner.innerHTML=draft.bannerUrl
+      ? `<img src="${escapeHtml(draft.bannerUrl)}" alt="" />`
+      : '<span class="profile-banner-preview-fallback"></span>';
+  }
 }
 
 async function editProfile(){
-  const username=prompt('Username (letters, numbers and underscores)',state.profile?.username||''); if(username===null)return;
-  const displayName=prompt('Display name',state.profile?.display_name||''); if(displayName===null)return;
-  const bio=prompt('Bio',state.profile?.bio||''); if(bio===null)return;
-  const clean=username.trim().replace(/^@/,'');
-  if(clean && !/^[A-Za-z0-9_]{3,24}$/.test(clean)){toast('Username must be 3–24 letters, numbers or underscores');return;}
-  const {data,error}=await supabase.from('blurb_profiles').update({username:clean||null,display_name:displayName.trim(),bio:bio.trim(),updated_at:new Date().toISOString()}).eq('id',state.user.id).select().single();
-  if(error){toast(error.message.includes('duplicate')?'That username is taken':'Couldn’t update profile');return;} state.profile=data;renderProfile();toast('Profile updated');
+  const modal=ensureProfileDetailsModal();
+  const p=state.profile||{};
+
+  modal._draft={
+    avatarFile:null,
+    bannerFile:null,
+    avatarUrl:p.avatar_url||null,
+    bannerUrl:p.banner_url||null,
+    removeAvatar:false,
+    removeBanner:false
+  };
+
+  modal.querySelector('#profileDisplayName').value=p.display_name||'';
+  modal.querySelector('#profileUsername').value=p.username||'';
+  modal.querySelector('#profileBio').value=p.bio||'';
+  modal.querySelector('#profileAvatarFile').value='';
+  modal.querySelector('#profileBannerFile').value='';
+  modal.querySelector('#profileDetailsStatus').textContent='';
+  modal.querySelector('#profileDetailsStatus').className='form-status';
+
+  paintProfileDetailsPreview(modal);
+  modal.hidden=false;
 }
 
 function renderBookSheet(filter=''){
