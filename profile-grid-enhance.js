@@ -12,20 +12,75 @@ function closeTileControls(except=null){
   });
 }
 function bindLongPress(tile){
+  let didLongPress=false;
+  let startX=0;
+  let startY=0;
+
   const clearPress=()=>{clearTimeout(longPressTimer);longPressTimer=null;};
-  tile.addEventListener('pointerdown',e=>{
-    if(e.target.closest('.profile-tile-controls'))return;
+
+  const beginPress=(x,y)=>{
     clearPress();
+    didLongPress=false;
+    startX=x;
+    startY=y;
     longPressTimer=setTimeout(()=>{
+      didLongPress=true;
       closeTileControls(tile);
       tile.classList.add('controls-open');
       navigator.vibrate?.(18);
-    },550);
+    },520);
+  };
+
+  const movePress=(x,y)=>{
+    if(Math.hypot(x-startX,y-startY)>10)clearPress();
+  };
+
+  tile.querySelectorAll('img').forEach(img=>{
+    img.draggable=false;
+    img.setAttribute('draggable','false');
   });
+
+  tile.addEventListener('dragstart',e=>e.preventDefault());
+  tile.addEventListener('contextmenu',e=>e.preventDefault());
+
+  tile.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.profile-tile-controls'))return;
+    beginPress(e.clientX,e.clientY);
+  });
+
+  tile.addEventListener('pointermove',e=>{
+    if(!longPressTimer)return;
+    movePress(e.clientX,e.clientY);
+  });
+
   tile.addEventListener('pointerup',clearPress);
   tile.addEventListener('pointercancel',clearPress);
   tile.addEventListener('pointerleave',clearPress);
-  tile.addEventListener('contextmenu',e=>e.preventDefault());
+
+  tile.addEventListener('click',async e=>{
+    if(e.target.closest('.profile-tile-controls'))return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if(didLongPress){
+      didLongPress=false;
+      return;
+    }
+
+    if(tile.classList.contains('controls-open')){
+      tile.classList.remove('controls-open');
+      return;
+    }
+
+    const postId=tile.dataset.profilePost;
+    if(postId&&typeof window.openBlurbPost==='function'){
+      const opened=await window.openBlurbPost(postId);
+      if(opened)return;
+    }
+
+    toast('Couldn’t open that Blurb');
+  });
 }
 function toast(message){const el=document.querySelector('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);}
 
@@ -236,7 +291,7 @@ async function hydrateProfileGrid(){
       const [a,b]=paletteFor(post.id);
       const cover=post.thumbnail_url||null;
       const media=cover||post.media_url;
-      const visual=media?(cover?`<img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy" />`:(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" />`)):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
+      const visual=media?(cover?`<img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`:(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`)):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
       return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}" data-caption="${escapeHtml(post.caption||'')}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><div class="profile-tile-controls" aria-hidden="true"><button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}">Edit</button><button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}">Delete</button></div></article>`;
     }).join('');
     grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
