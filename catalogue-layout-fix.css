@@ -319,3 +319,28 @@ body.book-flip-open{overflow:hidden}
 .book-flip-modal:not(.flipped) .book-flip-back{
   pointer-events:none;
 }
+
+/* Smoother Discover flip animation: transform-based FLIP instead of animating layout */
+.book-flip-stage{
+  left:var(--flip-to-left)!important;
+  top:var(--flip-to-top)!important;
+  width:var(--flip-to-width)!important;
+  height:var(--flip-to-height)!important;
+  transform-origin:top left;
+  transform:translate3d(var(--flip-dx,0),var(--flip-dy,0),0) scale(var(--flip-scale-x,1),var(--flip-scale-y,1));
+  transition:transform .34s cubic-bezier(.22,.78,.24,1)!important;
+  will-change:transform;
+}
+.book-flip-modal.expanded .book-flip-stage{
+  transform:translate3d(0,0,0) scale(1,1)!important;
+}
+.book-flip-card{
+  transition:transform .46s cubic-bezier(.22,.74,.22,1)!important;
+  will-change:transform;
+}
+.book-flip-modal.flipped .book-flip-card{
+  transform:rotateY(180deg);
+}
+.book-flip-backdrop{
+  transition:opacity .28s ease,background .28s ease,backdrop-filter .28s ease!important;
+}
