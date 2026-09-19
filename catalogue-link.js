@@ -221,13 +221,17 @@ async function refreshBookFlipStatus(book){
 function closeBookFlip(){
   const modal=document.querySelector('#bookFlipModal');
   if(!modal||modal.hidden)return;
+  clearTimeout(modal._openFlipTimer);
+  clearTimeout(modal._closeShrinkTimer);
+  clearTimeout(modal._closeHideTimer);
+
   modal.classList.remove('flipped');
-  setTimeout(()=>modal.classList.remove('expanded'),150);
-  setTimeout(()=>{
+  modal._closeShrinkTimer=setTimeout(()=>modal.classList.remove('expanded'),430);
+  modal._closeHideTimer=setTimeout(()=>{
     modal.hidden=true;
     modal.dataset.bookId='';
     document.body.classList.remove('book-flip-open');
-  },440);
+  },790);
 }
 
 function openBookFlip(book,coverEl){
@@ -245,10 +249,12 @@ function openBookFlip(book,coverEl){
   const targetLeft=(window.innerWidth-targetWidth)/2;
   const targetTop=Math.max(18,(window.innerHeight-targetHeight)/2);
 
-  stage.style.setProperty('--flip-from-left',rect.left+'px');
-  stage.style.setProperty('--flip-from-top',rect.top+'px');
-  stage.style.setProperty('--flip-from-width',rect.width+'px');
-  stage.style.setProperty('--flip-from-height',rect.height+'px');
+  const scaleX=rect.width/targetWidth;
+  const scaleY=rect.height/targetHeight;
+  stage.style.setProperty('--flip-dx',(rect.left-targetLeft)+'px');
+  stage.style.setProperty('--flip-dy',(rect.top-targetTop)+'px');
+  stage.style.setProperty('--flip-scale-x',String(scaleX));
+  stage.style.setProperty('--flip-scale-y',String(scaleY));
   stage.style.setProperty('--flip-to-left',targetLeft+'px');
   stage.style.setProperty('--flip-to-top',targetTop+'px');
   stage.style.setProperty('--flip-to-width',targetWidth+'px');
@@ -286,12 +292,17 @@ function openBookFlip(book,coverEl){
   modal.dataset.bookId=String(book.id);
   modal.hidden=false;
   modal.classList.remove('expanded','flipped');
+  clearTimeout(modal._openFlipTimer);
+  clearTimeout(modal._closeShrinkTimer);
+  clearTimeout(modal._closeHideTimer);
   document.body.classList.add('book-flip-open');
 
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  // Force the compact starting transform to paint first, then glide forward.
+  stage.getBoundingClientRect();
+  requestAnimationFrame(()=>{
     modal.classList.add('expanded');
-    setTimeout(()=>modal.classList.add('flipped'),340);
-  }));
+    modal._openFlipTimer=setTimeout(()=>modal.classList.add('flipped'),390);
+  });
   refreshBookFlipStatus(book);
 }
 
