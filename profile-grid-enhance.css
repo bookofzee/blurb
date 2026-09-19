@@ -150,3 +150,20 @@
   .profile-post-edit-card{padding:17px;border-radius:19px}
   .profile-post-edit-actions{grid-template-columns:1fr 1.7fr}
 }
+
+
+/* iPhone profile tile touch behaviour */
+.profile-media-tile,
+.profile-media-tile img,
+.profile-media-tile video{
+  -webkit-touch-callout:none!important;
+  -webkit-user-select:none!important;
+  user-select:none!important;
+}
+.profile-media-tile img{
+  -webkit-user-drag:none!important;
+  pointer-events:none;
+}
+.profile-media-tile video{
+  pointer-events:none;
+}
