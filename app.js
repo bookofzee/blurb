@@ -672,15 +672,23 @@ function paintProfileCrop(modal,kind){
   const url=profileCropUrl(modal,kind);
   const {preview,zoom}=profileCropElements(modal,kind);
   if(!preview||!state)return;
+
   if(!url){
+    preview.dataset.source='';
     preview.innerHTML=kind==='avatar'
       ? '<span class="profile-crop-empty">Add photo</span>'
       : '<span class="profile-crop-empty">Add banner</span>';
     if(zoom)zoom.value='1';
     return;
   }
-  preview.innerHTML='<img src="'+escapeHtml(url)+'" alt="" draggable="false" />';
-  const img=preview.querySelector('img');
+
+  let img=preview.querySelector('img');
+  if(!img||preview.dataset.source!==url){
+    preview.dataset.source=url;
+    preview.innerHTML='<img src="'+escapeHtml(url)+'" alt="" draggable="false" />';
+    img=preview.querySelector('img');
+  }
+
   const apply=()=>{
     clampProfileCrop(modal,kind);
     img.style.left='calc(50% + '+state.x+'px)';
@@ -688,8 +696,12 @@ function paintProfileCrop(modal,kind){
     img.style.transform='translate(-50%,-50%) scale('+state.scale+')';
     if(zoom)zoom.value=String(state.scale);
   };
-  if(img.complete)apply();
-  else img.addEventListener('load',apply,{once:true});
+
+  if(img.complete&&img.naturalWidth)apply();
+  else if(!img.dataset.cropLoadBound){
+    img.dataset.cropLoadBound='1';
+    img.addEventListener('load',apply,{once:true});
+  }
 }
 
 function bindProfileCropStage(modal,kind){
