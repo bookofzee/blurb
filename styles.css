@@ -223,17 +223,22 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 
 
 
-/* Crisp iOS status-bar edge
-   iOS Home Screen can draw a soft separator shadow at the top of the webview.
-   Cover only that narrow band so the transition is clean: cream status bar -> reel. */
+/* Hard iOS status-bar edge — deliberately FLAT, never blurred. */
 .ios-standalone #feedView::before{
   content:"";
   position:absolute;
-  z-index:30;
+  z-index:40;
   top:0;
   left:0;
   right:0;
-  height:3px;
+  height:14px;
   background:var(--cream);
+  background-image:none;
+  border-bottom:1px solid rgba(111,77,61,.16);
+  box-shadow:none;
+  filter:none;
+  -webkit-filter:none;
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
   pointer-events:none;
 }
