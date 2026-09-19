@@ -11,34 +11,7 @@ function closeTileControls(except=null){
     if(tile!==except)tile.classList.remove('controls-open');
   });
 }
-function bindLongPress(tile){
-  let didLongPress=false;
-  let startX=0;
-  let startY=0;
-  const hasControls=!!tile.querySelector('.profile-tile-controls');
-
-  const clearPress=()=>{clearTimeout(longPressTimer);longPressTimer=null;};
-
-  const beginPress=(x,y)=>{
-    clearPress();
-    didLongPress=false;
-    startX=x;
-    startY=y;
-    if(!hasControls)return;
-    longPressTimer=setTimeout(()=>{
-      didLongPress=true;
-      closeTileControls(tile);
-      tile.classList.remove('controls-open');
-      void tile.offsetWidth;
-      tile.classList.add('controls-open');
-      navigator.vibrate?.(18);
-    },520);
-  };
-
-  const movePress=(x,y)=>{
-    if(Math.hypot(x-startX,y-startY)>10)clearPress();
-  };
-
+function bindProfileTile(tile){
   tile.querySelectorAll('img').forEach(img=>{
     img.draggable=false;
     img.setAttribute('draggable','false');
@@ -47,33 +20,15 @@ function bindLongPress(tile){
   tile.addEventListener('dragstart',e=>e.preventDefault());
   tile.addEventListener('contextmenu',e=>e.preventDefault());
 
-  tile.addEventListener('pointerdown',e=>{
-    if(e.target.closest('.profile-tile-controls'))return;
-    beginPress(e.clientX,e.clientY);
-  });
-
-  tile.addEventListener('pointermove',e=>{
-    if(!longPressTimer)return;
-    movePress(e.clientX,e.clientY);
-  });
-
-  tile.addEventListener('pointerup',clearPress);
-  tile.addEventListener('pointercancel',clearPress);
-  tile.addEventListener('pointerleave',clearPress);
-
   tile.addEventListener('click',async e=>{
-    if(e.target.closest('.profile-tile-controls'))return;
+    if(e.target.closest('.profile-card-menu-toggle,.profile-tile-controls'))return;
 
     e.preventDefault();
     e.stopPropagation();
 
-    if(didLongPress){
-      didLongPress=false;
-      return;
-    }
-
     if(tile.classList.contains('controls-open')){
       tile.classList.remove('controls-open');
+      tile.querySelector('.profile-card-menu-toggle')?.setAttribute('aria-expanded','false');
       return;
     }
 
@@ -354,29 +309,31 @@ function profileCardMarkup(post,session,tab){
 
   const controls=own?`
     <div class="profile-tile-controls" aria-hidden="true">
-      <button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}" aria-label="Edit Blurb" title="Edit Blurb">
+      <button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}" aria-label="Edit Blurb">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4.2L19 9.2 14.8 5 4 15.8V20Z"/><path d="m13.7 6.1 4.2 4.2"/></svg>
+        <span>Edit</span>
       </button>
-      <button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete Blurb" title="Delete Blurb">
+      <button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete Blurb">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
+        <span>Delete</span>
       </button>
-    </div>`:'';
+    </div>`: '';
 
-  const rating=Number(post.rating||0);
+  const menu=own?`<button class="profile-card-menu-toggle" type="button" data-profile-menu="${post.id}" aria-label="Blurb options" aria-expanded="false">•••</button>`:'';
+
   return `<article class="profile-post profile-post-card profile-media-tile" data-profile-post="${post.id}">
     <div class="profile-card-media">
       ${visual}
       <span class="profile-card-heart ${tab==='liked'?'active':''}" aria-hidden="true">${tab==='liked'?'♥':'♡'}</span>
-      ${controls}
     </div>
     <div class="profile-card-copy">
       <div class="profile-card-heading">
         <strong>${escapeHtml(title)}</strong>
-        ${rating?`<span class="profile-card-rating">★ ${rating.toFixed(1)}</span>`:''}
       </div>
       ${author?`<small class="profile-card-author">${escapeHtml(author)}</small>`:''}
       ${post.caption?`<p>${escapeHtml(profileCardExcerpt(post.caption))}</p>`:''}
-      <div class="profile-card-meta"><span>${profileCardDate(post.created_at)}</span><span aria-hidden="true">•••</span></div>
+      <div class="profile-card-meta"><span>${profileCardDate(post.created_at)}</span>${menu}</div>
+      ${controls}
     </div>
   </article>`;
 }
@@ -384,7 +341,29 @@ function profileCardMarkup(post,session,tab){
 function bindProfileCardControls(grid,posts,session,tab){
   const postMap=new Map((posts||[]).map(post=>[String(post.id),post]));
 
-  grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
+  grid.querySelectorAll('.profile-media-tile').forEach(bindProfileTile);
+
+  grid.querySelectorAll('[data-profile-menu]').forEach(button=>button.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+
+    const tile=button.closest('.profile-media-tile');
+    if(!tile)return;
+
+    const opening=!tile.classList.contains('controls-open');
+    closeTileControls(opening?tile:null);
+
+    if(opening){
+      tile.classList.remove('controls-open');
+      void tile.offsetWidth;
+      tile.classList.add('controls-open');
+      button.setAttribute('aria-expanded','true');
+      navigator.vibrate?.(12);
+    }else{
+      tile.classList.remove('controls-open');
+      button.setAttribute('aria-expanded','false');
+    }
+  }));
 
   grid.querySelectorAll('[data-edit-profile-post]').forEach(btn=>btn.addEventListener('click',e=>{
     e.stopPropagation();
@@ -393,6 +372,7 @@ function bindProfileCardControls(grid,posts,session,tab){
     const post=postMap.get(String(id));
     if(!post)return;
     tile?.classList.remove('controls-open');
+    tile?.querySelector('.profile-card-menu-toggle')?.setAttribute('aria-expanded','false');
     openProfileEditModal(post,session,grid);
   }));
 
