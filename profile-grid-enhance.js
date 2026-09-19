@@ -379,11 +379,9 @@ function profileCardMarkup(post,session,tab){
     <div class="profile-tile-controls" aria-hidden="true">
       <button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}" aria-label="Edit Blurb">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4.2L19 9.2 14.8 5 4 15.8V20Z"/><path d="m13.7 6.1 4.2 4.2"/></svg>
-        <span>Edit</span>
       </button>
       <button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete Blurb">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
-        <span>Delete</span>
       </button>
     </div>`: '';
 
@@ -402,8 +400,8 @@ function profileCardMarkup(post,session,tab){
       </div>
       ${author?`<small class="profile-card-author">${escapeHtml(author)}</small>`:''}
       <div class="profile-card-meta"><span>${profileCardDate(post.created_at)}</span>${menu}</div>
-      ${controls}
     </div>
+    ${controls}
   </article>`;
 }
 
