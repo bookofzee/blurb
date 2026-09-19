@@ -1,6 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
 
 const CATALOGUE_URL='https://book-of-zee.onrender.com/api/blurb/catalogue';
+const CATALOGUE_ADMIN_EMAIL='amy@walfords.uk';
 const supabase=createClient('https://ndinulaqwixbmgjhrhdo.supabase.co','sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1');
 const norm=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
 const escapeHtml=(value='')=>String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
@@ -10,6 +11,10 @@ let byKey=new Map();
 let ready=false;
 let trendingBooks=[];
 let popularityScores=new Map();
+
+function isCatalogueAdmin(session){
+  return String(session?.user?.email||'').toLowerCase()===CATALOGUE_ADMIN_EMAIL;
+}
 
 function toast(message){
   const el=document.querySelector('#toast');
@@ -141,6 +146,75 @@ function bookSynopsis(book){
   return text||'No synopsis has been added for this book yet.';
 }
 
+async function uploadAdminAltCover(file,book,session){
+  if(!file||!book||!session?.user)return null;
+  if(file.size>15*1024*1024)throw new Error('Cover image must be under 15 MB');
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const safeSource=String(book.id||'book').replace(/[^a-z0-9_-]/gi,'-');
+  const path=`${session.user.id}/catalogue-alt/${safeSource}-${crypto.randomUUID?.()||Date.now()}.${ext}`;
+  const {error}=await supabase.storage.from('blurb-media').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
+  if(error)throw error;
+  return supabase.storage.from('blurb-media').getPublicUrl(path).data.publicUrl;
+}
+
+async function setAdminAltCover(book,file){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!isCatalogueAdmin(session))return false;
+  try{
+    const url=await uploadAdminAltCover(file,book,session);
+    const {error}=await supabase.from('blurb_catalogue_overrides').upsert({
+      source_id:String(book.id),
+      cover_url:url,
+      is_hidden:false,
+      updated_at:new Date().toISOString()
+    },{onConflict:'source_id'});
+    if(error)throw error;
+
+    book.cover_url=url;
+    await supabase.from('blurb_books')
+      .update({cover_url:url})
+      .eq('source','book_of_zee_prod')
+      .eq('source_id',String(book.id));
+
+    renderDiscover();
+    paintExistingCovers();
+    toast('Alternate cover updated');
+    return true;
+  }catch(err){
+    console.error('Could not update alternate cover',err);
+    toast('Couldn’t update the cover');
+    return false;
+  }
+}
+
+async function adminHideBook(book){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!isCatalogueAdmin(session))return false;
+  if(!confirm(`Remove “${book.title}” from Blurb? Existing posts and library history will be kept.`))return false;
+  try{
+    const {error}=await supabase.from('blurb_catalogue_overrides').upsert({
+      source_id:String(book.id),
+      cover_url:book.cover_url||null,
+      is_hidden:true,
+      updated_at:new Date().toISOString()
+    },{onConflict:'source_id'});
+    if(error)throw error;
+
+    books=books.filter(item=>String(item.id)!==String(book.id));
+    bySource=new Map(books.map(item=>[item.id,item]));
+    byKey=new Map(books.map(item=>[`${norm(item.title)}|${norm(item.author)}`,item]));
+    trendingBooks=trendingBooks.filter(item=>String(item?.id)!==String(book.id));
+    closeBookFlip();
+    setTimeout(()=>renderDiscover(),380);
+    toast('Book removed from Blurb');
+    return true;
+  }catch(err){
+    console.error('Could not remove catalogue book',err);
+    toast('Couldn’t remove that book');
+    return false;
+  }
+}
+
 function ensureBookFlipModal(){
   let modal=document.querySelector('#bookFlipModal');
   if(modal)return modal;
@@ -191,6 +265,28 @@ function ensureBookFlipModal(){
       if(!book)return;
       const ok=await removeLiveBookStatus(book);
       if(ok)await refreshBookFlipStatus(book);
+      return;
+    }
+    if(e.target.closest('[data-book-admin-delete]')){
+      const book=bySource.get(modal.dataset.bookId||'');
+      if(book)await adminHideBook(book);
+      return;
+    }
+  });
+
+  modal.addEventListener('change',async e=>{
+    const input=e.target.closest('[data-book-admin-alt-input]');
+    if(!input)return;
+    const book=bySource.get(modal.dataset.bookId||'');
+    const file=input.files?.[0];
+    if(!book||!file)return;
+    input.disabled=true;
+    const ok=await setAdminAltCover(book,file);
+    input.disabled=false;
+    input.value='';
+    if(ok){
+      const front=modal.querySelector('#bookFlipFront');
+      if(front)front.innerHTML=`<img src="${escapeHtml(book.cover_url)}" alt="${escapeHtml(book.title)} cover" />`;
     }
   });
   return modal;
@@ -261,7 +357,7 @@ function closeBookFlip(){
   }
 }
 
-function openBookFlip(book,coverEl){
+async function openBookFlip(book,coverEl){
   if(!book||!coverEl)return;
   const modal=ensureBookFlipModal();
   const stage=modal.querySelector('#bookFlipStage');
@@ -291,10 +387,22 @@ function openBookFlip(book,coverEl){
     ?`<img src="${escapeHtml(book.cover_url)}" alt="${escapeHtml(book.title)} cover" />`
     :`<div class="book-flip-cover-fallback">${escapeHtml(book.title)}</div>`;
 
+  const {data:{session}}=await supabase.auth.getSession();
+  const admin=isCatalogueAdmin(session);
+
   back.innerHTML=`
     <div class="book-flip-back-top">
-      <button type="button" class="book-flip-cover-button" data-book-flip-cover aria-label="Show cover">↶</button>
-      <button type="button" class="book-flip-close" data-book-flip-close aria-label="Close">×</button>
+      <button type="button" class="book-flip-cover-button" data-book-flip-cover aria-label="Flip back to cover" title="Flip back to cover">⇄</button>
+      <div class="book-flip-top-actions">
+        ${admin?`
+          <label class="book-flip-admin-alt" title="Change alternate cover">
+            <input type="file" accept="image/jpeg,image/png,image/webp" data-book-admin-alt-input />
+            <span>Alt art</span>
+          </label>
+          <button type="button" class="book-flip-admin-delete" data-book-admin-delete>Delete</button>
+        `:''}
+        <button type="button" class="book-flip-close" data-book-flip-close aria-label="Close">×</button>
+      </div>
     </div>
     <div class="book-flip-book-copy">
       <span class="book-flip-kicker">About the book</span>
@@ -680,6 +788,21 @@ async function loadCatalogue(){
       cover_url:b.cover_url||null,
       description:String(b.description||b.synopsis||b.summary||b.blurb||'').trim()
     }));
+
+    try{
+      const {data:overrides}=await supabase.from('blurb_catalogue_overrides')
+        .select('source_id,cover_url,is_hidden');
+      const overrideMap=new Map((overrides||[]).map(item=>[String(item.source_id),item]));
+      books=books
+        .filter(book=>!overrideMap.get(String(book.id))?.is_hidden)
+        .map(book=>{
+          const override=overrideMap.get(String(book.id));
+          return override?.cover_url?{...book,cover_url:override.cover_url}:book;
+        });
+    }catch(err){
+      console.warn('Could not load catalogue overrides',err);
+    }
+
     bySource=new Map(books.map(b=>[b.id,b]));
     byKey=new Map(books.map(b=>[`${norm(b.title)}|${norm(b.author)}`,b]));
     try{
