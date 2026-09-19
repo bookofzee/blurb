@@ -45,6 +45,13 @@ const paletteFor = key => palettes[Math.abs([...String(key)].reduce((a,c)=>a+c.c
 function ratingStars(value){ if(!value) return ''; const whole=Math.floor(value); const half=value%1>=.5; return '★'.repeat(whole)+(half?'½':''); }
 function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),1900); }
 
+function spoilerWarningEnabledForBook(book){
+  const sourceId=String(book?.source_id||book?.id||'').trim();
+  if(!sourceId)return true;
+  try{return localStorage.getItem('blurb-spoiler-warning:'+sourceId)!=='0';}
+  catch{return true;}
+}
+
 function showView(view){
   state.activeView=view;
   $$('.view').forEach(el=>el.classList.toggle('view-active',el.id===`${view}View`));
@@ -154,7 +161,7 @@ function feedCard(post,i){
   const editorOverlays=editorOverlayMarkup(editorState,escapeHtml);
   const editorLook=editorLookMarkup(editorState);
   const media=post.media_url ? (post.post_type==='video'?`<video class="feed-media" src="${escapeHtml(post.media_url)}" playsinline muted loop preload="metadata" style="${mediaStyle}"></video>`:`<img class="feed-media" src="${escapeHtml(post.media_url)}" alt="${escapeHtml(book.title||'Book review')}" style="${mediaStyle}" />`) : `<div class="cover-stage"><div class="cover-art" style="--cover-a:${a};--cover-b:${b}"><div class="cover-mark">${escapeHtml(book.title||'A book worth talking about')}</div><div class="cover-author">${escapeHtml(book.author||'BLURB')}</div></div></div>`;
-  const spoiler=post.contains_spoilers?`<div class="spoiler-cover">
+  const spoiler=post.contains_spoilers&&spoilerWarningEnabledForBook(book)?`<div class="spoiler-cover">
     <div class="spoiler-panel">
       <span class="spoiler-chip">Spoiler</span>
       <div class="spoiler-book-cover" style="--cover-a:${a};--cover-b:${b}">
@@ -463,6 +470,7 @@ function initEvents(){
     renderLibrary();
   });
   window.addEventListener('blurb-library-changed',()=>{if(state.activeView==='library')loadLibrary();});
+window.addEventListener('blurb-spoiler-preference-changed',()=>{if(state.activeView==='home')renderFeed();});
   $('#libraryContent').addEventListener('click',e=>{if(e.target.closest('[data-go-discover]'))showView('discover');});
   $('#openNotifications').addEventListener('click',()=>state.user?toast('Notifications are ready for live activity'):openSheet('authSheet'));
 }
