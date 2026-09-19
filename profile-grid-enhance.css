@@ -433,10 +433,6 @@
   position:relative;
 }
 
-.profile-card-rating{
-  display:none!important;
-}
-
 .profile-card-menu-toggle{
   appearance:none;
   border:0;
