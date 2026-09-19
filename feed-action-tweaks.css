@@ -134,11 +134,11 @@
 /* Tighter five-button fan around Add. */
 .add-status-option[data-status="read"]{--x:0px;--y:-70px}
 .add-status-option[data-status="read"] .status-label{bottom:47px}
-.add-status-option[data-status="tbr"]{--x:-58px;--y:-35px}
+.add-status-option[data-status="tbr"]{--x:-48px;--y:-46px}
 .add-status-option[data-status="tbr"] .status-label{bottom:47px}
 .add-status-option[data-save-post]{--x:-68px;--y:0px}
 .add-status-option[data-save-post] .status-label{left:auto;right:47px;top:50%;transform:translateY(-50%)}
-.add-status-option[data-status="dnf"]{--x:-58px;--y:35px}
+.add-status-option[data-status="dnf"]{--x:-48px;--y:46px}
 .add-status-option[data-status="dnf"] .status-label{top:47px}
 .add-status-option[data-status="reading"]{--x:0px;--y:70px}
 .add-status-option[data-status="reading"] .status-label{top:47px}
