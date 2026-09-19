@@ -456,7 +456,12 @@ function initEvents(){
   $('#sheetBackdrop').addEventListener('click',closeSheets); $$('[data-close-sheet]').forEach(b=>b.addEventListener('click',closeSheets));
   $('#signInMode').addEventListener('click',()=>setAuthMode('signin')); $('#signUpMode').addEventListener('click',()=>setAuthMode('signup'));
   $('#authForm').addEventListener('submit',handleAuth); $('#commentForm').addEventListener('submit',postComment);
-  $('#libraryTabs button').forEach(b=>b.addEventListener('click',()=>{state.libraryTab=b.dataset.library;renderLibrary();}));
+  $('#libraryTabs')?.addEventListener('click',e=>{
+    const button=e.target.closest('button[data-library]');
+    if(!button)return;
+    state.libraryTab=button.dataset.library;
+    renderLibrary();
+  });
   window.addEventListener('blurb-library-changed',()=>{if(state.activeView==='library')loadLibrary();});
   $('#libraryContent').addEventListener('click',e=>{if(e.target.closest('[data-go-discover]'))showView('discover');});
   $('#openNotifications').addEventListener('click',()=>state.user?toast('Notifications are ready for live activity'):openSheet('authSheet'));
