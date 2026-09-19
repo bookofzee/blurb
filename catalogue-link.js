@@ -191,9 +191,16 @@ async function applyAdminAltCover(book,url){
       .update({cover_url:String(url)})
       .eq('source_id',String(book.id));
 
+    await supabase.from('blurb_books')
+      .update({cover_url:String(url)})
+      .eq('title',String(book.title||''))
+      .eq('author',String(book.author||''));
+
     renderDiscover();
-    paintExistingCovers();
+    paintExistingCovers(document);
     window.dispatchEvent(new CustomEvent('blurb-library-changed'));
+    queueMicrotask(()=>paintExistingCovers(document));
+    setTimeout(()=>paintExistingCovers(document),80);
     toast('Alternate cover selected');
     return true;
   }catch(err){
@@ -907,7 +914,38 @@ function paintExistingCovers(root=document){
       }
     }
   });
+
+  root.querySelectorAll?.('.discover-book').forEach(card=>{
+    const title=card.querySelector('.discover-book-copy strong')?.textContent?.trim()||'';
+    const author=card.querySelector('.discover-book-copy small')?.textContent?.trim()||'';
+    const book=findBook('',title,author);
+    const el=card.querySelector('.discover-cover');
+    if(book?.cover_url&&el instanceof HTMLElement){
+      el.style.backgroundImage=`url("${book.cover_url.replace(/"/g,'%22')}")`;
+      el.style.backgroundSize='cover';
+      el.style.backgroundPosition='center';
+      el.style.backgroundRepeat='no-repeat';
+      el.dataset.bookFlip=String(book.id);
+    }
+  });
+
+  root.querySelectorAll?.('#bookGrid .book-card').forEach(card=>{
+    const title=card.querySelector('.book-meta strong')?.textContent?.trim()||'';
+    const author=card.querySelector('.book-meta small')?.textContent?.trim()||'';
+    const book=findBook('',title,author);
+    const el=card.querySelector('.book-cover');
+    if(book?.cover_url&&el instanceof HTMLElement){
+      el.style.backgroundImage=`url("${book.cover_url.replace(/"/g,'%22')}")`;
+      el.style.backgroundSize='cover';
+      el.style.backgroundPosition='center';
+      el.style.backgroundRepeat='no-repeat';
+      el.dataset.bookFlip=String(book.id);
+      el.classList.add('book-flip-trigger');
+    }
+  });
+
   bindLibraryBookFlips(root);
+  bindBookFlipActions(root);
 }
 
 function installDiscoverStyles(){
