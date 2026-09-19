@@ -131,17 +131,28 @@
 .add-status-option .status-symbol{font-size:17px;line-height:1}
 .add-status-option .status-label{position:absolute;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;white-space:nowrap;text-shadow:0 1px 5px #000}
 
-/* Even fan: top -> upper-left -> lower-left -> bottom. */
-.add-status-option[data-status="read"]{--x:0px;--y:-84px}
+/* Tighter five-button fan around Add. */
+.add-status-option[data-status="read"]{--x:0px;--y:-70px}
 .add-status-option[data-status="read"] .status-label{bottom:47px}
-.add-status-option[data-status="tbr"]{--x:-72px;--y:-42px}
+.add-status-option[data-status="tbr"]{--x:-58px;--y:-35px}
 .add-status-option[data-status="tbr"] .status-label{bottom:47px}
-.add-status-option[data-status="dnf"]{--x:-72px;--y:42px}
+.add-status-option[data-save-post]{--x:-68px;--y:0px}
+.add-status-option[data-save-post] .status-label{left:auto;right:47px;top:50%;transform:translateY(-50%)}
+.add-status-option[data-status="dnf"]{--x:-58px;--y:35px}
 .add-status-option[data-status="dnf"] .status-label{top:47px}
-.add-status-option[data-status="reading"]{--x:0px;--y:84px}
+.add-status-option[data-status="reading"]{--x:0px;--y:70px}
 .add-status-option[data-status="reading"] .status-label{top:47px}
 
 .add-action-wrap.open .add-status-option{opacity:1;transform:translate(var(--x),var(--y)) scale(1);pointer-events:auto}
-.add-action-wrap.open .add-status-option:nth-child(2){transition-delay:.025s}
-.add-action-wrap.open .add-status-option:nth-child(3){transition-delay:.05s}
-.add-action-wrap.open .add-status-option:nth-child(4){transition-delay:.075s}
+.add-action-wrap.open .add-status-option:nth-child(2){transition-delay:.02s}
+.add-action-wrap.open .add-status-option:nth-child(3){transition-delay:.04s}
+.add-action-wrap.open .add-status-option:nth-child(4){transition-delay:.06s}
+.add-action-wrap.open .add-status-option:nth-child(5){transition-delay:.08s}
+
+
+.add-save-option{
+  background:#a7502d;
+}
+.add-save-option .status-symbol{
+  font-size:19px;
+}
