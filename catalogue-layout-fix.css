@@ -479,3 +479,107 @@ body.book-flip-open{overflow:hidden}
 .book-flip-admin-delete:active{
   transform:translateY(0);
 }
+
+
+/* Library cover grid */
+#libraryContent.library-list{
+  display:block!important;
+  width:100%;
+  padding:0!important;
+}
+#libraryContent .library-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:22px 14px;
+  width:100%;
+  padding:4px 0 24px;
+}
+.library-book-card{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.library-book-cover{
+  appearance:none;
+  -webkit-appearance:none;
+  display:grid;
+  place-items:center;
+  width:100%;
+  aspect-ratio:2/3;
+  border:0;
+  border-radius:9px;
+  overflow:hidden;
+  padding:12px;
+  background:
+    linear-gradient(145deg,var(--cover-a,#5b445e),var(--cover-b,#1d1722));
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  color:#fff8ef;
+  box-shadow:0 10px 20px rgba(55,35,26,.16);
+  cursor:pointer;
+  font:700 11px/1.15 Georgia,"Times New Roman",serif;
+  text-align:center;
+  transition:transform .16s ease,box-shadow .16s ease;
+}
+.library-book-cover.has-live-cover{
+  padding:0;
+}
+.library-book-cover.has-live-cover>span{
+  opacity:0;
+}
+.library-book-meta{
+  min-width:0;
+  padding:0 2px;
+}
+.library-book-meta strong,
+.library-book-meta small{
+  display:block;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.library-book-meta strong{
+  color:#3d2b24;
+  font:700 12px/1.18 Georgia,"Times New Roman",serif;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  white-space:normal;
+}
+.library-book-meta small{
+  margin-top:3px;
+  color:#9b7969;
+  font-size:9px;
+  line-height:1.2;
+  white-space:nowrap;
+}
+@media (hover:hover) and (pointer:fine){
+  .library-book-cover:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 26px rgba(55,35,26,.2);
+  }
+}
+@media(max-width:420px){
+  #libraryContent .library-grid{gap:18px 9px}
+  .library-book-cover{border-radius:7px;padding:8px;font-size:9px}
+  .library-book-meta strong{font-size:10px}
+  .library-book-meta small{font-size:8px}
+}
+
+/* Library delete action is intentionally distinct from catalogue-admin delete. */
+.book-flip-remove{
+  margin:10px auto 0!important;
+  min-height:34px;
+  padding:0 14px!important;
+  border:1px solid rgba(169,72,49,.2)!important;
+  border-radius:999px;
+  background:#fff2ec!important;
+  color:#a74934!important;
+  font-size:8px!important;
+  font-weight:900!important;
+  cursor:pointer;
+}
+.book-flip-remove:hover{transform:translateY(-1px)}
+.book-flip-remove:active{transform:translateY(0)}
