@@ -724,7 +724,6 @@ function initEvents(){
   });
 window.addEventListener('blurb-spoiler-preference-changed',()=>{if(state.activeView==='home'||state.activeView==='feed')renderFeed();});
   $('#libraryContent').addEventListener('click',e=>{if(e.target.closest('[data-go-discover]'))showView('discover');});
-  $('#openNotifications').addEventListener('click',()=>state.user?toast('Notifications are ready for live activity'):openSheet('authSheet'));
   installFeedReelPaging();
 }
 
