@@ -321,6 +321,7 @@ function profileCardMarkup(post,session,tab){
 
   const menu=own?`<button class="profile-card-menu-toggle" type="button" data-profile-menu="${post.id}" aria-label="Blurb options" aria-expanded="false">•••</button>`:'';
 
+  const rating=Number(post.rating||0);
   return `<article class="profile-post profile-post-card profile-media-tile" data-profile-post="${post.id}">
     <div class="profile-card-media">
       ${visual}
@@ -329,9 +330,9 @@ function profileCardMarkup(post,session,tab){
     <div class="profile-card-copy">
       <div class="profile-card-heading">
         <strong>${escapeHtml(title)}</strong>
+        ${rating?`<span class="profile-card-rating">★ ${rating.toFixed(1)}</span>`:''}
       </div>
       ${author?`<small class="profile-card-author">${escapeHtml(author)}</small>`:''}
-      ${post.caption?`<p>${escapeHtml(profileCardExcerpt(post.caption))}</p>`:''}
       <div class="profile-card-meta"><span>${profileCardDate(post.created_at)}</span>${menu}</div>
       ${controls}
     </div>
