@@ -154,44 +154,127 @@ function bookSynopsis(book){
   return text||'No synopsis has been added for this book yet.';
 }
 
-async function uploadAdminAltCover(file,book,session){
-  if(!file||!book||!session?.user)return null;
-  if(file.size>15*1024*1024)throw new Error('Cover image must be under 15 MB');
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-  const safeSource=String(book.id||'book').replace(/[^a-z0-9_-]/gi,'-');
-  const path=`${session.user.id}/catalogue-alt/${safeSource}-${crypto.randomUUID?.()||Date.now()}.${ext}`;
-  const {error}=await supabase.storage.from('blurb-media').upload(path,file,{contentType:file.type||'image/jpeg',upsert:false});
-  if(error)throw error;
-  return supabase.storage.from('blurb-media').getPublicUrl(path).data.publicUrl;
+function altArtEndpoint(book){
+  return `${CATALOGUE_URL}/${encodeURIComponent(String(book.id))}/editions`;
 }
 
-async function setAdminAltCover(book,file){
+async function loadAltArtOptions(book){
+  const response=await fetch(altArtEndpoint(book),{headers:{Accept:'application/json'}});
+  if(!response.ok)throw new Error(`Alternate covers unavailable (${response.status})`);
+  const payload=await response.json();
+  const seen=new Set();
+  return (Array.isArray(payload?.editions)?payload.editions:[])
+    .filter(item=>item?.cover_url)
+    .filter(item=>{
+      const key=String(item.cover_url);
+      if(seen.has(key))return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+async function applyAdminAltCover(book,url){
   const {data:{session}}=await supabase.auth.getSession();
-  if(!isCatalogueAdmin(session))return false;
+  if(!isCatalogueAdmin(session)||!book||!url)return false;
   try{
-    const url=await uploadAdminAltCover(file,book,session);
     const {error}=await supabase.from('blurb_catalogue_overrides').upsert({
       source_id:String(book.id),
-      cover_url:url,
+      cover_url:String(url),
       is_hidden:false,
       updated_at:new Date().toISOString()
     },{onConflict:'source_id'});
     if(error)throw error;
 
-    book.cover_url=url;
+    book.cover_url=String(url);
+
     await supabase.from('blurb_books')
-      .update({cover_url:url})
-      .eq('source','book_of_zee_prod')
+      .update({cover_url:String(url)})
       .eq('source_id',String(book.id));
 
     renderDiscover();
     paintExistingCovers();
-    toast('Alternate cover updated');
+    window.dispatchEvent(new CustomEvent('blurb-library-changed'));
+    toast('Alternate cover selected');
     return true;
   }catch(err){
     console.error('Could not update alternate cover',err);
     toast('Couldn’t update the cover');
     return false;
+  }
+}
+
+function closeAltArtPicker(){
+  document.querySelector('#bookAltArtPicker')?.remove();
+}
+
+async function openAltArtPicker(book){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!isCatalogueAdmin(session)||!book)return;
+
+  closeAltArtPicker();
+
+  const picker=document.createElement('div');
+  picker.id='bookAltArtPicker';
+  picker.className='book-alt-art-picker';
+  picker.innerHTML=`
+    <div class="book-alt-art-backdrop" data-alt-art-close></div>
+    <section class="book-alt-art-panel" role="dialog" aria-modal="true" aria-label="Choose alternate cover">
+      <div class="book-alt-art-head">
+        <div>
+          <span>Alternate artwork</span>
+          <strong>${escapeHtml(book.title)}</strong>
+        </div>
+        <button type="button" data-alt-art-close aria-label="Close">×</button>
+      </div>
+      <div class="book-alt-art-grid" data-alt-art-grid>
+        <div class="book-alt-art-loading">Loading available covers…</div>
+      </div>
+    </section>`;
+  document.body.appendChild(picker);
+
+  picker.addEventListener('click',async e=>{
+    if(e.target.closest('[data-alt-art-close]')){
+      closeAltArtPicker();
+      return;
+    }
+    const choice=e.target.closest('[data-alt-art-url]');
+    if(!choice)return;
+    const url=choice.dataset.altArtUrl;
+    if(!url)return;
+    picker.querySelectorAll('[data-alt-art-url]').forEach(btn=>btn.disabled=true);
+    const ok=await applyAdminAltCover(book,url);
+    if(ok){
+      const modal=document.querySelector('#bookFlipModal');
+      const front=modal?.querySelector('#bookFlipFront');
+      if(front)front.innerHTML=`<img src="${escapeHtml(book.cover_url)}" alt="${escapeHtml(book.title)} cover" />`;
+      closeAltArtPicker();
+    }else{
+      picker.querySelectorAll('[data-alt-art-url]').forEach(btn=>btn.disabled=false);
+    }
+  });
+
+  try{
+    const options=await loadAltArtOptions(book);
+    const grid=picker.querySelector('[data-alt-art-grid]');
+    if(!grid)return;
+    if(!options.length){
+      grid.innerHTML='<div class="book-alt-art-empty">No alternate cover artwork is stored for this book yet.</div>';
+      return;
+    }
+    grid.innerHTML=options.map((item,index)=>{
+      const active=String(item.cover_url)===String(book.cover_url||'');
+      const format=String(item.format||'Edition').replace(/(^|\s)\S/g,m=>m.toUpperCase());
+      const meta=[format,item.publisher,item.publication_date?String(item.publication_date).slice(0,4):''].filter(Boolean).join(' · ');
+      return `<button type="button" class="book-alt-art-choice ${active?'active':''}" data-alt-art-url="${escapeHtml(item.cover_url)}">
+        <img src="${escapeHtml(item.cover_url)}" alt="${escapeHtml(book.title)} alternate cover ${index+1}" />
+        <span>${escapeHtml(meta||'Alternate cover')}</span>
+        ${active?'<em>Current</em>':''}
+      </button>`;
+    }).join('');
+  }catch(err){
+    console.error('Could not load alternate artwork',err);
+    const grid=picker.querySelector('[data-alt-art-grid]');
+    if(grid)grid.innerHTML='<div class="book-alt-art-empty">Couldn’t load alternate artwork right now.</div>';
   }
 }
 
@@ -298,6 +381,11 @@ function ensureBookFlipModal(){
       }
       return;
     }
+    if(e.target.closest('[data-book-admin-alt]')){
+      const book=bySource.get(modal.dataset.bookId||'');
+      if(book)await openAltArtPicker(book);
+      return;
+    }
     if(e.target.closest('[data-book-admin-delete]')){
       const book=bySource.get(modal.dataset.bookId||'');
       if(book)await adminHideBook(book);
@@ -305,21 +393,6 @@ function ensureBookFlipModal(){
     }
   });
 
-  modal.addEventListener('change',async e=>{
-    const input=e.target.closest('[data-book-admin-alt-input]');
-    if(!input)return;
-    const book=bySource.get(modal.dataset.bookId||'');
-    const file=input.files?.[0];
-    if(!book||!file)return;
-    input.disabled=true;
-    const ok=await setAdminAltCover(book,file);
-    input.disabled=false;
-    input.value='';
-    if(ok){
-      const front=modal.querySelector('#bookFlipFront');
-      if(front)front.innerHTML=`<img src="${escapeHtml(book.cover_url)}" alt="${escapeHtml(book.title)} cover" />`;
-    }
-  });
   return modal;
 }
 
@@ -426,10 +499,7 @@ async function openBookFlip(book,coverEl){
       <button type="button" class="book-flip-cover-button" data-book-flip-cover aria-label="Flip back to cover" title="Flip back to cover">⇄</button>
       <div class="book-flip-top-actions">
         ${admin?`
-          <label class="book-flip-admin-alt" title="Change alternate cover">
-            <input type="file" accept="image/jpeg,image/png,image/webp" data-book-admin-alt-input />
-            <span>Alt art</span>
-          </label>
+          <button type="button" class="book-flip-admin-alt" data-book-admin-alt title="Choose alternate artwork">Alt art</button>
           <button type="button" class="book-flip-admin-delete" data-book-admin-delete>Delete</button>
         `:''}
         <button type="button" class="book-flip-close" data-book-flip-close aria-label="Close">×</button>
