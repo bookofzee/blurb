@@ -355,8 +355,8 @@ function profileCardMarkup(post,session,tab){
   const title=book.title||'Untitled Blurb';
   const author=book.author||'';
   const [a,b]=paletteFor(post.id);
-  const cover=post.thumbnail_url||null;
-  const media=cover||post.media_url||book.cover_url||null;
+  const cover=book.cover_url||post.thumbnail_url||null;
+  const media=cover||post.media_url||null;
   const own=String(post.user_id||'')===String(session.user.id||'')&&tab==='blurbs';
 
   let visual='';
