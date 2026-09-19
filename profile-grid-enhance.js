@@ -424,17 +424,23 @@ function bindProfileCardControls(grid,posts,session,tab){
 async function hydrateProfileGrid(tab=activeProfileTab,force=false){
   const grid=document.querySelector('#profileContent .profile-grid');
   if(!grid)return;
+  if(grid.dataset.loading==='1')return;
   if(!force&&grid.dataset.enhanced===tab)return;
 
-  const {data:{session}}=await supabase.auth.getSession();
-  if(!session?.user)return;
-
-  activeProfileTab=tab;
-  grid.dataset.enhanced='';
-  grid.innerHTML='<div class="profile-grid-loading">Gathering your books…</div>';
+  grid.dataset.loading='1';
 
   try{
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session?.user)return;
+
+    activeProfileTab=tab;
+    grid.dataset.enhanced='';
+    grid.innerHTML='<div class="profile-grid-loading">Gathering your books…</div>';
+
     const posts=await profilePostsForTab(session,tab);
+
+    if(!document.body.contains(grid))return;
+
     grid.dataset.enhanced=tab;
 
     if(!posts.length){
@@ -452,7 +458,11 @@ async function hydrateProfileGrid(tab=activeProfileTab,force=false){
     bindProfileCardControls(grid,posts,session,tab);
   }catch(err){
     console.error('Profile content failed',err);
-    grid.innerHTML='<div class="profile-tab-empty"><strong>Couldn’t load this section</strong><p>Try again in a moment.</p></div>';
+    if(document.body.contains(grid)){
+      grid.innerHTML='<div class="profile-tab-empty"><strong>Couldn’t load this section</strong><p>Try again in a moment.</p></div>';
+    }
+  }finally{
+    if(document.body.contains(grid))grid.dataset.loading='0';
   }
 }
 
@@ -463,7 +473,9 @@ function watch(){
   if(root){
     new MutationObserver(()=>{
       const grid=root.querySelector('.profile-grid');
-      if(grid&&!grid.dataset.enhanced)hydrateProfileGrid(activeProfileTab);
+      if(grid&&grid.dataset.loading!=='1'&&!grid.dataset.enhanced){
+        hydrateProfileGrid(activeProfileTab);
+      }
     }).observe(root,{childList:true,subtree:true});
   }
 
