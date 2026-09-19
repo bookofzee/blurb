@@ -178,3 +178,73 @@
     font-size:16px!important;
   }
 }
+
+
+/* Stronger profile hold state */
+.profile-media-tile img,
+.profile-media-tile video,
+.profile-media-tile .profile-media-fallback{
+  transition:opacity .18s ease,filter .18s ease,transform .18s ease;
+}
+
+.profile-media-tile.controls-open{
+  animation:profileTileWiggle .28s ease-in-out 1;
+}
+
+@keyframes profileTileWiggle{
+  0%{transform:rotate(0deg) scale(1)}
+  20%{transform:rotate(-.75deg) scale(1.008)}
+  40%{transform:rotate(.75deg) scale(1.008)}
+  60%{transform:rotate(-.45deg) scale(1.004)}
+  80%{transform:rotate(.35deg) scale(1.002)}
+  100%{transform:rotate(0deg) scale(1)}
+}
+
+.profile-media-tile.controls-open img,
+.profile-media-tile.controls-open video,
+.profile-media-tile.controls-open .profile-media-fallback{
+  opacity:.52;
+  filter:brightness(.72) saturate(.9);
+  transform:scale(.99);
+}
+
+.profile-media-tile.controls-open .profile-tile-title{
+  opacity:.42;
+}
+
+.profile-media-tile.controls-open .profile-tile-controls{
+  background:rgba(29,20,16,.12);
+}
+
+.profile-tile-controls button{
+  width:44px!important;
+  height:44px!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.32)!important;
+}
+
+.profile-tile-controls button svg{
+  width:21px!important;
+  height:21px!important;
+  stroke-width:2.3!important;
+}
+
+.profile-edit-post{
+  left:10px!important;
+  bottom:10px!important;
+  background:rgba(255,255,255,.98)!important;
+  border:2px solid rgba(255,255,255,.94)!important;
+  color:#6a4a3b!important;
+}
+
+.profile-delete-post{
+  top:10px!important;
+  right:10px!important;
+  background:#a7502d!important;
+  border:2px solid rgba(255,255,255,.7)!important;
+  color:#fffaf5!important;
+}
+
+.profile-edit-post:active,
+.profile-delete-post:active{
+  transform:scale(.92);
+}
