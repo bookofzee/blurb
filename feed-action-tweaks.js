@@ -61,6 +61,30 @@ async function saveReadingStatus(bookId,status){
   toast(`Added to ${label}`);
 }
 
+async function saveBlurbPost(postId){
+  if(!postId){toast('Blurb unavailable');return false;}
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session?.user){
+    document.querySelector('#openNotifications')?.click();
+    return false;
+  }
+
+  const {error}=await supabase.from('blurb_saved_posts').upsert({
+    user_id:session.user.id,
+    post_id:postId
+  },{onConflict:'user_id,post_id'});
+
+  if(error){
+    console.error('Could not save Blurb',error);
+    toast('Couldn’t save that Blurb');
+    return false;
+  }
+
+  toast('Saved to your profile');
+  window.dispatchEvent(new CustomEvent('blurb-saved-post',{detail:{postId}}));
+  return true;
+}
+
 function enhanceComments(card){
   const button=card.querySelector('[data-comments]');
   const icon=button?.querySelector('.action-icon');
@@ -117,6 +141,7 @@ function enhanceAdd(card){
   const existing=card.querySelector('[data-tbr]');
   if(!existing||card.querySelector('.add-action-wrap'))return;
   const bookId=existing.dataset.tbr||'';
+  const postId=card.dataset.post||'';
   const wrap=document.createElement('div');
   wrap.className='add-action-wrap';
   wrap.innerHTML=`
@@ -126,8 +151,9 @@ function enhanceAdd(card){
     <div class="add-status-menu" aria-hidden="true">
       <button type="button" class="add-status-option" data-status="read"><span class="status-symbol">✓</span><span class="status-label">Finished</span></button>
       <button type="button" class="add-status-option" data-status="tbr"><span class="status-symbol">＋</span><span class="status-label">TBR</span></button>
-      <button type="button" class="add-status-option" data-status="reading"><span class="status-symbol">◫</span><span class="status-label">Reading</span></button>
+      <button type="button" class="add-status-option add-save-option" data-save-post="${postId}"><span class="status-symbol">♡</span><span class="status-label">Save</span></button>
       <button type="button" class="add-status-option" data-status="dnf"><span class="status-symbol">×</span><span class="status-label">DNF</span></button>
+      <button type="button" class="add-status-option" data-status="reading"><span class="status-symbol">◫</span><span class="status-label">Reading</span></button>
     </div>`;
   existing.replaceWith(wrap);
   const main=wrap.querySelector('.add-main');
@@ -143,12 +169,19 @@ function enhanceAdd(card){
     main.setAttribute('aria-expanded',String(opening));
     menu.setAttribute('aria-hidden',String(!opening));
   });
-  wrap.querySelectorAll('.add-status-option').forEach(button=>button.addEventListener('click',async e=>{
+  wrap.querySelectorAll('.add-status-option[data-status]').forEach(button=>button.addEventListener('click',async e=>{
     e.preventDefault();
     e.stopPropagation();
     await saveReadingStatus(bookId,button.dataset.status);
     closeAddMenu(wrap);
   }));
+
+  wrap.querySelector('[data-save-post]')?.addEventListener('click',async e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    const saved=await saveBlurbPost(postId);
+    if(saved)closeAddMenu(wrap);
+  });
 }
 
 function enhance(root=document){
