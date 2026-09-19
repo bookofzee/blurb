@@ -851,3 +851,17 @@
   width:29px!important;
   height:29px!important;
 }
+
+
+/* Equal centered vertical action spacing */
+.profile-post-card .profile-delete-post{
+  top:36%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+}
+
+.profile-post-card .profile-edit-post{
+  top:64%!important;
+  left:50%!important;
+  transform:translate(-50%,-50%)!important;
+}
