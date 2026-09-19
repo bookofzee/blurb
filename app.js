@@ -245,9 +245,29 @@ async function addToLibrary(bookId,status){
 }
 
 async function loadLibrary(){
-  if(!state.user){ $('#libraryContent').innerHTML=emptyAuth('Sign in to build your library','Keep your TBR, current reads and favourites together.'); bindEmptySignIn(); return; }
-  const {data,error}=await supabase.from('blurb_library').select('book_id,reading_status,is_favourite,updated_at,blurb_books(id,source,source_id,title,author,genres,cover_url,description)').eq('user_id',state.user.id).order('updated_at',{ascending:false});
-  if(error){$('#libraryContent').innerHTML=emptyText('Couldn’t load your library','Try again in a moment.');return;}
+  let user=state.user;
+  if(!user){
+    const {data:{session}}=await supabase.auth.getSession();
+    user=session?.user||null;
+    if(user){
+      state.user=user;
+      if(!state.profile) await ensureProfile();
+    }
+  }
+  if(!user){
+    $('#libraryContent').innerHTML=emptyAuth('Sign in to build your library','Keep your TBR, current reads and favourites together.');
+    bindEmptySignIn();
+    return;
+  }
+  const {data,error}=await supabase.from('blurb_library')
+    .select('book_id,reading_status,is_favourite,updated_at,blurb_books(id,source,source_id,title,author,genres,cover_url,description)')
+    .eq('user_id',user.id)
+    .order('updated_at',{ascending:false});
+  if(error){
+    console.warn('Could not load library',error);
+    $('#libraryContent').innerHTML=emptyText('Couldn’t load your library','Try again in a moment.');
+    return;
+  }
   state.library=data||[];
   renderLibrary();
 }
