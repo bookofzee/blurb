@@ -177,15 +177,18 @@ async function applyAdminAltCover(book,url){
   const {data:{session}}=await supabase.auth.getSession();
   if(!isCatalogueAdmin(session)||!book||!url)return false;
   try{
-    const {error}=await supabase.from('blurb_catalogue_overrides').upsert({
-      source_id:String(book.id),
-      cover_url:String(url),
+    const sourceId=String(book.id);
+    const selectedUrl=String(url);
+    const {data:savedOverride,error}=await supabase.from('blurb_catalogue_overrides').upsert({
+      source_id:sourceId,
+      cover_url:selectedUrl,
       is_hidden:false,
       updated_at:new Date().toISOString()
-    },{onConflict:'source_id'});
+    },{onConflict:'source_id'}).select('source_id,cover_url').single();
     if(error)throw error;
+    if(String(savedOverride?.cover_url||'')!==selectedUrl)throw new Error('Cover override did not persist');
 
-    book.cover_url=String(url);
+    book.cover_url=selectedUrl;
 
     await supabase.from('blurb_books')
       .update({cover_url:String(url)})
@@ -195,6 +198,18 @@ async function applyAdminAltCover(book,url){
       .update({cover_url:String(url)})
       .eq('title',String(book.title||''))
       .eq('author',String(book.author||''));
+
+    bySource.set(sourceId,book);
+    byKey.set(`${norm(book.title)}|${norm(book.author)}`,book);
+
+    window.dispatchEvent(new CustomEvent('blurb-cover-changed',{
+      detail:{
+        sourceId,
+        title:String(book.title||''),
+        author:String(book.author||''),
+        coverUrl:selectedUrl
+      }
+    }));
 
     renderDiscover();
     paintExistingCovers(document);
