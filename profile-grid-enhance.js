@@ -292,7 +292,14 @@ async function hydrateProfileGrid(){
       const cover=post.thumbnail_url||null;
       const media=cover||post.media_url;
       const visual=media?(cover?`<img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`:(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`)):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
-      return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}" data-caption="${escapeHtml(post.caption||'')}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><div class="profile-tile-controls" aria-hidden="true"><button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}">Edit</button><button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}">Delete</button></div></article>`;
+      return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}" data-caption="${escapeHtml(post.caption||'')}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><div class="profile-tile-controls" aria-hidden="true">
+        <button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}" aria-label="Edit Blurb" title="Edit Blurb">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4.2L19 9.2 14.8 5 4 15.8V20Z"/><path d="m13.7 6.1 4.2 4.2"/></svg>
+        </button>
+        <button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete Blurb" title="Delete Blurb">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
+        </button>
+      </div></article>`;
     }).join('');
     grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
     const postMap=new Map((posts||[]).map(post=>[post.id,post]));
