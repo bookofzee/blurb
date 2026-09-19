@@ -245,55 +245,92 @@ async function addToLibrary(bookId,status){
 }
 
 async function loadLibrary(){
-  let user=state.user;
-  if(!user){
-    const {data:{session}}=await supabase.auth.getSession();
-    user=session?.user||null;
-    if(user){
-      state.user=user;
-      if(!state.profile) await ensureProfile();
+  const root=$('#libraryContent');
+  if(root)root.innerHTML='<div class="empty-state"><p>Loading your library…</p></div>';
+
+  try{
+    let user=state.user;
+    if(!user){
+      const {data:{session},error:sessionError}=await supabase.auth.getSession();
+      if(sessionError)console.warn('Could not refresh session',sessionError);
+      user=session?.user||null;
+      if(user){
+        state.user=user;
+        if(!state.profile)await ensureProfile();
+      }
     }
+
+    if(!user){
+      if(root)root.innerHTML=emptyAuth('Sign in to build your library','Keep your TBR, current reads and favourites together.');
+      bindEmptySignIn();
+      return;
+    }
+
+    const {data:libraryRows,error:libraryError}=await supabase
+      .from('blurb_library')
+      .select('book_id,reading_status,is_favourite,updated_at')
+      .eq('user_id',user.id)
+      .order('updated_at',{ascending:false});
+
+    if(libraryError)throw libraryError;
+
+    const rows=libraryRows||[];
+    const bookIds=[...new Set(rows.map(x=>x.book_id).filter(Boolean))];
+    let booksById={};
+
+    if(bookIds.length){
+      const {data:bookRows,error:bookError}=await supabase
+        .from('blurb_books')
+        .select('id,source,source_id,title,author,genres,cover_url,description')
+        .in('id',bookIds);
+      if(bookError)throw bookError;
+      booksById=Object.fromEntries((bookRows||[]).map(book=>[book.id,book]));
+    }
+
+    state.library=rows.map(row=>({
+      ...row,
+      blurb_books:booksById[row.book_id]||null
+    }));
+    renderLibrary();
+  }catch(error){
+    console.error('Could not load library',error);
+    state.library=[];
+    if(root)root.innerHTML=emptyText('Couldn’t load your library','Refresh the page and try again.');
   }
-  if(!user){
-    $('#libraryContent').innerHTML=emptyAuth('Sign in to build your library','Keep your TBR, current reads and favourites together.');
-    bindEmptySignIn();
-    return;
-  }
-  const {data,error}=await supabase.from('blurb_library')
-    .select('book_id,reading_status,is_favourite,updated_at,blurb_books(id,source,source_id,title,author,genres,cover_url,description)')
-    .eq('user_id',user.id)
-    .order('updated_at',{ascending:false});
-  if(error){
-    console.warn('Could not load library',error);
-    $('#libraryContent').innerHTML=emptyText('Couldn’t load your library','Try again in a moment.');
-    return;
-  }
-  state.library=data||[];
-  renderLibrary();
 }
+
 function renderLibrary(){
-  const items=state.library.filter(x=>state.libraryTab==='favourites'?x.is_favourite:x.reading_status===state.libraryTab);
-  $('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
-  $('#libraryContent').innerHTML=items.length?`<div class="library-grid">${items.map(x=>{
-    const b=x.blurb_books||{};
-    const title=b.title||'Untitled';
-    const author=b.author||'';
-    const [a,c]=paletteFor(title);
-    return `<article class="library-book-card"
-      data-library-card
-      data-library-book="${escapeHtml(x.book_id||'')}"
-      data-library-source="${escapeHtml(b.source_id||'')}"
-      data-library-title="${escapeHtml(title)}"
-      data-library-author="${escapeHtml(author)}">
-      <button type="button" class="library-book-cover" style="--cover-a:${a};--cover-b:${c}" aria-label="View ${escapeHtml(title)} details">
-        <span>${escapeHtml(title)}</span>
-      </button>
-      <div class="library-book-meta">
-        <strong>${escapeHtml(title)}</strong>
-        <small>${escapeHtml(author)}</small>
-      </div>
-    </article>`;
-  }).join('')}</div>`:emptyText(state.libraryTab==='tbr'?'Your TBR is waiting':'Nothing here yet','Add books from Discover or straight from a Blurb in your feed.');
+  try{
+    const items=(state.library||[]).filter(x=>state.libraryTab==='favourites'?x.is_favourite:x.reading_status===state.libraryTab);
+    $$('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
+    const root=$('#libraryContent');
+    if(!root)return;
+
+    root.innerHTML=items.length?`<div class="library-grid">${items.map(x=>{
+      const b=x.blurb_books||{};
+      const title=b.title||'Untitled';
+      const author=b.author||'';
+      const [a,c]=paletteFor(title);
+      return `<article class="library-book-card"
+        data-library-card
+        data-library-book="${escapeHtml(x.book_id||'')}"
+        data-library-source="${escapeHtml(b.source_id||'')}"
+        data-library-title="${escapeHtml(title)}"
+        data-library-author="${escapeHtml(author)}">
+        <button type="button" class="library-book-cover" style="--cover-a:${a};--cover-b:${c}" aria-label="View ${escapeHtml(title)} details">
+          <span>${escapeHtml(title)}</span>
+        </button>
+        <div class="library-book-meta">
+          <strong>${escapeHtml(title)}</strong>
+          <small>${escapeHtml(author)}</small>
+        </div>
+      </article>`;
+    }).join('')}</div>`:emptyText(state.libraryTab==='tbr'?'Your TBR is waiting':'Nothing here yet','Add books from Discover or straight from a Blurb in your feed.');
+  }catch(error){
+    console.error('Could not render library',error);
+    const root=$('#libraryContent');
+    if(root)root.innerHTML=emptyText('Couldn’t display your library','Refresh the page and try again.');
+  }
 }
 function emptyText(title,copy){return `<div class="empty-state"><div class="empty-icon">▤</div><h3>${title}</h3><p>${copy}</p><button class="secondary-button" data-go-discover>Discover books</button></div>`;}
 function emptyAuth(title,copy){return `<div class="empty-state"><div class="empty-icon">▤</div><h3>${title}</h3><p>${copy}</p><button class="secondary-button" data-empty-signin>Sign in</button></div>`;}
