@@ -436,13 +436,102 @@ function setCreateStatus(msg,error=false,success=false){const el=$('#createStatu
 function resetCreateForm(){ $('#createForm').reset();$('#selectedBookId').value='';$('#selectedBookLabel').textContent='Choose a book';$('#mediaPreview').hidden=true;$('#mediaPreview').innerHTML='';$('#uploadPrompt').hidden=false;$('#captionCount').textContent='0';state.selectedBook=null;state.selectedRating=null;$$('[data-rating]').forEach(x=>x.classList.remove('active')); }
 
 async function openComments(postId){
-  state.activePostForComments=postId; openSheet('commentsSheet');
-  if(postId.startsWith('demo-')){ $('#commentsList').innerHTML=`<div class="comment-row"><div class="avatar">R</div><div class="comment-body"><strong>@readrepeat</strong><p>This is exactly the review I needed 😂</p><time>12m</time></div></div><div class="comment-row"><div class="avatar">S</div><div class="comment-body"><strong>@shelflife</strong><p>Adding it to my TBR immediately.</p><time>4m</time></div></div>`; return; }
+  state.activePostForComments=postId;
+  openSheet('commentsSheet');
+
+  if(postId.startsWith('demo-')){
+    $('#commentsList').innerHTML=`
+      <div class="comment-row">
+        <div class="avatar">R</div>
+        <div class="comment-body"><strong>@readrepeat</strong><p>This is exactly the review I needed 😂</p><time>12m</time></div>
+        <button type="button" class="comment-like" data-demo-comment-like aria-pressed="false" aria-label="Like comment"><span>♥</span><small>3</small></button>
+      </div>
+      <div class="comment-row">
+        <div class="avatar">S</div>
+        <div class="comment-body"><strong>@shelflife</strong><p>Adding it to my TBR immediately.</p><time>4m</time></div>
+        <button type="button" class="comment-like" data-demo-comment-like aria-pressed="false" aria-label="Like comment"><span>♥</span><small>1</small></button>
+      </div>`;
+    return;
+  }
+
   $('#commentsList').innerHTML='<div class="empty-state"><p>Loading comments…</p></div>';
-  const {data}=await supabase.from('blurb_comments').select('id,user_id,body,created_at').eq('post_id',postId).order('created_at');
-  const ids=[...new Set((data||[]).map(x=>x.user_id))]; let profiles=[]; if(ids.length){const r=await supabase.from('blurb_profiles').select('id,username,display_name,avatar_url').in('id',ids);profiles=r.data||[];}
-  const map=Object.fromEntries(profiles.map(p=>[p.id,p]));
-  $('#commentsList').innerHTML=(data||[]).length?(data||[]).map(c=>{const p=map[c.user_id]||{};const name=p.username||p.display_name||'reader';return `<div class="comment-row"><div class="avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div><div class="comment-body"><strong>@${escapeHtml(name)}</strong><p>${escapeHtml(c.body)}</p><time>${timeAgo(c.created_at)}</time></div></div>`;}).join(''):'<div class="empty-state"><h3>No comments yet</h3><p>Be the first to start the conversation.</p></div>';
+
+  const {data:comments,error:commentsError}=await supabase
+    .from('blurb_comments')
+    .select('id,user_id,body,created_at')
+    .eq('post_id',postId)
+    .order('created_at');
+
+  if(commentsError){
+    console.error('Could not load comments',commentsError);
+    $('#commentsList').innerHTML='<div class="empty-state"><h3>Couldn’t load comments</h3><p>Try again in a moment.</p></div>';
+    return;
+  }
+
+  const rows=comments||[];
+  const userIds=[...new Set(rows.map(x=>x.user_id))];
+  const commentIds=rows.map(x=>x.id);
+
+  const [profileResult,likeResult]=await Promise.all([
+    userIds.length
+      ? supabase.from('blurb_profiles').select('id,username,display_name,avatar_url').in('id',userIds)
+      : Promise.resolve({data:[]}),
+    commentIds.length
+      ? supabase.from('blurb_comment_likes').select('comment_id,user_id').in('comment_id',commentIds)
+      : Promise.resolve({data:[]})
+  ]);
+
+  const profiles=profileResult.data||[];
+  const likes=likeResult.data||[];
+  const profileMap=Object.fromEntries(profiles.map(p=>[p.id,p]));
+  const likesBy={};
+  likes.forEach(like=>(likesBy[like.comment_id]??=[]).push(like.user_id));
+
+  $('#commentsList').innerHTML=rows.length
+    ? rows.map(c=>{
+        const p=profileMap[c.user_id]||{};
+        const name=p.username||p.display_name||'reader';
+        const commentLikes=likesBy[c.id]||[];
+        const liked=!!state.user&&commentLikes.includes(state.user.id);
+        return `<div class="comment-row">
+          <div class="avatar">${p.avatar_url?`<img src="${escapeHtml(p.avatar_url)}" alt="" />`:initials(name)}</div>
+          <div class="comment-body">
+            <strong>@${escapeHtml(name)}</strong>
+            <p>${escapeHtml(c.body)}</p>
+            <time>${timeAgo(c.created_at)}</time>
+          </div>
+          <button type="button" class="comment-like ${liked?'active':''}" data-comment-like="${c.id}" aria-pressed="${liked?'true':'false'}" aria-label="${liked?'Unlike':'Like'} comment">
+            <span>♥</span><small>${commentLikes.length||''}</small>
+          </button>
+        </div>`;
+      }).join('')
+    : '<div class="empty-state"><h3>No comments yet</h3><p>Be the first to start the conversation.</p></div>';
+}
+
+async function toggleCommentLike(commentId,button){
+  if(!requireAuth())return;
+  const liked=button.classList.contains('active');
+  const countEl=button.querySelector('small');
+  let count=Number(countEl?.textContent||0);
+
+  if(liked){
+    const {error}=await supabase.from('blurb_comment_likes')
+      .delete()
+      .eq('comment_id',commentId)
+      .eq('user_id',state.user.id);
+    if(error){toast('Couldn’t remove that like');return;}
+    count=Math.max(0,count-1);
+  }else{
+    const {error}=await supabase.from('blurb_comment_likes')
+      .insert({comment_id:commentId,user_id:state.user.id});
+    if(error){toast('Couldn’t like that comment');return;}
+    count+=1;
+  }
+
+  button.classList.toggle('active',!liked);
+  button.setAttribute('aria-pressed',String(!liked));
+  button.setAttribute('aria-label',!liked?'Unlike comment':'Like comment');
+  if(countEl)countEl.textContent=count||'';
 }
 
 async function postComment(e){
@@ -463,6 +552,18 @@ function initEvents(){
   $('#sheetBackdrop').addEventListener('click',closeSheets); $$('[data-close-sheet]').forEach(b=>b.addEventListener('click',closeSheets));
   $('#signInMode').addEventListener('click',()=>setAuthMode('signin')); $('#signUpMode').addEventListener('click',()=>setAuthMode('signup'));
   $('#authForm').addEventListener('submit',handleAuth); $('#commentForm').addEventListener('submit',postComment);
+  $('#commentsList')?.addEventListener('click',e=>{
+    const live=e.target.closest('[data-comment-like]');
+    if(live){toggleCommentLike(live.dataset.commentLike,live);return;}
+    const demo=e.target.closest('[data-demo-comment-like]');
+    if(demo){
+      const active=demo.classList.toggle('active');
+      demo.setAttribute('aria-pressed',String(active));
+      const count=demo.querySelector('small');
+      const current=Number(count?.textContent||0);
+      if(count)count.textContent=String(Math.max(0,current+(active?1:-1)))||'';
+    }
+  });
   $('#libraryTabs')?.addEventListener('click',e=>{
     const button=e.target.closest('button[data-library]');
     if(!button)return;
