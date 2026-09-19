@@ -670,15 +670,14 @@ function clampProfileCrop(modal,kind){
 function paintProfileCrop(modal,kind){
   const state=profileCropState(modal,kind);
   const url=profileCropUrl(modal,kind);
-  const {preview,zoom}=profileCropElements(modal,kind);
-  if(!preview||!state)return;
+  const {stage,preview}=profileCropElements(modal,kind);
+  if(!preview||!stage||!state)return;
 
   if(!url){
     preview.dataset.source='';
     preview.innerHTML=kind==='avatar'
       ? '<span class="profile-crop-empty">Add photo</span>'
       : '<span class="profile-crop-empty">Add banner</span>';
-    if(zoom)zoom.value='1';
     return;
   }
 
@@ -690,11 +689,24 @@ function paintProfileCrop(modal,kind){
   }
 
   const apply=()=>{
-    clampProfileCrop(modal,kind);
+    const sw=stage.clientWidth;
+    const sh=stage.clientHeight;
+    if(!sw||!sh||!img.naturalWidth||!img.naturalHeight)return;
+
+    const base=Math.max(sw/img.naturalWidth,sh/img.naturalHeight);
+    const renderedW=img.naturalWidth*base*state.scale;
+    const renderedH=img.naturalHeight*base*state.scale;
+
+    const maxX=Math.max(0,(renderedW-sw)/2);
+    const maxY=Math.max(0,(renderedH-sh)/2);
+    state.x=Math.max(-maxX,Math.min(maxX,state.x));
+    state.y=Math.max(-maxY,Math.min(maxY,state.y));
+
+    img.style.width=renderedW+'px';
+    img.style.height=renderedH+'px';
     img.style.left='calc(50% + '+state.x+'px)';
     img.style.top='calc(50% + '+state.y+'px)';
-    img.style.transform='translate(-50%,-50%) scale('+state.scale+')';
-    if(zoom)zoom.value=String(state.scale);
+    img.style.transform='translate(-50%,-50%)';
   };
 
   if(img.complete&&img.naturalWidth)apply();
@@ -837,7 +849,7 @@ function ensureProfileDetailsModal(){
         <section class="profile-crop-section">
           <div class="profile-crop-heading">
             <strong>Banner</strong>
-            <span>Drag to move · pinch or slide to zoom</span>
+            <span>Drag to move · pinch to zoom</span>
           </div>
           <div class="profile-crop-stage profile-crop-stage-banner" data-profile-crop="banner">
             <span class="profile-banner-preview" id="profileBannerPreview"></span>
@@ -847,10 +859,6 @@ function ensureProfileDetailsModal(){
               <span>Change banner</span>
               <input id="profileBannerFile" type="file" accept="image/jpeg,image/png,image/webp" />
             </label>
-            <label class="profile-zoom-control">
-              <span>Zoom</span>
-              <input id="profileBannerZoom" type="range" min="1" max="3.5" step=".01" value="1" />
-            </label>
             <button type="button" class="profile-remove-asset" id="profileRemoveBanner">Remove</button>
           </div>
         </section>
@@ -858,7 +866,7 @@ function ensureProfileDetailsModal(){
         <section class="profile-crop-section profile-crop-section-avatar">
           <div class="profile-crop-heading">
             <strong>Profile photo</strong>
-            <span>Drag to move · pinch or slide to zoom</span>
+            <span>Drag to move · pinch to zoom</span>
           </div>
           <div class="profile-avatar-crop-row">
             <div class="profile-crop-stage profile-crop-stage-avatar" data-profile-crop="avatar">
@@ -868,10 +876,6 @@ function ensureProfileDetailsModal(){
               <label class="profile-change-asset">
                 <span>Change photo</span>
                 <input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp" />
-              </label>
-              <label class="profile-zoom-control">
-                <span>Zoom</span>
-                <input id="profileAvatarZoom" type="range" min="1" max="3.5" step=".01" value="1" />
               </label>
               <button type="button" class="profile-remove-asset" id="profileRemoveAvatar">Remove</button>
             </div>
