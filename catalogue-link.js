@@ -267,9 +267,14 @@ function ensureBookFlipModal(){
       const next=!current;
       spoilerToggle.setAttribute('aria-checked',String(next));
       spoilerToggle.classList.toggle('is-on',next);
+      const stateLabel=modal.querySelector('[data-book-spoiler-state]');
+      if(stateLabel){
+        stateLabel.textContent=next?'Spoilers hidden':'Spoilers visible';
+        stateLabel.classList.toggle('is-visible',!next);
+      }
       try{localStorage.setItem(key,next?'1':'0');}catch{}
       window.dispatchEvent(new CustomEvent('blurb-spoiler-preference-changed',{detail:{sourceId:String(book.id),showWarning:next}}));
-      toast(next?'Spoiler warning on':'Spoiler warning off');
+      toast(next?'Spoilers hidden in Home feed':'Spoilers visible in Home feed');
       return;
     }
     const statusButton=e.target.closest('[data-book-status]');
@@ -441,10 +446,11 @@ async function openBookFlip(book,coverEl){
     </div>
     <div class="book-spoiler-warning-setting">
       <div class="book-spoiler-warning-copy">
-        <strong>Spoiler warning</strong>
-        <span>Show the spoiler warning on Home feed posts for this book.</span>
+        <strong>Hide spoilers in Home feed</strong>
+        <span>Cover spoiler-marked posts for this book until you choose to reveal them.</span>
+        <em class="book-spoiler-state" data-book-spoiler-state>Spoilers hidden</em>
       </div>
-      <button type="button" class="book-spoiler-switch is-on" data-book-spoiler-warning-toggle role="switch" aria-checked="true" aria-label="Show spoiler warning for ${escapeHtml(book.title)}">
+      <button type="button" class="book-spoiler-switch is-on" data-book-spoiler-warning-toggle role="switch" aria-checked="true" aria-label="Hide spoilers for ${escapeHtml(book.title)} in Home feed">
         <i></i>
       </button>
     </div>
@@ -466,6 +472,11 @@ async function openBookFlip(book,coverEl){
   if(spoilerToggle){
     spoilerToggle.setAttribute('aria-checked',String(showSpoilerWarning));
     spoilerToggle.classList.toggle('is-on',showSpoilerWarning);
+  }
+  const spoilerState=back.querySelector('[data-book-spoiler-state]');
+  if(spoilerState){
+    spoilerState.textContent=showSpoilerWarning?'Spoilers hidden':'Spoilers visible';
+    spoilerState.classList.toggle('is-visible',!showSpoilerWarning);
   }
   modal.hidden=false;
   modal.classList.remove('expanded','flipped','show-back','flip-out-front','flip-in-back','flip-out-back','flip-in-front');
