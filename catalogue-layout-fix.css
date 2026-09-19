@@ -344,3 +344,72 @@ body.book-flip-open{overflow:hidden}
 .book-flip-backdrop{
   transition:opacity .28s ease,background .28s ease,backdrop-filter .28s ease!important;
 }
+
+/* Rigid-card turn: avoids the visual "folding in half" effect */
+.book-flip-stage{
+  perspective:5000px!important;
+}
+.book-flip-card{
+  transform:none!important;
+  transform-style:flat!important;
+  -webkit-transform-style:flat!important;
+  transition:none!important;
+}
+.book-flip-face{
+  transform:none!important;
+  -webkit-transform:none!important;
+  backface-visibility:visible!important;
+  -webkit-backface-visibility:visible!important;
+  transform-origin:center center;
+}
+.book-flip-front{
+  display:block;
+}
+.book-flip-back{
+  display:none;
+}
+.book-flip-modal.show-back .book-flip-front{
+  display:none;
+}
+.book-flip-modal.show-back .book-flip-back{
+  display:grid;
+}
+
+.book-flip-modal.flip-out-front .book-flip-front{
+  display:block;
+  animation:bookRigidOutLeft .17s cubic-bezier(.35,.05,.65,.95) forwards;
+}
+.book-flip-modal.flip-in-back .book-flip-back{
+  display:grid;
+  animation:bookRigidInRight .17s cubic-bezier(.35,.05,.65,.95) forwards;
+}
+.book-flip-modal.flip-out-back .book-flip-back{
+  display:grid;
+  animation:bookRigidOutRight .17s cubic-bezier(.35,.05,.65,.95) forwards;
+}
+.book-flip-modal.flip-in-front .book-flip-front{
+  display:block;
+  animation:bookRigidInLeft .17s cubic-bezier(.35,.05,.65,.95) forwards;
+}
+
+@keyframes bookRigidOutLeft{
+  from{transform:rotateY(0deg) scale(1);opacity:1}
+  to{transform:rotateY(88deg) scale(.995);opacity:.94}
+}
+@keyframes bookRigidInRight{
+  from{transform:rotateY(-88deg) scale(.995);opacity:.94}
+  to{transform:rotateY(0deg) scale(1);opacity:1}
+}
+@keyframes bookRigidOutRight{
+  from{transform:rotateY(0deg) scale(1);opacity:1}
+  to{transform:rotateY(-88deg) scale(.995);opacity:.94}
+}
+@keyframes bookRigidInLeft{
+  from{transform:rotateY(88deg) scale(.995);opacity:.94}
+  to{transform:rotateY(0deg) scale(1);opacity:1}
+}
+
+/* Old flipped-state rotation no longer participates. */
+.book-flip-modal.flipped .book-flip-card{
+  transform:none!important;
+}
