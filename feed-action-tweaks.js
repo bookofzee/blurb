@@ -173,11 +173,11 @@ function start(){
   document.addEventListener('click',e=>{
     if(!e.target.closest('.add-action-wrap')) closeAllAddMenus();
   });
-  import('/profile-grid-enhance.js?v=8').catch(console.error);
+  import('/profile-grid-enhance.js?v=9').catch(console.error);
   if(!document.querySelector('link[data-profile-grid-enhance]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/profile-grid-enhance.css?v=8';
+    link.href='/profile-grid-enhance.css?v=9';
     link.dataset.profileGridEnhance='1';
     document.head.appendChild(link);
   }
