@@ -26,6 +26,8 @@ function bindLongPress(tile){
     longPressTimer=setTimeout(()=>{
       didLongPress=true;
       closeTileControls(tile);
+      tile.classList.remove('controls-open');
+      void tile.offsetWidth;
       tile.classList.add('controls-open');
       navigator.vibrate?.(18);
     },520);
