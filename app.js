@@ -246,15 +246,34 @@ async function addToLibrary(bookId,status){
 
 async function loadLibrary(){
   if(!state.user){ $('#libraryContent').innerHTML=emptyAuth('Sign in to build your library','Keep your TBR, current reads and favourites together.'); bindEmptySignIn(); return; }
-  const {data,error}=await supabase.from('blurb_library').select('book_id,reading_status,is_favourite,updated_at,blurb_books(id,title,author,genres)').eq('user_id',state.user.id).order('updated_at',{ascending:false});
+  const {data,error}=await supabase.from('blurb_library').select('book_id,reading_status,is_favourite,updated_at,blurb_books(id,source,source_id,title,author,genres,cover_url,description)').eq('user_id',state.user.id).order('updated_at',{ascending:false});
   if(error){$('#libraryContent').innerHTML=emptyText('Couldn’t load your library','Try again in a moment.');return;}
   state.library=data||[];
   renderLibrary();
 }
 function renderLibrary(){
   const items=state.library.filter(x=>state.libraryTab==='favourites'?x.is_favourite:x.reading_status===state.libraryTab);
-  $$('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
-  $('#libraryContent').innerHTML=items.length?items.map(x=>{const b=x.blurb_books||{};const [a,c]=paletteFor(b.title||'');return `<div class="library-row"><i class="mini-cover" style="--cover-a:${a};--cover-b:${c}"></i><div class="library-copy"><strong>${escapeHtml(b.title||'Untitled')}</strong><span>${escapeHtml(b.author||'')}</span></div><button class="menu-dots" data-library-book="${x.book_id}">•••</button></div>`;}).join(''):emptyText(state.libraryTab==='tbr'?'Your TBR is waiting':'Nothing here yet','Add books from Discover or straight from a Blurb in your feed.');
+  $('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
+  $('#libraryContent').innerHTML=items.length?`<div class="library-grid">${items.map(x=>{
+    const b=x.blurb_books||{};
+    const title=b.title||'Untitled';
+    const author=b.author||'';
+    const [a,c]=paletteFor(title);
+    return `<article class="library-book-card"
+      data-library-card
+      data-library-book="${escapeHtml(x.book_id||'')}"
+      data-library-source="${escapeHtml(b.source_id||'')}"
+      data-library-title="${escapeHtml(title)}"
+      data-library-author="${escapeHtml(author)}">
+      <button type="button" class="library-book-cover" style="--cover-a:${a};--cover-b:${c}" aria-label="View ${escapeHtml(title)} details">
+        <span>${escapeHtml(title)}</span>
+      </button>
+      <div class="library-book-meta">
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(author)}</small>
+      </div>
+    </article>`;
+  }).join('')}</div>`:emptyText(state.libraryTab==='tbr'?'Your TBR is waiting':'Nothing here yet','Add books from Discover or straight from a Blurb in your feed.');
 }
 function emptyText(title,copy){return `<div class="empty-state"><div class="empty-icon">▤</div><h3>${title}</h3><p>${copy}</p><button class="secondary-button" data-go-discover>Discover books</button></div>`;}
 function emptyAuth(title,copy){return `<div class="empty-state"><div class="empty-icon">▤</div><h3>${title}</h3><p>${copy}</p><button class="secondary-button" data-empty-signin>Sign in</button></div>`;}
@@ -380,7 +399,8 @@ function initEvents(){
   $('#sheetBackdrop').addEventListener('click',closeSheets); $$('[data-close-sheet]').forEach(b=>b.addEventListener('click',closeSheets));
   $('#signInMode').addEventListener('click',()=>setAuthMode('signin')); $('#signUpMode').addEventListener('click',()=>setAuthMode('signup'));
   $('#authForm').addEventListener('submit',handleAuth); $('#commentForm').addEventListener('submit',postComment);
-  $$('#libraryTabs button').forEach(b=>b.addEventListener('click',()=>{state.libraryTab=b.dataset.library;renderLibrary();}));
+  $('#libraryTabs button').forEach(b=>b.addEventListener('click',()=>{state.libraryTab=b.dataset.library;renderLibrary();}));
+  window.addEventListener('blurb-library-changed',()=>{if(state.activeView==='library')loadLibrary();});
   $('#libraryContent').addEventListener('click',e=>{if(e.target.closest('[data-go-discover]'))showView('discover');});
   $('#openNotifications').addEventListener('click',()=>state.user?toast('Notifications are ready for live activity'):openSheet('authSheet'));
 }
