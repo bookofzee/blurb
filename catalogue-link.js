@@ -58,11 +58,7 @@ async function ensureLocalBook(book){
   const sourceId=String(book.id||book.source_id||'');
   if(!sourceId)return null;
 
-  const {data:existing}=await supabase.from('blurb_books')
-    .select('id,source,source_id,title,author,cover_url,description')
-    .eq('source','book_of_zee_prod')
-    .eq('source_id',sourceId)
-    .maybeSingle();
+  const existing=await findExistingLocalBook(book);
   if(existing)return existing;
 
   const {data:{session}}=await supabase.auth.getSession();
@@ -95,13 +91,23 @@ async function ensureLocalBook(book){
 async function findExistingLocalBook(book){
   if(!book)return null;
   const sourceId=String(book.id||book.source_id||'');
-  if(!sourceId)return null;
-  const {data}=await supabase.from('blurb_books')
-    .select('id,source_id,title,author,cover_url,description')
-    .eq('source','book_of_zee_prod')
-    .eq('source_id',sourceId)
-    .maybeSingle();
-  return data||null;
+  if(sourceId){
+    const {data}=await supabase.from('blurb_books')
+      .select('id,source,source_id,title,author,cover_url,description')
+      .eq('source_id',sourceId)
+      .limit(1)
+      .maybeSingle();
+    if(data)return data;
+  }
+  const title=String(book.title||'').trim();
+  const author=String(book.author||'').trim();
+  if(!title)return null;
+  let query=supabase.from('blurb_books')
+    .select('id,source,source_id,title,author,cover_url,description')
+    .eq('title',title);
+  if(author)query=query.eq('author',author);
+  const {data:fallback}=await query.limit(1).maybeSingle();
+  return fallback||null;
 }
 
 async function setLiveBookStatus(book,status){
@@ -124,6 +130,7 @@ async function setLiveBookStatus(book,status){
   },{onConflict:'user_id,book_id'});
   if(error){toast('Couldn’t update your library');return false;}
   toast(`Moved to ${labels[status]||status}`);
+  window.dispatchEvent(new CustomEvent('blurb-library-changed',{detail:{bookId:local.id,status}}));
   return true;
 }
 
@@ -138,6 +145,7 @@ async function removeLiveBookStatus(book){
     .eq('book_id',local.id);
   if(error){toast('Couldn’t remove that book');return false;}
   toast('Removed from your library');
+  window.dispatchEvent(new CustomEvent('blurb-library-changed',{detail:{bookId:local.id,status:null}}));
   return true;
 }
 
@@ -263,8 +271,12 @@ function ensureBookFlipModal(){
     if(e.target.closest('[data-book-remove]')){
       const book=bySource.get(modal.dataset.bookId||'');
       if(!book)return;
+      if(!confirm(`Delete “${book.title}” from your library completely?`))return;
       const ok=await removeLiveBookStatus(book);
-      if(ok)await refreshBookFlipStatus(book);
+      if(ok){
+        closeBookFlip();
+        setTimeout(()=>window.dispatchEvent(new CustomEvent('blurb-library-changed')),380);
+      }
       return;
     }
     if(e.target.closest('[data-book-admin-delete]')){
@@ -421,7 +433,7 @@ async function openBookFlip(book,coverEl){
         <button type="button" data-book-status="read">Read</button>
         <button type="button" data-book-status="dnf">DNF</button>
       </div>
-      <button type="button" class="book-flip-remove" data-book-remove hidden>Remove from library</button>
+      <button type="button" class="book-flip-remove" data-book-remove hidden>Delete from library</button>
     </div>`;
 
   modal.dataset.bookId=String(book.id);
@@ -459,6 +471,23 @@ function bindBookFlipActions(root){
       e.stopPropagation();
       const book=bySource.get(el.dataset.bookFlip);
       if(book)openBookFlip(book,el);
+    });
+  });
+}
+
+function bindLibraryBookFlips(root=document){
+  if(!ready)return;
+  root?.querySelectorAll?.('[data-library-card]').forEach(card=>{
+    const cover=card.querySelector('.library-book-cover');
+    if(!cover||cover.dataset.flipBound==='1')return;
+    const book=findBook(card.dataset.librarySource,card.dataset.libraryTitle,card.dataset.libraryAuthor);
+    if(!book)return;
+    card.dataset.catalogueBookId=String(book.id);
+    cover.dataset.flipBound='1';
+    cover.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      openBookFlip(book,cover);
     });
   });
 }
@@ -738,16 +767,24 @@ function paintExistingCovers(root=document){
       [...el.children].forEach(child=>{child.style.opacity='0';child.style.pointerEvents='none';});
     }
   });
-  root.querySelectorAll?.('.library-row').forEach(row=>{
-    const title=row.querySelector('.library-copy strong')?.textContent?.trim()||'';
-    const author=row.querySelector('.library-copy span')?.textContent?.trim()||'';
-    const book=findBook('',title,author);
-    const el=row.querySelector('.mini-cover');
-    if(book?.cover_url&&el instanceof HTMLElement){
-      el.style.backgroundImage=`url("${book.cover_url.replace(/"/g,'%22')}")`;
-      el.style.backgroundSize='cover';el.style.backgroundPosition='center';el.style.backgroundRepeat='no-repeat';
+  root.querySelectorAll?.('.library-book-card').forEach(card=>{
+    const title=card.dataset.libraryTitle||card.querySelector('.library-book-meta strong')?.textContent?.trim()||'';
+    const author=card.dataset.libraryAuthor||card.querySelector('.library-book-meta small')?.textContent?.trim()||'';
+    const sourceId=card.dataset.librarySource||'';
+    const book=findBook(sourceId,title,author);
+    const el=card.querySelector('.library-book-cover');
+    if(book&&el instanceof HTMLElement){
+      card.dataset.catalogueBookId=String(book.id);
+      if(book.cover_url){
+        el.style.backgroundImage=`url("${book.cover_url.replace(/"/g,'%22')}")`;
+        el.style.backgroundSize='cover';
+        el.style.backgroundPosition='center';
+        el.style.backgroundRepeat='no-repeat';
+        el.classList.add('has-live-cover');
+      }
     }
   });
+  bindLibraryBookFlips(root);
 }
 
 function installDiscoverStyles(){
