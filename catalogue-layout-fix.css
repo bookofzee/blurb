@@ -664,20 +664,24 @@ body.book-flip-open{overflow:hidden}
 /* Alternate artwork database picker */
 .book-alt-art-picker{
   position:fixed;
-  z-index:220;
+  z-index:12000;
   inset:0;
   display:grid;
   place-items:end center;
+  pointer-events:auto;
 }
 .book-alt-art-backdrop{
   position:absolute;
+  z-index:0;
   inset:0;
   background:rgba(31,22,18,.68);
   backdrop-filter:blur(5px);
+  pointer-events:auto;
 }
 .book-alt-art-panel{
   position:relative;
-  z-index:1;
+  z-index:2;
+  pointer-events:auto;
   width:min(100%,560px);
   max-height:min(76dvh,760px);
   overflow:hidden;
