@@ -64,9 +64,7 @@ function ensureProfileEditModal(){
     <section class="profile-post-edit-card" role="dialog" aria-modal="true" aria-labelledby="profilePostEditTitle">
       <button type="button" class="profile-post-edit-close" data-close-profile-edit aria-label="Close">×</button>
       <div class="profile-post-edit-heading">
-        <span>Edit Blurb</span>
-        <h3 id="profilePostEditTitle">Caption & profile cover</h3>
-        <p>Only these details can be changed after posting.</p>
+        <h3 id="profilePostEditTitle">Edit blurb</h3>
       </div>
 
       <label class="profile-edit-caption-label" for="profileEditCaption">Caption</label>
