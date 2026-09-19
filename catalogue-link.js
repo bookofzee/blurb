@@ -164,7 +164,16 @@ function ensureBookFlipModal(){
       return;
     }
     if(e.target.closest('[data-book-flip-cover]')){
-      modal.classList.remove('flipped');
+      clearTimeout(modal._flipSwapTimer);
+      clearTimeout(modal._flipEndTimer);
+      if(modal.classList.contains('show-back')){
+        modal.classList.add('flip-out-back');
+        modal._flipSwapTimer=setTimeout(()=>{
+          modal.classList.remove('show-back','flip-out-back');
+          modal.classList.add('flip-in-front');
+        },170);
+        modal._flipEndTimer=setTimeout(()=>modal.classList.remove('flip-in-front'),340);
+      }
       return;
     }
     const statusButton=e.target.closest('[data-book-status]');
@@ -222,16 +231,34 @@ function closeBookFlip(){
   const modal=document.querySelector('#bookFlipModal');
   if(!modal||modal.hidden)return;
   clearTimeout(modal._openFlipTimer);
+  clearTimeout(modal._flipSwapTimer);
+  clearTimeout(modal._flipEndTimer);
   clearTimeout(modal._closeShrinkTimer);
   clearTimeout(modal._closeHideTimer);
 
-  modal.classList.remove('flipped');
-  modal._closeShrinkTimer=setTimeout(()=>modal.classList.remove('expanded'),430);
-  modal._closeHideTimer=setTimeout(()=>{
-    modal.hidden=true;
-    modal.dataset.bookId='';
-    document.body.classList.remove('book-flip-open');
-  },790);
+  if(modal.classList.contains('show-back')){
+    modal.classList.add('flip-out-back');
+    modal._flipSwapTimer=setTimeout(()=>{
+      modal.classList.remove('show-back','flip-out-back');
+      modal.classList.add('flip-in-front');
+    },170);
+    modal._flipEndTimer=setTimeout(()=>{
+      modal.classList.remove('flip-in-front');
+      modal.classList.remove('expanded');
+    },340);
+    modal._closeHideTimer=setTimeout(()=>{
+      modal.hidden=true;
+      modal.dataset.bookId='';
+      document.body.classList.remove('book-flip-open');
+    },690);
+  }else{
+    modal.classList.remove('expanded');
+    modal._closeHideTimer=setTimeout(()=>{
+      modal.hidden=true;
+      modal.dataset.bookId='';
+      document.body.classList.remove('book-flip-open');
+    },360);
+  }
 }
 
 function openBookFlip(book,coverEl){
@@ -291,17 +318,26 @@ function openBookFlip(book,coverEl){
 
   modal.dataset.bookId=String(book.id);
   modal.hidden=false;
-  modal.classList.remove('expanded','flipped');
+  modal.classList.remove('expanded','flipped','show-back','flip-out-front','flip-in-back','flip-out-back','flip-in-front');
   clearTimeout(modal._openFlipTimer);
+  clearTimeout(modal._flipSwapTimer);
+  clearTimeout(modal._flipEndTimer);
   clearTimeout(modal._closeShrinkTimer);
   clearTimeout(modal._closeHideTimer);
   document.body.classList.add('book-flip-open');
 
-  // Force the compact starting transform to paint first, then glide forward.
+  // Pop the cover forward first, then turn the whole card as one rigid piece.
   stage.getBoundingClientRect();
   requestAnimationFrame(()=>{
     modal.classList.add('expanded');
-    modal._openFlipTimer=setTimeout(()=>modal.classList.add('flipped'),390);
+    modal._openFlipTimer=setTimeout(()=>{
+      modal.classList.add('flip-out-front');
+      modal._flipSwapTimer=setTimeout(()=>{
+        modal.classList.remove('flip-out-front');
+        modal.classList.add('show-back','flip-in-back');
+      },170);
+      modal._flipEndTimer=setTimeout(()=>modal.classList.remove('flip-in-back'),340);
+    },380);
   });
   refreshBookFlipStatus(book);
 }
