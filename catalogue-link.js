@@ -258,15 +258,18 @@ function ensureBookFlipModal(){
       }
       return;
     }
-    const spoilerToggle=e.target.closest('[data-book-spoiler-toggle]');
+    const spoilerToggle=e.target.closest('[data-book-spoiler-warning-toggle]');
     if(spoilerToggle){
-      const hidden=!modal.classList.contains('spoilers-hidden');
-      modal.classList.toggle('spoilers-hidden',hidden);
-      spoilerToggle.textContent=hidden?'Show spoilers':'Hide spoilers';
-      spoilerToggle.setAttribute('aria-pressed',String(hidden));
-      try{localStorage.setItem('blurb-book-spoilers-hidden',hidden?'1':'0');}catch{}
-      const headerToggle=modal.querySelector('.book-spoiler-toggle');
-      if(headerToggle&&headerToggle!==spoilerToggle){headerToggle.textContent=hidden?'Show spoilers':'Hide spoilers';headerToggle.setAttribute('aria-pressed',String(hidden));}
+      const book=bySource.get(modal.dataset.bookId||'');
+      if(!book)return;
+      const key='blurb-spoiler-warning:'+String(book.id);
+      const current=spoilerToggle.getAttribute('aria-checked')!=='false';
+      const next=!current;
+      spoilerToggle.setAttribute('aria-checked',String(next));
+      spoilerToggle.classList.toggle('is-on',next);
+      try{localStorage.setItem(key,next?'1':'0');}catch{}
+      window.dispatchEvent(new CustomEvent('blurb-spoiler-preference-changed',{detail:{sourceId:String(book.id),showWarning:next}}));
+      toast(next?'Spoiler warning on':'Spoiler warning off');
       return;
     }
     const statusButton=e.target.closest('[data-book-status]');
@@ -433,14 +436,17 @@ async function openBookFlip(book,coverEl){
       <p class="book-flip-author">${escapeHtml(book.author)}</p>
     </div>
     <div class="book-flip-synopsis">
-      <div class="book-flip-synopsis-head">
-        <span>Synopsis</span>
-        <button type="button" class="book-spoiler-toggle" data-book-spoiler-toggle aria-pressed="false">Hide spoilers</button>
+      <span>Synopsis</span>
+      <p>${escapeHtml(bookSynopsis(book))}</p>
+    </div>
+    <div class="book-spoiler-warning-setting">
+      <div class="book-spoiler-warning-copy">
+        <strong>Spoiler warning</strong>
+        <span>Show the spoiler warning on Home feed posts for this book.</span>
       </div>
-      <div class="book-spoiler-copy" data-book-spoiler-copy>
-        <p>${escapeHtml(bookSynopsis(book))}</p>
-        <button type="button" class="book-spoiler-reveal" data-book-spoiler-toggle>Show spoilers</button>
-      </div>
+      <button type="button" class="book-spoiler-switch is-on" data-book-spoiler-warning-toggle role="switch" aria-checked="true" aria-label="Show spoiler warning for ${escapeHtml(book.title)}">
+        <i></i>
+      </button>
     </div>
     <div class="book-flip-library">
       <span id="bookFlipStatusNote">Choose where this belongs in your library.</span>
@@ -454,13 +460,12 @@ async function openBookFlip(book,coverEl){
     </div>`;
 
   modal.dataset.bookId=String(book.id);
-  let spoilersHidden=false;
-  try{spoilersHidden=localStorage.getItem('blurb-book-spoilers-hidden')==='1';}catch{}
-  modal.classList.toggle('spoilers-hidden',spoilersHidden);
-  const spoilerToggle=back.querySelector('.book-spoiler-toggle');
+  let showSpoilerWarning=true;
+  try{showSpoilerWarning=localStorage.getItem('blurb-spoiler-warning:'+String(book.id))!=='0';}catch{}
+  const spoilerToggle=back.querySelector('[data-book-spoiler-warning-toggle]');
   if(spoilerToggle){
-    spoilerToggle.textContent=spoilersHidden?'Show spoilers':'Hide spoilers';
-    spoilerToggle.setAttribute('aria-pressed',String(spoilersHidden));
+    spoilerToggle.setAttribute('aria-checked',String(showSpoilerWarning));
+    spoilerToggle.classList.toggle('is-on',showSpoilerWarning);
   }
   modal.hidden=false;
   modal.classList.remove('expanded','flipped','show-back','flip-out-front','flip-in-back','flip-out-back','flip-in-front');
