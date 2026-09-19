@@ -865,3 +865,24 @@
   left:50%!important;
   transform:translate(-50%,-50%)!important;
 }
+
+
+/* Dots become plain cancel X */
+.profile-post-card .profile-card-menu-toggle{
+  z-index:16!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+.profile-post-card.controls-open .profile-card-menu-toggle{
+  z-index:16!important;
+  color:#5f4639!important;
+  font-size:22px!important;
+  font-weight:500!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
