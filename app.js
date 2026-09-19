@@ -19,6 +19,7 @@ const state = {
   authMode: 'signin',
   activePostForComments: null,
   libraryTab: 'tbr',
+  librarySearchByTab: {tbr:'',reading:'',read:'',dnf:''},
 };
 
 const palettes = [
@@ -308,8 +309,23 @@ async function loadLibrary(){
 
 function renderLibrary(){
   try{
-    const items=(state.library||[]).filter(x=>state.libraryTab==='favourites'?x.is_favourite:x.reading_status===state.libraryTab);
-    $$('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
+    const tabItems=(state.library||[]).filter(x=>state.libraryTab==='favourites'?x.is_favourite:x.reading_status===state.libraryTab);
+    const query=String(state.librarySearchByTab?.[state.libraryTab]||'').trim().toLowerCase();
+    const items=query
+      ? tabItems.filter(x=>{
+          const b=x.blurb_books||{};
+          return String(b.title||'').toLowerCase().includes(query)||String(b.author||'').toLowerCase().includes(query);
+        })
+      : tabItems;
+    $('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
+
+    const search=$('#librarySearch');
+    if(search){
+      const labels={tbr:'TBR',reading:'Reading',read:'Read',dnf:'DNF'};
+      search.placeholder=`Search ${labels[state.libraryTab]||'library'}`;
+      if(search.value!==String(state.librarySearchByTab?.[state.libraryTab]||''))search.value=String(state.librarySearchByTab?.[state.libraryTab]||'');
+    }
+
     const root=$('#libraryContent');
     if(!root)return;
 
@@ -332,7 +348,9 @@ function renderLibrary(){
           <small>${escapeHtml(author)}</small>
         </div>
       </article>`;
-    }).join('')}</div>`:emptyText(state.libraryTab==='tbr'?'Your TBR is waiting':'Nothing here yet','Add books from Discover or straight from a Blurb in your feed.');
+    }).join('')}</div>`:query
+      ? emptyText('No books found',`Nothing in this ${state.libraryTab==='tbr'?'TBR':state.libraryTab} list matches “${escapeHtml(query)}”.`)
+      : emptyText(state.libraryTab==='tbr'?'Your TBR is waiting':'Nothing here yet','Add books from Discover or straight from a Blurb in your feed.');
   }catch(error){
     console.error('Could not render library',error);
     const root=$('#libraryContent');
@@ -568,6 +586,14 @@ function initEvents(){
     const button=e.target.closest('button[data-library]');
     if(!button)return;
     state.libraryTab=button.dataset.library;
+    renderLibrary();
+  });
+  $('#librarySearch')?.addEventListener('input',e=>{
+    state.librarySearchByTab[state.libraryTab]=e.target.value||'';
+    renderLibrary();
+  });
+  $('#librarySearch')?.addEventListener('search',e=>{
+    state.librarySearchByTab[state.libraryTab]=e.target.value||'';
     renderLibrary();
   });
   window.addEventListener('blurb-library-changed',()=>{if(state.activeView==='library')loadLibrary();});
