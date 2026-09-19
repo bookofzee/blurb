@@ -340,10 +340,16 @@ async function profilePostsForTab(session,tab){
   const ids=(links||[]).map(x=>x.post_id).filter(Boolean);
   if(!ids.length)return [];
 
-  const {data,error}=await supabase.from('blurb_posts')
+  let query=supabase.from('blurb_posts')
     .select(select)
     .in('id',ids)
     .eq('status','published');
+
+  if(tab==='liked'){
+    query=query.neq('user_id',session.user.id);
+  }
+
+  const {data,error}=await query;
 
   if(error)throw error;
   const byId=new Map((data||[]).map(post=>[String(post.id),post]));
