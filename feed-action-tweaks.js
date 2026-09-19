@@ -177,7 +177,7 @@ function start(){
   if(!document.querySelector('link[data-profile-grid-enhance]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
-    link.href='/profile-grid-enhance.css?v=14';
+    link.href='/profile-grid-enhance.css?v=15';
     link.dataset.profileGridEnhance='1';
     document.head.appendChild(link);
   }
