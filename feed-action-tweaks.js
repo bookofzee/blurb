@@ -173,7 +173,7 @@ function start(){
   document.addEventListener('click',e=>{
     if(!e.target.closest('.add-action-wrap')) closeAllAddMenus();
   });
-  import('/profile-grid-enhance.js?v=15').catch(console.error);
+  import('/profile-grid-enhance.js?v=16').catch(console.error);
   if(!document.querySelector('link[data-profile-grid-enhance]')){
     const link=document.createElement('link');
     link.rel='stylesheet';
