@@ -199,7 +199,13 @@ function bindFeedActions(){
   $$('[data-tbr]').forEach(b=>b.addEventListener('click',()=>addToLibrary(b.dataset.tbr,'tbr')));
   $$('[data-share]').forEach(b=>b.addEventListener('click',()=>sharePost(b.dataset.share)));
   $$('[data-follow]').forEach(b=>b.addEventListener('click',()=>toggleFollow(b.dataset.follow,b)));
-  $$('.book-chip').forEach(b=>b.addEventListener('click',()=>{const book=state.books.find(x=>x.id===b.dataset.book); if(book){showView('discover'); $('#discoverSearch').value=book.title; renderDiscover(book.title);}}));
+  $('.book-chip').forEach(b=>b.addEventListener('click',e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if(typeof window.openBlurbFeedBook==='function'&&window.openBlurbFeedBook(b))return;
+    const book=state.books.find(x=>x.id===b.dataset.book);
+    if(book){showView('discover'); $('#discoverSearch').value=book.title; renderDiscover(book.title);}
+  }));
 }
 
 function observeVideos(){
