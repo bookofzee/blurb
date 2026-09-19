@@ -819,27 +819,52 @@ function ensureProfileDetailsModal(){
     <div class="profile-details-backdrop" data-close-profile-details></div>
     <section class="profile-details-card" role="dialog" aria-modal="true" aria-labelledby="profileDetailsTitle">
       <button class="profile-details-close" type="button" data-close-profile-details aria-label="Close">×</button>
-      <p class="profile-details-eyebrow">Your reading corner</p>
       <h2 id="profileDetailsTitle">Edit profile</h2>
 
-      <div class="profile-asset-editor">
-        <label class="profile-banner-editor">
-          <span class="profile-asset-preview profile-banner-preview" id="profileBannerPreview"></span>
-          <span class="profile-asset-action">Change banner</span>
-          <input id="profileBannerFile" type="file" accept="image/jpeg,image/png,image/webp" />
-        </label>
-        <div class="profile-avatar-editor-wrap">
-          <label class="profile-avatar-editor">
-            <span class="profile-asset-preview profile-avatar-preview" id="profileAvatarPreview"></span>
-            <span class="profile-asset-action">Change photo</span>
-            <input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp" />
-          </label>
-        </div>
-      </div>
+      <div class="profile-media-editor">
+        <section class="profile-crop-section">
+          <div class="profile-crop-heading">
+            <strong>Banner</strong>
+            <span>Drag to move · pinch or slide to zoom</span>
+          </div>
+          <div class="profile-crop-stage profile-crop-stage-banner" data-profile-crop="banner">
+            <span class="profile-banner-preview" id="profileBannerPreview"></span>
+          </div>
+          <div class="profile-crop-tools">
+            <label class="profile-change-asset">
+              <span>Change banner</span>
+              <input id="profileBannerFile" type="file" accept="image/jpeg,image/png,image/webp" />
+            </label>
+            <label class="profile-zoom-control">
+              <span>Zoom</span>
+              <input id="profileBannerZoom" type="range" min="1" max="3.5" step=".01" value="1" />
+            </label>
+            <button type="button" class="profile-remove-asset" id="profileRemoveBanner">Remove</button>
+          </div>
+        </section>
 
-      <div class="profile-remove-assets">
-        <button type="button" id="profileRemoveAvatar">Remove photo</button>
-        <button type="button" id="profileRemoveBanner">Remove banner</button>
+        <section class="profile-crop-section profile-crop-section-avatar">
+          <div class="profile-crop-heading">
+            <strong>Profile photo</strong>
+            <span>Drag to move · pinch or slide to zoom</span>
+          </div>
+          <div class="profile-avatar-crop-row">
+            <div class="profile-crop-stage profile-crop-stage-avatar" data-profile-crop="avatar">
+              <span class="profile-avatar-preview" id="profileAvatarPreview"></span>
+            </div>
+            <div class="profile-avatar-crop-tools">
+              <label class="profile-change-asset">
+                <span>Change photo</span>
+                <input id="profileAvatarFile" type="file" accept="image/jpeg,image/png,image/webp" />
+              </label>
+              <label class="profile-zoom-control">
+                <span>Zoom</span>
+                <input id="profileAvatarZoom" type="range" min="1" max="3.5" step=".01" value="1" />
+              </label>
+              <button type="button" class="profile-remove-asset" id="profileRemoveAvatar">Remove</button>
+            </div>
+          </div>
+        </section>
       </div>
 
       <label class="profile-details-label" for="profileDisplayName">Display name</label>
@@ -868,8 +893,11 @@ function ensureProfileDetailsModal(){
   modal.querySelector('#profileAvatarFile')?.addEventListener('change',e=>{
     const file=e.target.files?.[0];
     if(!file||!modal._draft)return;
+    if(modal._draft.avatarUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.avatarUrl);
     modal._draft.avatarFile=file;
     modal._draft.avatarUrl=URL.createObjectURL(file);
+    modal._draft.avatarTransform={x:0,y:0,scale:1};
+    modal._draft.avatarDirty=true;
     modal._draft.removeAvatar=false;
     paintProfileDetailsPreview(modal);
   });
@@ -877,24 +905,31 @@ function ensureProfileDetailsModal(){
   modal.querySelector('#profileBannerFile')?.addEventListener('change',e=>{
     const file=e.target.files?.[0];
     if(!file||!modal._draft)return;
+    if(modal._draft.bannerUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.bannerUrl);
     modal._draft.bannerFile=file;
     modal._draft.bannerUrl=URL.createObjectURL(file);
+    modal._draft.bannerTransform={x:0,y:0,scale:1};
+    modal._draft.bannerDirty=true;
     modal._draft.removeBanner=false;
     paintProfileDetailsPreview(modal);
   });
 
   modal.querySelector('#profileRemoveAvatar')?.addEventListener('click',()=>{
     if(!modal._draft)return;
+    if(modal._draft.avatarUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.avatarUrl);
     modal._draft.avatarFile=null;
     modal._draft.avatarUrl=null;
+    modal._draft.avatarDirty=false;
     modal._draft.removeAvatar=true;
     paintProfileDetailsPreview(modal);
   });
 
   modal.querySelector('#profileRemoveBanner')?.addEventListener('click',()=>{
     if(!modal._draft)return;
+    if(modal._draft.bannerUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.bannerUrl);
     modal._draft.bannerFile=null;
     modal._draft.bannerUrl=null;
+    modal._draft.bannerDirty=false;
     modal._draft.removeBanner=true;
     paintProfileDetailsPreview(modal);
   });
@@ -923,8 +958,14 @@ function ensureProfileDetailsModal(){
       let avatarUrl=draft.removeAvatar?null:(state.profile?.avatar_url||null);
       let bannerUrl=draft.removeBanner?null:(state.profile?.banner_url||null);
 
-      if(draft.avatarFile)avatarUrl=await uploadProfileAsset(draft.avatarFile,'avatar');
-      if(draft.bannerFile)bannerUrl=await uploadProfileAsset(draft.bannerFile,'banner');
+      if(!draft.removeAvatar&&draft.avatarUrl&&(draft.avatarFile||draft.avatarDirty)){
+        const avatarCrop=await makeProfileCropFile(modal,'avatar');
+        avatarUrl=await uploadProfileAsset(avatarCrop,'avatar');
+      }
+      if(!draft.removeBanner&&draft.bannerUrl&&(draft.bannerFile||draft.bannerDirty)){
+        const bannerCrop=await makeProfileCropFile(modal,'banner');
+        bannerUrl=await uploadProfileAsset(bannerCrop,'banner');
+      }
 
       const {data,error}=await supabase.from('blurb_profiles')
         .update({
@@ -960,22 +1001,8 @@ function ensureProfileDetailsModal(){
 }
 
 function paintProfileDetailsPreview(modal){
-  const draft=modal._draft||{};
-  const name=modal.querySelector('#profileDisplayName')?.value||state.profile?.display_name||state.profile?.username||'Reader';
-  const avatar=modal.querySelector('#profileAvatarPreview');
-  const banner=modal.querySelector('#profileBannerPreview');
-
-  if(avatar){
-    avatar.innerHTML=draft.avatarUrl
-      ? `<img src="${escapeHtml(draft.avatarUrl)}" alt="" />`
-      : `<span>${escapeHtml(initials(name))}</span>`;
-  }
-
-  if(banner){
-    banner.innerHTML=draft.bannerUrl
-      ? `<img src="${escapeHtml(draft.bannerUrl)}" alt="" />`
-      : '<span class="profile-banner-preview-fallback"></span>';
-  }
+  paintProfileCrop(modal,'banner');
+  paintProfileCrop(modal,'avatar');
 }
 
 async function editProfile(){
@@ -987,6 +1014,10 @@ async function editProfile(){
     bannerFile:null,
     avatarUrl:p.avatar_url||null,
     bannerUrl:p.banner_url||null,
+    avatarTransform:{x:0,y:0,scale:1},
+    bannerTransform:{x:0,y:0,scale:1},
+    avatarDirty:false,
+    bannerDirty:false,
     removeAvatar:false,
     removeBanner:false
   };
@@ -1000,6 +1031,8 @@ async function editProfile(){
   modal.querySelector('#profileDetailsStatus').className='form-status';
 
   paintProfileDetailsPreview(modal);
+  bindProfileCropStage(modal,'banner');
+  bindProfileCropStage(modal,'avatar');
   modal.hidden=false;
 }
 
