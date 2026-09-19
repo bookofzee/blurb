@@ -521,3 +521,32 @@
 .profile-post-card.controls-open .profile-card-copy{
   opacity:.84;
 }
+
+
+/* Profile card finishing touches */
+.profile-card-copy{
+  position:relative;
+  padding-bottom:34px;
+}
+
+.profile-card-meta{
+  position:static;
+  margin-top:8px;
+}
+
+.profile-card-menu-toggle{
+  position:absolute;
+  right:10px;
+  bottom:9px;
+  padding:0;
+  min-width:28px;
+  min-height:24px;
+  display:grid;
+  place-items:center;
+}
+
+.profile-card-rating{
+  font-size:12px!important;
+  font-weight:900!important;
+  line-height:1!important;
+}
