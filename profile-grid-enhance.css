@@ -787,3 +787,67 @@
 .profile-post-card .profile-tile-controls span{
   display:none!important;
 }
+
+
+/* Fixed vertical action positions on whole profile card */
+.profile-post-card .profile-tile-controls{
+  position:absolute!important;
+  inset:0!important;
+  left:0!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  width:100%!important;
+  height:100%!important;
+  transform:none!important;
+  display:block!important;
+  padding:0!important;
+  margin:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  opacity:0;
+  pointer-events:none;
+}
+
+.profile-post-card.controls-open .profile-tile-controls{
+  opacity:1!important;
+  pointer-events:auto!important;
+  transform:none!important;
+}
+
+.profile-post-card .profile-tile-controls button{
+  position:absolute!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:62px!important;
+  height:62px!important;
+  min-width:62px!important;
+  min-height:62px!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:50%!important;
+  transform:translate(-50%,-50%)!important;
+  display:grid!important;
+  place-items:center!important;
+}
+
+.profile-post-card .profile-edit-post{
+  top:32%!important;
+  background:rgba(255,250,243,.98)!important;
+  color:#6a4a3b!important;
+  border:2px solid rgba(255,255,255,.96)!important;
+}
+
+.profile-post-card .profile-delete-post{
+  top:68%!important;
+  background:#a7502d!important;
+  color:#fffaf5!important;
+  border:2px solid rgba(255,255,255,.78)!important;
+}
+
+.profile-post-card .profile-tile-controls button svg{
+  width:29px!important;
+  height:29px!important;
+}
