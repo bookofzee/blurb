@@ -286,3 +286,36 @@ body.book-flip-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .book-flip-stage,.book-flip-card,.book-flip-backdrop{transition:none!important}
 }
+
+/* Fix 3D book flip: don't flatten the card while it rotates */
+.book-flip-stage{
+  transform-style:preserve-3d!important;
+  -webkit-transform-style:preserve-3d!important;
+}
+.book-flip-card{
+  filter:none!important;
+  transform-style:preserve-3d!important;
+  -webkit-transform-style:preserve-3d!important;
+}
+.book-flip-face{
+  -webkit-backface-visibility:hidden!important;
+  backface-visibility:hidden!important;
+  transform-style:preserve-3d;
+  box-shadow:0 24px 46px rgba(20,12,9,.34);
+}
+.book-flip-front{
+  transform:rotateY(0deg) translateZ(1px)!important;
+  -webkit-transform:rotateY(0deg) translateZ(1px)!important;
+}
+.book-flip-back{
+  transform:rotateY(180deg) translateZ(1px)!important;
+  -webkit-transform:rotateY(180deg) translateZ(1px)!important;
+}
+
+/* Extra visibility guard for browsers that mishandle backface compositing */
+.book-flip-modal.flipped .book-flip-front{
+  pointer-events:none;
+}
+.book-flip-modal:not(.flipped) .book-flip-back{
+  pointer-events:none;
+}
