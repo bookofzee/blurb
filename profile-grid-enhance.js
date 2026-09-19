@@ -52,6 +52,51 @@ async function uploadProfileCover(file,userId){
   return data?.publicUrl||null;
 }
 
+async function makeSquareBookCoverFile(url,title='book-cover'){
+  const response=await fetch(url,{mode:'cors'});
+  if(!response.ok)throw new Error('Could not load book cover');
+  const sourceBlob=await response.blob();
+  const objectUrl=URL.createObjectURL(sourceBlob);
+  try{
+    const image=await new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(new Error('Could not read book cover'));
+      img.src=objectUrl;
+    });
+    const size=1080;
+    const canvas=document.createElement('canvas');
+    canvas.width=size;
+    canvas.height=size;
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw new Error('Canvas unavailable');
+    ctx.fillStyle='#f7eee3';
+    ctx.fillRect(0,0,size,size);
+    const maxW=size*.62;
+    const maxH=size*.82;
+    const scale=Math.min(maxW/image.naturalWidth,maxH/image.naturalHeight);
+    const w=image.naturalWidth*scale;
+    const h=image.naturalHeight*scale;
+    const x=(size-w)/2;
+    const y=(size-h)/2;
+    ctx.save();
+    ctx.shadowColor='rgba(72,45,31,.28)';
+    ctx.shadowBlur=34;
+    ctx.shadowOffsetY=18;
+    ctx.fillStyle='#fffaf3';
+    ctx.fillRect(x,y,w,h);
+    ctx.drawImage(image,x,y,w,h);
+    ctx.restore();
+    const blob=await new Promise((resolve,reject)=>{
+      canvas.toBlob(value=>value?resolve(value):reject(new Error('Could not make square cover')),'image/jpeg',.92);
+    });
+    const safeName=String(title||'book-cover').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'book-cover';
+    return new File([blob],`${safeName}-square.jpg`,{type:'image/jpeg'});
+  }finally{
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 function ensureProfileEditModal(){
   let modal=document.querySelector('#profilePostEditModal');
   if(modal)return modal;
@@ -143,7 +188,7 @@ function openProfileEditModal(post,session,grid){
   if(!modal.dataset.bound){
     modal.dataset.bound='1';
 
-    modal.addEventListener('click',e=>{
+    modal.addEventListener('click',async e=>{
       if(e.target.closest('[data-close-profile-edit]')){closeProfileEditModal();return;}
       const state=modal._editState;
       if(!state)return;
@@ -151,12 +196,31 @@ function openProfileEditModal(post,session,grid){
       if(e.target.closest('#profileEditUseBookCover')){
         const url=state.post.blurb_books?.cover_url;
         if(!url)return;
-        state.mode='book';
-        state.coverUrl=url;
-        state.coverFile=null;
-        modal.querySelector('#profileEditCoverFile').value='';
-        paintProfileEditCover(modal,url);
-        modal.querySelector('#profileEditRemoveCover').disabled=false;
+
+        const button=modal.querySelector('#profileEditUseBookCover');
+        const status=modal.querySelector('#profileEditStatus');
+        button.disabled=true;
+        status.textContent='Making square cover…';
+        status.className='form-status';
+
+        try{
+          const squareFile=await makeSquareBookCoverFile(url,state.post.blurb_books?.title||'book-cover');
+          if(modal._editState!==state)return;
+          if(state.coverUrl?.startsWith?.('blob:'))URL.revokeObjectURL(state.coverUrl);
+          state.mode='upload';
+          state.coverFile=squareFile;
+          state.coverUrl=URL.createObjectURL(squareFile);
+          modal.querySelector('#profileEditCoverFile').value='';
+          paintProfileEditCover(modal,state.coverUrl);
+          modal.querySelector('#profileEditRemoveCover').disabled=false;
+          status.textContent='Square cover ready.';
+        }catch(err){
+          console.error('Could not make square book cover',err);
+          status.textContent='Couldn’t make a square cover from that image.';
+          status.className='form-status error';
+        }finally{
+          button.disabled=false;
+        }
         return;
       }
 
