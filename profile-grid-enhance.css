@@ -564,3 +564,120 @@
   object-fit:cover;
   display:block;
 }
+
+
+/* Three-across full-cover profile cards */
+.profile-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+  padding:10px 14px 22px!important;
+}
+
+.profile-grid .profile-post-card{
+  border-radius:12px!important;
+}
+
+.profile-card-media{
+  aspect-ratio:2/3!important;
+  background:#eee3d6!important;
+}
+
+.profile-card-media>img,
+.profile-card-media>video{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+}
+
+.profile-card-copy{
+  min-height:86px!important;
+  padding:8px 8px 30px!important;
+}
+
+.profile-card-heading{
+  gap:4px!important;
+}
+
+.profile-card-heading strong{
+  font-size:12px!important;
+  line-height:1.08!important;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+.profile-card-rating{
+  font-size:10px!important;
+  line-height:1!important;
+}
+
+.profile-card-author{
+  margin-top:3px!important;
+  font-size:7px!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.profile-card-meta{
+  margin-top:8px!important;
+  font-size:7px!important;
+}
+
+.profile-card-menu-toggle{
+  right:7px!important;
+  bottom:6px!important;
+  min-width:25px!important;
+  min-height:22px!important;
+  font-size:13px!important;
+}
+
+.profile-card-heart{
+  right:7px!important;
+  top:6px!important;
+  font-size:19px!important;
+}
+
+.profile-post-card .profile-tile-controls{
+  right:6px!important;
+  bottom:28px!important;
+}
+
+.profile-post-card .profile-tile-controls button{
+  height:27px!important;
+  padding:0 8px!important;
+  font-size:8px!important;
+}
+
+.profile-post-card .profile-tile-controls button svg{
+  width:12px!important;
+  height:12px!important;
+}
+
+@media(max-width:390px){
+  .profile-grid{
+    gap:6px!important;
+    padding-left:10px!important;
+    padding-right:10px!important;
+  }
+
+  .profile-card-copy{
+    min-height:82px!important;
+    padding:7px 7px 28px!important;
+  }
+
+  .profile-card-heading strong{
+    font-size:11px!important;
+  }
+
+  .profile-card-rating{
+    font-size:9px!important;
+  }
+
+  .profile-card-author,
+  .profile-card-meta{
+    font-size:6.5px!important;
+  }
+}
