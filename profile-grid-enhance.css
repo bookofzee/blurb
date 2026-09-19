@@ -426,3 +426,102 @@
 
 
 .profile-post-card:after{display:none!important}
+
+
+/* Profile card three-dot controls */
+.profile-card-copy{
+  position:relative;
+}
+
+.profile-card-rating{
+  display:none!important;
+}
+
+.profile-card-menu-toggle{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#a08472;
+  font:900 15px/1 Inter,system-ui,sans-serif;
+  letter-spacing:1px;
+  padding:0 1px 3px 8px;
+  min-width:30px;
+  min-height:24px;
+  cursor:pointer;
+}
+
+.profile-card-menu-toggle[aria-expanded="true"]{
+  color:#a7502d;
+}
+
+.profile-post-card .profile-tile-controls{
+  position:absolute!important;
+  z-index:12!important;
+  inset:auto 8px 31px auto!important;
+  display:flex!important;
+  align-items:center;
+  gap:5px;
+  width:auto!important;
+  padding:5px;
+  border:1px solid rgba(96,65,49,.12);
+  border-radius:999px;
+  background:rgba(255,250,242,.98)!important;
+  box-shadow:0 8px 22px rgba(58,37,26,.16);
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(4px) scale(.96);
+  transition:opacity .14s ease,transform .14s ease;
+}
+
+.profile-post-card.controls-open .profile-tile-controls{
+  opacity:1!important;
+  pointer-events:auto!important;
+  transform:translateY(0) scale(1);
+}
+
+.profile-post-card .profile-tile-controls button{
+  position:static!important;
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  width:auto!important;
+  height:30px!important;
+  min-width:0!important;
+  padding:0 10px!important;
+  border-radius:999px!important;
+  box-shadow:none!important;
+  font-size:9px!important;
+  font-weight:850!important;
+}
+
+.profile-post-card .profile-tile-controls button svg{
+  width:14px!important;
+  height:14px!important;
+  stroke-width:2.2!important;
+}
+
+.profile-post-card .profile-edit-post{
+  background:#fff!important;
+  border:1px solid rgba(96,65,49,.14)!important;
+  color:#6a4a3b!important;
+}
+
+.profile-post-card .profile-delete-post{
+  background:#a7502d!important;
+  border:1px solid #a7502d!important;
+  color:#fffaf5!important;
+}
+
+.profile-post-card.controls-open .profile-card-media>img,
+.profile-post-card.controls-open .profile-card-media>video,
+.profile-post-card.controls-open .profile-media-fallback{
+  opacity:.48!important;
+  filter:brightness(.7) saturate(.88)!important;
+}
+
+.profile-post-card.controls-open .profile-card-copy{
+  opacity:.84;
+}
