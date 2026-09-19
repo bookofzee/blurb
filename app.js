@@ -651,6 +651,20 @@ function profileCropElements(modal,kind){
   };
 }
 
+function profileCropMinScale(modal,kind){
+  const {stage,preview}=profileCropElements(modal,kind);
+  const img=preview?.querySelector('img');
+  if(!stage||!img||!img.naturalWidth||!img.naturalHeight)return .2;
+
+  const sw=stage.clientWidth;
+  const sh=stage.clientHeight;
+  if(!sw||!sh)return .2;
+
+  const cover=Math.max(sw/img.naturalWidth,sh/img.naturalHeight);
+  const contain=Math.min(sw/img.naturalWidth,sh/img.naturalHeight);
+  return Math.max(.15,Math.min(1,contain/cover));
+}
+
 function clampProfileCrop(modal,kind){
   const state=profileCropState(modal,kind);
   const {stage,preview}=profileCropElements(modal,kind);
@@ -694,6 +708,14 @@ function paintProfileCrop(modal,kind){
     if(!sw||!sh||!img.naturalWidth||!img.naturalHeight)return;
 
     const base=Math.max(sw/img.naturalWidth,sh/img.naturalHeight);
+
+    if(state.autoFit){
+      state.scale=profileCropMinScale(modal,kind);
+      state.x=0;
+      state.y=0;
+      state.autoFit=false;
+    }
+
     const renderedW=img.naturalWidth*base*state.scale;
     const renderedH=img.naturalHeight*base*state.scale;
 
@@ -749,7 +771,8 @@ function bindProfileCropStage(modal,kind){
       if(!pinchStart)startPinch();
       const pts=[...pointers.values()].slice(0,2);
       const center=midpoint(pts[0],pts[1]);
-      state.scale=Math.max(1,Math.min(3.5,pinchStart.scale*(distance(pts[0],pts[1])/Math.max(1,pinchStart.distance))));
+      const minScale=profileCropMinScale(modal,kind);
+      state.scale=Math.max(minScale,Math.min(4,pinchStart.scale*(distance(pts[0],pts[1])/Math.max(1,pinchStart.distance))));
       state.x=pinchStart.x+(center.x-pinchStart.center.x);
       state.y=pinchStart.y+(center.y-pinchStart.center.y);
     }else if(lastPoint){
@@ -781,7 +804,8 @@ function bindProfileCropStage(modal,kind){
     e.preventDefault();
     const state=profileCropState(modal,kind);
     if(!state)return;
-    state.scale=Math.max(1,Math.min(3.5,state.scale+(e.deltaY<0?.08:-.08)));
+    const minScale=profileCropMinScale(modal,kind);
+    state.scale=Math.max(minScale,Math.min(4,state.scale+(e.deltaY<0?.08:-.08)));
     markProfileCropDirty(modal,kind);
     paintProfileCrop(modal,kind);
   },{passive:false});
@@ -912,7 +936,7 @@ function ensureProfileDetailsModal(){
     if(modal._draft.avatarUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.avatarUrl);
     modal._draft.avatarFile=file;
     modal._draft.avatarUrl=URL.createObjectURL(file);
-    modal._draft.avatarTransform={x:0,y:0,scale:1};
+    modal._draft.avatarTransform={x:0,y:0,scale:1,autoFit:true};
     modal._draft.avatarDirty=true;
     modal._draft.removeAvatar=false;
     paintProfileDetailsPreview(modal);
@@ -924,7 +948,7 @@ function ensureProfileDetailsModal(){
     if(modal._draft.bannerUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.bannerUrl);
     modal._draft.bannerFile=file;
     modal._draft.bannerUrl=URL.createObjectURL(file);
-    modal._draft.bannerTransform={x:0,y:0,scale:1};
+    modal._draft.bannerTransform={x:0,y:0,scale:1,autoFit:true};
     modal._draft.bannerDirty=true;
     modal._draft.removeBanner=false;
     paintProfileDetailsPreview(modal);
@@ -1030,8 +1054,8 @@ async function editProfile(){
     bannerFile:null,
     avatarUrl:p.avatar_url||null,
     bannerUrl:p.banner_url||null,
-    avatarTransform:{x:0,y:0,scale:1},
-    bannerTransform:{x:0,y:0,scale:1},
+    avatarTransform:{x:0,y:0,scale:1,autoFit:false},
+    bannerTransform:{x:0,y:0,scale:1,autoFit:false},
     avatarDirty:false,
     bannerDirty:false,
     removeAvatar:false,
