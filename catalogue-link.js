@@ -586,6 +586,18 @@ function bindBookFlipActions(root){
   });
 }
 
+function openFeedBookChip(chip){
+  if(!ready||!(chip instanceof HTMLElement))return false;
+  const title=chip.querySelector('strong')?.textContent?.trim()||'';
+  const author=chip.querySelector('small')?.textContent?.trim()||'';
+  const book=findBook('',title,author);
+  if(!book)return false;
+  openBookFlip(book,chip);
+  return true;
+}
+
+window.openBlurbFeedBook=openFeedBookChip;
+
 function bindLibraryBookFlips(root=document){
   if(!ready)return;
   root?.querySelectorAll?.('[data-library-card]').forEach(card=>{
