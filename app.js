@@ -603,7 +603,34 @@ function initEvents(){
     renderLibrary();
   });
   window.addEventListener('blurb-library-changed',()=>{if(state.activeView==='library')loadLibrary();});
-window.addEventListener('blurb-spoiler-preference-changed',()=>{if(state.activeView==='home')renderFeed();});
+  window.addEventListener('blurb-cover-changed',e=>{
+    const detail=e.detail||{};
+    const sourceId=String(detail.sourceId||'');
+    const title=String(detail.title||'').trim().toLowerCase();
+    const author=String(detail.author||'').trim().toLowerCase();
+    const coverUrl=String(detail.coverUrl||'');
+    if(!coverUrl)return;
+
+    const matches=book=>{
+      if(sourceId&&String(book?.source_id||'')===sourceId)return true;
+      return String(book?.title||'').trim().toLowerCase()===title
+        && String(book?.author||'').trim().toLowerCase()===author;
+    };
+
+    state.books=(state.books||[]).map(book=>matches(book)?{...book,cover_url:coverUrl}:book);
+    state.library=(state.library||[]).map(item=>({
+      ...item,
+      blurb_books:item.blurb_books&&matches(item.blurb_books)
+        ? {...item.blurb_books,cover_url:coverUrl}
+        : item.blurb_books
+    }));
+
+    if(state.activeView==='discover')renderDiscover();
+    if(state.activeView==='library')renderLibrary();
+    if(state.activeView==='feed')renderFeed();
+    renderBookSheet();
+  });
+window.addEventListener('blurb-spoiler-preference-changed',()=>{if(state.activeView==='home'||state.activeView==='feed')renderFeed();});
   $('#libraryContent').addEventListener('click',e=>{if(e.target.closest('[data-go-discover]'))showView('discover');});
   $('#openNotifications').addEventListener('click',()=>state.user?toast('Notifications are ready for live activity'):openSheet('authSheet'));
 }
