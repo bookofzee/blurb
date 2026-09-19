@@ -167,3 +167,14 @@
 .profile-media-tile video{
   pointer-events:none;
 }
+
+
+/* Prevent iPhone form focus zoom */
+@media (max-width: 600px){
+  #profileEditCaption,
+  .profile-post-edit-card input,
+  .profile-post-edit-card textarea,
+  .profile-post-edit-card select{
+    font-size:16px!important;
+  }
+}
