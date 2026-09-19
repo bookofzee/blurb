@@ -293,3 +293,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   -webkit-backdrop-filter:none;
   pointer-events:none;
 }
+
+
+/* Hidden interactive layers must never intercept taps */
+[hidden]{
+  display:none!important;
+}
+.sheet-backdrop[hidden],
+.sheet[hidden],
+.profile-details-modal[hidden],
+.profile-post-edit-modal[hidden]{
+  display:none!important;
+  pointer-events:none!important;
+}
