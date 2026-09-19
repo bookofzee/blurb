@@ -626,6 +626,187 @@ async function uploadProfileAsset(file,kind){
   return data?.publicUrl||null;
 }
 
+function profileCropState(modal,kind){
+  const draft=modal?._draft;
+  if(!draft)return null;
+  return kind==='avatar'?draft.avatarTransform:draft.bannerTransform;
+}
+
+function profileCropUrl(modal,kind){
+  const draft=modal?._draft;
+  return kind==='avatar'?draft?.avatarUrl:draft?.bannerUrl;
+}
+
+function markProfileCropDirty(modal,kind){
+  if(!modal?._draft)return;
+  if(kind==='avatar')modal._draft.avatarDirty=true;
+  else modal._draft.bannerDirty=true;
+}
+
+function profileCropElements(modal,kind){
+  return {
+    stage:modal.querySelector('[data-profile-crop="'+kind+'"]'),
+    preview:modal.querySelector(kind==='avatar'?'#profileAvatarPreview':'#profileBannerPreview'),
+    zoom:modal.querySelector(kind==='avatar'?'#profileAvatarZoom':'#profileBannerZoom')
+  };
+}
+
+function clampProfileCrop(modal,kind){
+  const state=profileCropState(modal,kind);
+  const {stage,preview}=profileCropElements(modal,kind);
+  const img=preview?.querySelector('img');
+  if(!state||!stage||!img||!img.naturalWidth||!img.naturalHeight)return;
+  const sw=stage.clientWidth, sh=stage.clientHeight;
+  if(!sw||!sh)return;
+  const base=Math.max(sw/img.naturalWidth,sh/img.naturalHeight);
+  const renderedW=img.naturalWidth*base*state.scale;
+  const renderedH=img.naturalHeight*base*state.scale;
+  const maxX=Math.max(0,(renderedW-sw)/2);
+  const maxY=Math.max(0,(renderedH-sh)/2);
+  state.x=Math.max(-maxX,Math.min(maxX,state.x));
+  state.y=Math.max(-maxY,Math.min(maxY,state.y));
+}
+
+function paintProfileCrop(modal,kind){
+  const state=profileCropState(modal,kind);
+  const url=profileCropUrl(modal,kind);
+  const {preview,zoom}=profileCropElements(modal,kind);
+  if(!preview||!state)return;
+  if(!url){
+    preview.innerHTML=kind==='avatar'
+      ? '<span class="profile-crop-empty">Add photo</span>'
+      : '<span class="profile-crop-empty">Add banner</span>';
+    if(zoom)zoom.value='1';
+    return;
+  }
+  preview.innerHTML='<img src="'+escapeHtml(url)+'" alt="" draggable="false" />';
+  const img=preview.querySelector('img');
+  const apply=()=>{
+    clampProfileCrop(modal,kind);
+    img.style.left='calc(50% + '+state.x+'px)';
+    img.style.top='calc(50% + '+state.y+'px)';
+    img.style.transform='translate(-50%,-50%) scale('+state.scale+')';
+    if(zoom)zoom.value=String(state.scale);
+  };
+  if(img.complete)apply();
+  else img.addEventListener('load',apply,{once:true});
+}
+
+function bindProfileCropStage(modal,kind){
+  const {stage,zoom}=profileCropElements(modal,kind);
+  if(!stage||stage.dataset.cropBound==='1')return;
+  stage.dataset.cropBound='1';
+  const pointers=new Map();
+  let lastPoint=null, pinchStart=null;
+  const point=e=>({x:e.clientX,y:e.clientY});
+  const midpoint=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+  const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const startPinch=()=>{
+    if(pointers.size<2){pinchStart=null;return;}
+    const pts=[...pointers.values()].slice(0,2);
+    const state=profileCropState(modal,kind);
+    if(!state)return;
+    pinchStart={distance:Math.max(1,distance(pts[0],pts[1])),center:midpoint(pts[0],pts[1]),scale:state.scale,x:state.x,y:state.y};
+  };
+  stage.addEventListener('pointerdown',e=>{
+    if(!profileCropUrl(modal,kind))return;
+    e.preventDefault();
+    stage.setPointerCapture?.(e.pointerId);
+    pointers.set(e.pointerId,point(e));
+    if(pointers.size===1){lastPoint=point(e);pinchStart=null;} else startPinch();
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!pointers.has(e.pointerId))return;
+    e.preventDefault();
+    pointers.set(e.pointerId,point(e));
+    const state=profileCropState(modal,kind);
+    if(!state)return;
+    if(pointers.size>=2){
+      if(!pinchStart)startPinch();
+      const pts=[...pointers.values()].slice(0,2);
+      const center=midpoint(pts[0],pts[1]);
+      state.scale=Math.max(1,Math.min(3.5,pinchStart.scale*(distance(pts[0],pts[1])/Math.max(1,pinchStart.distance))));
+      state.x=pinchStart.x+(center.x-pinchStart.center.x);
+      state.y=pinchStart.y+(center.y-pinchStart.center.y);
+    }else if(lastPoint){
+      const p=point(e);
+      state.x+=p.x-lastPoint.x;
+      state.y+=p.y-lastPoint.y;
+      lastPoint=p;
+    }
+    markProfileCropDirty(modal,kind);
+    paintProfileCrop(modal,kind);
+  });
+  const end=e=>{
+    pointers.delete(e.pointerId);
+    if(pointers.size===1){lastPoint=[...pointers.values()][0];pinchStart=null;}
+    else if(!pointers.size){lastPoint=null;pinchStart=null;}
+    else startPinch();
+  };
+  stage.addEventListener('pointerup',end);
+  stage.addEventListener('pointercancel',end);
+  zoom?.addEventListener('input',e=>{
+    const state=profileCropState(modal,kind);
+    if(!state||!profileCropUrl(modal,kind))return;
+    state.scale=Math.max(1,Math.min(3.5,Number(e.target.value)||1));
+    markProfileCropDirty(modal,kind);
+    paintProfileCrop(modal,kind);
+  });
+  stage.addEventListener('wheel',e=>{
+    if(!profileCropUrl(modal,kind))return;
+    e.preventDefault();
+    const state=profileCropState(modal,kind);
+    if(!state)return;
+    state.scale=Math.max(1,Math.min(3.5,state.scale+(e.deltaY<0?.08:-.08)));
+    markProfileCropDirty(modal,kind);
+    paintProfileCrop(modal,kind);
+  },{passive:false});
+}
+
+async function profileCropSourceBlob(url){
+  if(!url)throw new Error('No image selected');
+  const response=await fetch(url,{mode:'cors'});
+  if(!response.ok)throw new Error('Could not load image');
+  return await response.blob();
+}
+
+async function makeProfileCropFile(modal,kind){
+  const state=profileCropState(modal,kind);
+  const url=profileCropUrl(modal,kind);
+  const {stage}=profileCropElements(modal,kind);
+  if(!state||!url||!stage)throw new Error('Crop is unavailable');
+  const sourceBlob=await profileCropSourceBlob(url);
+  const objectUrl=URL.createObjectURL(sourceBlob);
+  try{
+    const image=await new Promise((resolve,reject)=>{
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(new Error('Could not read image'));
+      img.src=objectUrl;
+    });
+    const outW=kind==='avatar'?1000:1600;
+    const ratio=stage.clientWidth&&stage.clientHeight?stage.clientHeight/stage.clientWidth:(kind==='avatar'?1:(184/540));
+    const outH=Math.max(1,Math.round(outW*ratio));
+    const canvas=document.createElement('canvas');
+    canvas.width=outW; canvas.height=outH;
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw new Error('Canvas unavailable');
+    const base=Math.max(outW/image.naturalWidth,outH/image.naturalHeight);
+    const drawScale=base*state.scale;
+    const drawW=image.naturalWidth*drawScale, drawH=image.naturalHeight*drawScale;
+    const sx=stage.clientWidth?state.x/stage.clientWidth:0;
+    const sy=stage.clientHeight?state.y/stage.clientHeight:0;
+    const dx=(outW-drawW)/2+(sx*outW);
+    const dy=(outH-drawH)/2+(sy*outH);
+    ctx.fillStyle='#f4e8dc'; ctx.fillRect(0,0,outW,outH);
+    ctx.drawImage(image,dx,dy,drawW,drawH);
+    const blob=await new Promise((resolve,reject)=>{
+      canvas.toBlob(value=>value?resolve(value):reject(new Error('Could not create crop')),'image/jpeg',.92);
+    });
+    return new File([blob],kind+'-'+Date.now()+'.jpg',{type:'image/jpeg'});
+  }finally{ URL.revokeObjectURL(objectUrl); }
+}
+
 function ensureProfileDetailsModal(){
   let modal=document.querySelector('#profileDetailsModal');
   if(modal)return modal;
