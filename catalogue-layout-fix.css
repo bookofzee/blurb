@@ -583,3 +583,57 @@ body.book-flip-open{overflow:hidden}
 }
 .book-flip-remove:hover{transform:translateY(-1px)}
 .book-flip-remove:active{transform:translateY(0)}
+
+
+/* Synopsis spoiler visibility toggle */
+.book-flip-synopsis-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.book-flip-synopsis-head>span{
+  color:#bf602f;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  font-size:8px;
+  font-weight:900;
+}
+.book-spoiler-toggle{
+  border:0;
+  background:transparent;
+  color:#a85a34;
+  padding:2px 0;
+  font-size:8px;
+  font-weight:850;
+  cursor:pointer;
+}
+.book-spoiler-copy{
+  position:relative;
+  min-height:42px;
+}
+.book-spoiler-reveal{
+  display:none;
+  position:absolute;
+  inset:50% auto auto 50%;
+  transform:translate(-50%,-50%);
+  z-index:2;
+  min-height:30px;
+  padding:0 13px;
+  border:1px solid rgba(191,96,47,.22);
+  border-radius:999px;
+  background:#fff8ef;
+  color:#a7502d;
+  font-size:8px;
+  font-weight:900;
+  box-shadow:0 7px 18px rgba(74,43,29,.12);
+}
+.book-flip-modal.spoilers-hidden .book-spoiler-copy p{
+  filter:blur(7px);
+  user-select:none;
+  pointer-events:none;
+  opacity:.62;
+}
+.book-flip-modal.spoilers-hidden .book-spoiler-reveal{
+  display:block;
+}
