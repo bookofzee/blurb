@@ -306,3 +306,191 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   display:none!important;
   pointer-events:none!important;
 }
+
+
+/* Polished draggable profile media editor */
+.profile-details-card{
+  width:min(100%,500px);
+  padding:22px;
+}
+.profile-details-card h2{
+  margin:0 44px 18px 0;
+  font:500 32px/1 Georgia,serif;
+}
+.profile-media-editor{
+  display:grid;
+  gap:14px;
+  margin:0 0 18px;
+}
+.profile-crop-section{
+  padding:12px;
+  border:1px solid rgba(111,77,61,.13);
+  border-radius:18px;
+  background:#fffdf8;
+  box-shadow:0 8px 24px rgba(73,43,28,.05);
+}
+.profile-crop-heading{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 1px 9px;
+}
+.profile-crop-heading strong{
+  font-size:11px;
+  color:#5d4033;
+}
+.profile-crop-heading span{
+  color:#a18474;
+  font-size:8px;
+  font-weight:650;
+  text-align:right;
+}
+.profile-crop-stage{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(135deg,#ead9c8,#d9b99f);
+  border:1px solid rgba(91,55,38,.12);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.38);
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
+.profile-crop-stage:active{cursor:grabbing}
+.profile-crop-stage-banner{
+  width:100%;
+  aspect-ratio:2.93/1;
+  border-radius:14px;
+}
+.profile-crop-stage-avatar{
+  width:122px;
+  height:122px;
+  min-width:122px;
+  border-radius:50%;
+  border:4px solid #fff8ef;
+  box-shadow:0 8px 22px rgba(73,43,28,.14);
+}
+.profile-banner-preview,
+.profile-avatar-preview{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+}
+.profile-banner-preview img,
+.profile-avatar-preview img{
+  position:absolute;
+  width:100%;
+  height:100%;
+  max-width:none;
+  object-fit:cover;
+  display:block;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  will-change:left,top,transform;
+}
+.profile-crop-empty{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#8d6f5f;
+  font-size:10px;
+  font-weight:800;
+  background:linear-gradient(135deg,#f2e3d4,#dfc3aa);
+}
+.profile-crop-tools{
+  display:grid;
+  grid-template-columns:auto minmax(110px,1fr) auto;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+}
+.profile-avatar-crop-row{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.profile-avatar-crop-tools{
+  flex:1;
+  min-width:0;
+  display:grid;
+  gap:9px;
+}
+.profile-change-asset,
+.profile-remove-asset{
+  min-height:34px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:850;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+}
+.profile-change-asset{
+  position:relative;
+  padding:0 13px;
+  border:1px solid rgba(111,77,61,.16);
+  background:#f7ecdf;
+  color:#614538;
+  cursor:pointer;
+}
+.profile-change-asset input{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  cursor:pointer;
+}
+.profile-remove-asset{
+  padding:0 12px;
+  border:0;
+  background:transparent;
+  color:#a7502d;
+}
+.profile-zoom-control{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  color:#8d6f5f;
+  font-size:8px;
+  font-weight:800;
+}
+.profile-zoom-control input{
+  width:100%;
+  min-width:0;
+  accent-color:#c96832;
+}
+.profile-details-label{margin-top:12px}
+.profile-details-actions{
+  position:sticky;
+  bottom:-22px;
+  padding:14px 0 0;
+  background:linear-gradient(to top,#fff9f0 72%,rgba(255,249,240,0));
+}
+@media(max-width:390px){
+  .profile-details-modal{padding:8px}
+  .profile-details-card{
+    padding:18px 14px 16px;
+    border-radius:20px;
+    max-height:94dvh;
+  }
+  .profile-crop-section{padding:10px}
+  .profile-crop-heading span{font-size:7px}
+  .profile-crop-tools{
+    grid-template-columns:auto minmax(80px,1fr) auto;
+    gap:7px;
+  }
+  .profile-avatar-crop-row{gap:12px}
+  .profile-crop-stage-avatar{
+    width:108px;
+    height:108px;
+    min-width:108px;
+  }
+}
