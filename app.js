@@ -651,20 +651,6 @@ function profileCropElements(modal,kind){
   };
 }
 
-function profileCropMinScale(modal,kind){
-  const {stage,preview}=profileCropElements(modal,kind);
-  const img=preview?.querySelector('img');
-  if(!stage||!img||!img.naturalWidth||!img.naturalHeight)return .2;
-
-  const sw=stage.clientWidth;
-  const sh=stage.clientHeight;
-  if(!sw||!sh)return .2;
-
-  const cover=Math.max(sw/img.naturalWidth,sh/img.naturalHeight);
-  const contain=Math.min(sw/img.naturalWidth,sh/img.naturalHeight);
-  return Math.max(.15,Math.min(1,contain/cover));
-}
-
 function clampProfileCrop(modal,kind){
   const state=profileCropState(modal,kind);
   const {stage,preview}=profileCropElements(modal,kind);
@@ -707,20 +693,14 @@ function paintProfileCrop(modal,kind){
     const sh=stage.clientHeight;
     if(!sw||!sh||!img.naturalWidth||!img.naturalHeight)return;
 
-    const base=Math.max(sw/img.naturalWidth,sh/img.naturalHeight);
+    // Scale 1 = whole image visible inside the crop frame.
+    const contain=Math.min(sw/img.naturalWidth,sh/img.naturalHeight);
+    const renderedW=img.naturalWidth*contain*state.scale;
+    const renderedH=img.naturalHeight*contain*state.scale;
 
-    if(state.autoFit){
-      state.scale=profileCropMinScale(modal,kind);
-      state.x=0;
-      state.y=0;
-      state.autoFit=false;
-    }
-
-    const renderedW=img.naturalWidth*base*state.scale;
-    const renderedH=img.naturalHeight*base*state.scale;
-
-    const maxX=Math.max(0,(renderedW-sw)/2);
-    const maxY=Math.max(0,(renderedH-sh)/2);
+    // Allow repositioning but keep at least a small part of the image in view.
+    const maxX=Math.max(sw,renderedW)*.72;
+    const maxY=Math.max(sh,renderedH)*.72;
     state.x=Math.max(-maxX,Math.min(maxX,state.x));
     state.y=Math.max(-maxY,Math.min(maxY,state.y));
 
@@ -771,8 +751,7 @@ function bindProfileCropStage(modal,kind){
       if(!pinchStart)startPinch();
       const pts=[...pointers.values()].slice(0,2);
       const center=midpoint(pts[0],pts[1]);
-      const minScale=profileCropMinScale(modal,kind);
-      state.scale=Math.max(minScale,Math.min(4,pinchStart.scale*(distance(pts[0],pts[1])/Math.max(1,pinchStart.distance))));
+      state.scale=Math.max(.55,Math.min(5,pinchStart.scale*(distance(pts[0],pts[1])/Math.max(1,pinchStart.distance))));
       state.x=pinchStart.x+(center.x-pinchStart.center.x);
       state.y=pinchStart.y+(center.y-pinchStart.center.y);
     }else if(lastPoint){
@@ -804,8 +783,7 @@ function bindProfileCropStage(modal,kind){
     e.preventDefault();
     const state=profileCropState(modal,kind);
     if(!state)return;
-    const minScale=profileCropMinScale(modal,kind);
-    state.scale=Math.max(minScale,Math.min(4,state.scale+(e.deltaY<0?.08:-.08)));
+    state.scale=Math.max(.55,Math.min(5,state.scale+(e.deltaY<0?.08:-.08)));
     markProfileCropDirty(modal,kind);
     paintProfileCrop(modal,kind);
   },{passive:false});
@@ -823,8 +801,10 @@ async function makeProfileCropFile(modal,kind){
   const url=profileCropUrl(modal,kind);
   const {stage}=profileCropElements(modal,kind);
   if(!state||!url||!stage)throw new Error('Crop is unavailable');
+
   const sourceBlob=await profileCropSourceBlob(url);
   const objectUrl=URL.createObjectURL(sourceBlob);
+
   try{
     const image=await new Promise((resolve,reject)=>{
       const img=new Image();
@@ -832,27 +812,42 @@ async function makeProfileCropFile(modal,kind){
       img.onerror=()=>reject(new Error('Could not read image'));
       img.src=objectUrl;
     });
+
     const outW=kind==='avatar'?1000:1600;
-    const ratio=stage.clientWidth&&stage.clientHeight?stage.clientHeight/stage.clientWidth:(kind==='avatar'?1:(184/540));
+    const ratio=stage.clientWidth&&stage.clientHeight
+      ? stage.clientHeight/stage.clientWidth
+      : (kind==='avatar'?1:(184/540));
     const outH=Math.max(1,Math.round(outW*ratio));
+
     const canvas=document.createElement('canvas');
-    canvas.width=outW; canvas.height=outH;
+    canvas.width=outW;
+    canvas.height=outH;
     const ctx=canvas.getContext('2d');
     if(!ctx)throw new Error('Canvas unavailable');
-    const base=Math.max(outW/image.naturalWidth,outH/image.naturalHeight);
-    const drawScale=base*state.scale;
-    const drawW=image.naturalWidth*drawScale, drawH=image.naturalHeight*drawScale;
+
+    // Match the preview: scale 1 = contain the whole image.
+    const contain=Math.min(outW/image.naturalWidth,outH/image.naturalHeight);
+    const drawScale=contain*state.scale;
+    const drawW=image.naturalWidth*drawScale;
+    const drawH=image.naturalHeight*drawScale;
+
     const sx=stage.clientWidth?state.x/stage.clientWidth:0;
     const sy=stage.clientHeight?state.y/stage.clientHeight:0;
     const dx=(outW-drawW)/2+(sx*outW);
     const dy=(outH-drawH)/2+(sy*outH);
-    ctx.fillStyle='#f4e8dc'; ctx.fillRect(0,0,outW,outH);
+
+    ctx.fillStyle='#f4e8dc';
+    ctx.fillRect(0,0,outW,outH);
     ctx.drawImage(image,dx,dy,drawW,drawH);
+
     const blob=await new Promise((resolve,reject)=>{
       canvas.toBlob(value=>value?resolve(value):reject(new Error('Could not create crop')),'image/jpeg',.92);
     });
+
     return new File([blob],kind+'-'+Date.now()+'.jpg',{type:'image/jpeg'});
-  }finally{ URL.revokeObjectURL(objectUrl); }
+  }finally{
+    URL.revokeObjectURL(objectUrl);
+  }
 }
 
 function ensureProfileDetailsModal(){
@@ -936,7 +931,7 @@ function ensureProfileDetailsModal(){
     if(modal._draft.avatarUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.avatarUrl);
     modal._draft.avatarFile=file;
     modal._draft.avatarUrl=URL.createObjectURL(file);
-    modal._draft.avatarTransform={x:0,y:0,scale:1,autoFit:true};
+    modal._draft.avatarTransform={x:0,y:0,scale:1};
     modal._draft.avatarDirty=true;
     modal._draft.removeAvatar=false;
     paintProfileDetailsPreview(modal);
@@ -948,7 +943,7 @@ function ensureProfileDetailsModal(){
     if(modal._draft.bannerUrl?.startsWith?.('blob:'))URL.revokeObjectURL(modal._draft.bannerUrl);
     modal._draft.bannerFile=file;
     modal._draft.bannerUrl=URL.createObjectURL(file);
-    modal._draft.bannerTransform={x:0,y:0,scale:1,autoFit:true};
+    modal._draft.bannerTransform={x:0,y:0,scale:1};
     modal._draft.bannerDirty=true;
     modal._draft.removeBanner=false;
     paintProfileDetailsPreview(modal);
@@ -1054,8 +1049,8 @@ async function editProfile(){
     bannerFile:null,
     avatarUrl:p.avatar_url||null,
     bannerUrl:p.banner_url||null,
-    avatarTransform:{x:0,y:0,scale:1,autoFit:false},
-    bannerTransform:{x:0,y:0,scale:1,autoFit:false},
+    avatarTransform:{x:0,y:0,scale:1},
+    bannerTransform:{x:0,y:0,scale:1},
     avatarDirty:false,
     bannerDirty:false,
     removeAvatar:false,
