@@ -15,6 +15,7 @@ function bindLongPress(tile){
   let didLongPress=false;
   let startX=0;
   let startY=0;
+  const hasControls=!!tile.querySelector('.profile-tile-controls');
 
   const clearPress=()=>{clearTimeout(longPressTimer);longPressTimer=null;};
 
@@ -23,6 +24,7 @@ function bindLongPress(tile){
     didLongPress=false;
     startX=x;
     startY=y;
+    if(!hasControls)return;
     longPressTimer=setTimeout(()=>{
       didLongPress=true;
       closeTileControls(tile);
@@ -277,59 +279,214 @@ function openProfileEditModal(post,session,grid){
     });
   }
 }
-async function hydrateProfileGrid(){
-  if(busy)return;
+let activeProfileTab='blurbs';
+
+function profileCardDate(iso){
+  if(!iso)return '';
+  const d=new Date(iso);
+  if(Number.isNaN(d.getTime()))return '';
+  const diff=Math.max(0,Date.now()-d.getTime());
+  const days=Math.floor(diff/86400000);
+  if(days===0)return 'Today';
+  if(days===1)return '1d ago';
+  if(days<14)return `${days}d ago`;
+  return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+}
+
+function profileCardExcerpt(value=''){
+  const text=String(value||'').trim().replace(/\s+/g,' ');
+  return text.length>86?`${text.slice(0,83)}…`:text;
+}
+
+async function profilePostsForTab(session,tab){
+  const select='id,user_id,media_url,thumbnail_url,post_type,caption,rating,created_at,status,blurb_books(title,author,cover_url)';
+
+  if(tab==='blurbs'){
+    const {data,error}=await supabase.from('blurb_posts')
+      .select(select)
+      .eq('user_id',session.user.id)
+      .eq('status','published')
+      .order('created_at',{ascending:false})
+      .limit(40);
+    if(error)throw error;
+    return data||[];
+  }
+
+  const table=tab==='liked'?'blurb_likes':'blurb_saved_posts';
+  const {data:links,error:linkError}=await supabase.from(table)
+    .select('post_id,created_at')
+    .eq('user_id',session.user.id)
+    .order('created_at',{ascending:false})
+    .limit(60);
+
+  if(linkError)throw linkError;
+  const ids=(links||[]).map(x=>x.post_id).filter(Boolean);
+  if(!ids.length)return [];
+
+  const {data,error}=await supabase.from('blurb_posts')
+    .select(select)
+    .in('id',ids)
+    .eq('status','published');
+
+  if(error)throw error;
+  const byId=new Map((data||[]).map(post=>[String(post.id),post]));
+  return ids.map(id=>byId.get(String(id))).filter(Boolean);
+}
+
+function profileCardMarkup(post,session,tab){
+  const book=post.blurb_books||{};
+  const title=book.title||'Untitled Blurb';
+  const author=book.author||'';
+  const [a,b]=paletteFor(post.id);
+  const cover=post.thumbnail_url||null;
+  const media=cover||post.media_url||book.cover_url||null;
+  const own=String(post.user_id||'')===String(session.user.id||'')&&tab==='blurbs';
+
+  let visual='';
+  if(media){
+    const useVideo=!cover&&post.post_type==='video'&&post.media_url;
+    visual=useVideo
+      ?`<video src="${escapeHtml(post.media_url)}" muted playsinline preload="metadata"></video>`
+      :`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`;
+  }else{
+    visual=`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}"><span>${escapeHtml(title)}</span></div>`;
+  }
+
+  const controls=own?`
+    <div class="profile-tile-controls" aria-hidden="true">
+      <button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}" aria-label="Edit Blurb" title="Edit Blurb">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4.2L19 9.2 14.8 5 4 15.8V20Z"/><path d="m13.7 6.1 4.2 4.2"/></svg>
+      </button>
+      <button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete Blurb" title="Delete Blurb">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
+      </button>
+    </div>`:'';
+
+  const rating=Number(post.rating||0);
+  return `<article class="profile-post profile-post-card profile-media-tile" data-profile-post="${post.id}">
+    <div class="profile-card-media">
+      ${visual}
+      <span class="profile-card-heart ${tab==='liked'?'active':''}" aria-hidden="true">${tab==='liked'?'♥':'♡'}</span>
+      ${controls}
+    </div>
+    <div class="profile-card-copy">
+      <div class="profile-card-heading">
+        <strong>${escapeHtml(title)}</strong>
+        ${rating?`<span class="profile-card-rating">★ ${rating.toFixed(1)}</span>`:''}
+      </div>
+      ${author?`<small class="profile-card-author">${escapeHtml(author)}</small>`:''}
+      ${post.caption?`<p>${escapeHtml(profileCardExcerpt(post.caption))}</p>`:''}
+      <div class="profile-card-meta"><span>${profileCardDate(post.created_at)}</span><span aria-hidden="true">•••</span></div>
+    </div>
+  </article>`;
+}
+
+function bindProfileCardControls(grid,posts,session,tab){
+  const postMap=new Map((posts||[]).map(post=>[String(post.id),post]));
+
+  grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
+
+  grid.querySelectorAll('[data-edit-profile-post]').forEach(btn=>btn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const id=btn.dataset.editProfilePost;
+    const tile=btn.closest('.profile-media-tile');
+    const post=postMap.get(String(id));
+    if(!post)return;
+    tile?.classList.remove('controls-open');
+    openProfileEditModal(post,session,grid);
+  }));
+
+  grid.querySelectorAll('[data-delete-profile-post]').forEach(btn=>btn.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const id=btn.dataset.deleteProfilePost;
+    const tile=btn.closest('.profile-media-tile');
+    if(!confirm('Delete this Blurb?'))return;
+
+    tile?.classList.add('deleting');
+    const {error}=await supabase.from('blurb_posts')
+      .delete()
+      .eq('id',id)
+      .eq('user_id',session.user.id);
+
+    if(error){
+      tile?.classList.remove('deleting');
+      toast('Couldn’t delete that Blurb');
+      return;
+    }
+
+    tile?.remove();
+    const count=document.querySelector('[data-profile-stat="blurbs"] strong');
+    if(count)count.textContent=String(Math.max(0,Number(count.textContent||0)-1));
+    toast('Blurb deleted');
+  }));
+}
+
+async function hydrateProfileGrid(tab=activeProfileTab,force=false){
   const grid=document.querySelector('#profileContent .profile-grid');
-  if(!grid||grid.dataset.enhanced==='1')return;
+  if(!grid)return;
+  if(!force&&grid.dataset.enhanced===tab)return;
+
   const {data:{session}}=await supabase.auth.getSession();
   if(!session?.user)return;
-  busy=true;
+
+  activeProfileTab=tab;
+  grid.dataset.enhanced='';
+  grid.innerHTML='<div class="profile-grid-loading">Gathering your books…</div>';
+
   try{
-    const {data:posts,error}=await supabase.from('blurb_posts').select('id,media_url,thumbnail_url,post_type,caption,created_at,blurb_books(title,author,cover_url)').eq('user_id',session.user.id).order('created_at',{ascending:false}).limit(30);
-    if(error)throw error;
-    grid.dataset.enhanced='1';
-    grid.innerHTML=(posts||[]).map(post=>{
-      const title=post.blurb_books?.title||post.caption||'Blurb';
-      const [a,b]=paletteFor(post.id);
-      const cover=post.thumbnail_url||null;
-      const media=cover||post.media_url;
-      const visual=media?(cover?`<img src="${escapeHtml(cover)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`:(post.post_type==='video'?`<video src="${escapeHtml(media)}" muted playsinline preload="metadata"></video>`:`<img src="${escapeHtml(media)}" alt="${escapeHtml(title)}" loading="lazy" draggable="false" />`)):`<div class="profile-media-fallback" style="--card-a:${a};--card-b:${b}">${escapeHtml(title)}</div>`;
-      return `<article class="profile-post profile-media-tile" data-profile-post="${post.id}" data-caption="${escapeHtml(post.caption||'')}">${visual}<div class="profile-tile-title">${escapeHtml(title)}</div><div class="profile-tile-controls" aria-hidden="true">
-        <button class="profile-edit-post" type="button" data-edit-profile-post="${post.id}" aria-label="Edit Blurb" title="Edit Blurb">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4.2L19 9.2 14.8 5 4 15.8V20Z"/><path d="m13.7 6.1 4.2 4.2"/></svg>
-        </button>
-        <button class="profile-delete-post" type="button" data-delete-profile-post="${post.id}" aria-label="Delete Blurb" title="Delete Blurb">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/><path d="M10 11v5M14 11v5"/></svg>
-        </button>
-      </div></article>`;
-    }).join('');
-    grid.querySelectorAll('.profile-media-tile').forEach(bindLongPress);
-    const postMap=new Map((posts||[]).map(post=>[post.id,post]));
-    grid.querySelectorAll('[data-edit-profile-post]').forEach(btn=>btn.addEventListener('click',e=>{
-      e.stopPropagation();
-      const id=btn.dataset.editProfilePost;
-      const tile=btn.closest('.profile-media-tile');
-      const post=postMap.get(id);
-      if(!post)return;
-      tile?.classList.remove('controls-open');
-      openProfileEditModal(post,session,grid);
-    }));
-    grid.querySelectorAll('[data-delete-profile-post]').forEach(btn=>btn.addEventListener('click',async e=>{
-      e.stopPropagation();
-      const id=btn.dataset.deleteProfilePost;
-      const tile=btn.closest('.profile-media-tile');
-      if(!confirm('Delete this Blurb?'))return;
-      tile?.classList.add('deleting');
-      const {error:deleteError}=await supabase.from('blurb_posts').delete().eq('id',id).eq('user_id',session.user.id);
-      if(deleteError){tile?.classList.remove('deleting');toast('Couldn’t delete that Blurb');return;}
-      tile?.remove();toast('Blurb deleted');
-    }));
-  }catch(err){console.error('Profile preview upgrade failed',err);}finally{busy=false;}
+    const posts=await profilePostsForTab(session,tab);
+    grid.dataset.enhanced=tab;
+
+    if(!posts.length){
+      const title=tab==='liked'?'Nothing liked yet':tab==='saved'?'Nothing saved yet':'No Blurbs yet';
+      const copy=tab==='liked'
+        ? 'Tap the heart on a Blurb and it’ll live here.'
+        : tab==='saved'
+          ? 'Saved Blurbs will be waiting for you here.'
+          : 'Your published Blurbs will appear here.';
+      grid.innerHTML=`<div class="profile-tab-empty"><span>${tab==='liked'?'♡':tab==='saved'?'▱':'✦'}</span><strong>${title}</strong><p>${copy}</p></div>`;
+      return;
+    }
+
+    grid.innerHTML=posts.map(post=>profileCardMarkup(post,session,tab)).join('');
+    bindProfileCardControls(grid,posts,session,tab);
+  }catch(err){
+    console.error('Profile content failed',err);
+    grid.innerHTML='<div class="profile-tab-empty"><strong>Couldn’t load this section</strong><p>Try again in a moment.</p></div>';
+  }
 }
+
 function watch(){
   hydrateProfileGrid();
+
   const root=document.querySelector('#profileContent');
-  if(root)new MutationObserver(()=>{const grid=root.querySelector('.profile-grid');if(grid&&!grid.dataset.enhanced)hydrateProfileGrid();}).observe(root,{childList:true,subtree:true});
-  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.profile-media-tile'))closeTileControls();});
+  if(root){
+    new MutationObserver(()=>{
+      const grid=root.querySelector('.profile-grid');
+      if(grid&&!grid.dataset.enhanced)hydrateProfileGrid(activeProfileTab);
+    }).observe(root,{childList:true,subtree:true});
+  }
+
+  document.addEventListener('click',e=>{
+    const tab=e.target.closest('#profileContent [data-profile-tab]');
+    if(tab){
+      e.preventDefault();
+      activeProfileTab=tab.dataset.profileTab||'blurbs';
+      document.querySelectorAll('#profileContent [data-profile-tab]').forEach(button=>{
+        const active=button===tab;
+        button.classList.toggle('active',active);
+        button.setAttribute('aria-selected',String(active));
+      });
+      hydrateProfileGrid(activeProfileTab,true);
+      return;
+    }
+
+    if(!e.target.closest('.profile-media-tile'))closeTileControls();
+  });
+
+  window.addEventListener('blurb-profile-rendered',()=>{
+    activeProfileTab='blurbs';
+    hydrateProfileGrid('blurbs',true);
+  });
 }
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',watch,{once:true}):watch();
