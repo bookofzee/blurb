@@ -317,7 +317,7 @@ function renderLibrary(){
           return String(b.title||'').toLowerCase().includes(query)||String(b.author||'').toLowerCase().includes(query);
         })
       : tabItems;
-    $('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
+    document.querySelectorAll('#libraryTabs button').forEach(b=>b.classList.toggle('active',b.dataset.library===state.libraryTab));
 
     const search=$('#librarySearch');
     if(search){
