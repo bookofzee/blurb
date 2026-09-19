@@ -258,6 +258,17 @@ function ensureBookFlipModal(){
       }
       return;
     }
+    const spoilerToggle=e.target.closest('[data-book-spoiler-toggle]');
+    if(spoilerToggle){
+      const hidden=!modal.classList.contains('spoilers-hidden');
+      modal.classList.toggle('spoilers-hidden',hidden);
+      spoilerToggle.textContent=hidden?'Show spoilers':'Hide spoilers';
+      spoilerToggle.setAttribute('aria-pressed',String(hidden));
+      try{localStorage.setItem('blurb-book-spoilers-hidden',hidden?'1':'0');}catch{}
+      const headerToggle=modal.querySelector('.book-spoiler-toggle');
+      if(headerToggle&&headerToggle!==spoilerToggle){headerToggle.textContent=hidden?'Show spoilers':'Hide spoilers';headerToggle.setAttribute('aria-pressed',String(hidden));}
+      return;
+    }
     const statusButton=e.target.closest('[data-book-status]');
     if(statusButton){
       const book=bySource.get(modal.dataset.bookId||'');
@@ -271,7 +282,7 @@ function ensureBookFlipModal(){
     if(e.target.closest('[data-book-remove]')){
       const book=bySource.get(modal.dataset.bookId||'');
       if(!book)return;
-      if(!confirm(`Delete “${book.title}” from your library completely?`))return;
+      if(!confirm(`Remove “${book.title}” from your library?`))return;
       const ok=await removeLiveBookStatus(book);
       if(ok){
         closeBookFlip();
@@ -422,8 +433,14 @@ async function openBookFlip(book,coverEl){
       <p class="book-flip-author">${escapeHtml(book.author)}</p>
     </div>
     <div class="book-flip-synopsis">
-      <span>Synopsis</span>
-      <p>${escapeHtml(bookSynopsis(book))}</p>
+      <div class="book-flip-synopsis-head">
+        <span>Synopsis</span>
+        <button type="button" class="book-spoiler-toggle" data-book-spoiler-toggle aria-pressed="false">Hide spoilers</button>
+      </div>
+      <div class="book-spoiler-copy" data-book-spoiler-copy>
+        <p>${escapeHtml(bookSynopsis(book))}</p>
+        <button type="button" class="book-spoiler-reveal" data-book-spoiler-toggle>Show spoilers</button>
+      </div>
     </div>
     <div class="book-flip-library">
       <span id="bookFlipStatusNote">Choose where this belongs in your library.</span>
@@ -433,10 +450,18 @@ async function openBookFlip(book,coverEl){
         <button type="button" data-book-status="read">Read</button>
         <button type="button" data-book-status="dnf">DNF</button>
       </div>
-      <button type="button" class="book-flip-remove" data-book-remove hidden>Delete from library</button>
+      <button type="button" class="book-flip-remove" data-book-remove hidden>Remove from library</button>
     </div>`;
 
   modal.dataset.bookId=String(book.id);
+  let spoilersHidden=false;
+  try{spoilersHidden=localStorage.getItem('blurb-book-spoilers-hidden')==='1';}catch{}
+  modal.classList.toggle('spoilers-hidden',spoilersHidden);
+  const spoilerToggle=back.querySelector('.book-spoiler-toggle');
+  if(spoilerToggle){
+    spoilerToggle.textContent=spoilersHidden?'Show spoilers':'Hide spoilers';
+    spoilerToggle.setAttribute('aria-pressed',String(spoilersHidden));
+  }
   modal.hidden=false;
   modal.classList.remove('expanded','flipped','show-back','flip-out-front','flip-in-back','flip-out-back','flip-in-front');
   clearTimeout(modal._openFlipTimer);
