@@ -552,7 +552,7 @@ async function renderProfile(){
       </div>
     </div>
   </div>
-  <div class="profile-tabs"><button class="active">Blurbs</button><button>Reviews</button><button>Library</button></div><div class="profile-grid">${(posts||[]).map(x=>{const [a,b]=paletteFor(x.id);return `<div class="profile-post" style="--card-a:${a};--card-b:${b}">${escapeHtml(x.blurb_books?.title||x.caption||'Blurb')}</div>`;}).join('')}</div>`;
+  <div class="profile-tabs"><button class="active">Blurbs</button><button>Liked</button><button>Saved</button></div><div class="profile-grid">${(posts||[]).map(x=>{const [a,b]=paletteFor(x.id);return `<div class="profile-post" style="--card-a:${a};--card-b:${b}">${escapeHtml(x.blurb_books?.title||x.caption||'Blurb')}</div>`;}).join('')}</div>`;
   const settingsButton=$('#profileSettingsButton');
   const settingsMenu=$('#profileSettingsMenu');
   settingsButton?.addEventListener('click',e=>{
