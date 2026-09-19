@@ -220,3 +220,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
   height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));
   padding-bottom:env(safe-area-inset-bottom,0px);
 }
+
+
+/* Blurb standalone status bar surface
+   Keep the Home Screen webview below the status bar, but use a dark shell
+   so iOS doesn't create a visible cream-to-reel separator. */
+.ios-standalone,
+.ios-standalone body{
+  background:#0f0d12;
+}
