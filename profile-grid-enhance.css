@@ -423,3 +423,6 @@
   .profile-card-heading strong{font-size:14px}
   .profile-card-copy p{font-size:9px}
 }
+
+
+.profile-post-card:after{display:none!important}
