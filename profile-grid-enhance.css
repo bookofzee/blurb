@@ -681,3 +681,39 @@
     font-size:6.5px!important;
   }
 }
+
+
+/* Blur the whole profile card behind its action menu */
+.profile-grid .profile-post-card{
+  isolation:isolate;
+}
+
+.profile-grid .profile-post-card::before{
+  content:"";
+  position:absolute;
+  z-index:10;
+  inset:0;
+  border-radius:inherit;
+  background:rgba(247,238,227,.18);
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .16s ease;
+}
+
+.profile-grid .profile-post-card.controls-open::before{
+  opacity:1;
+}
+
+.profile-post-card.controls-open .profile-card-copy{
+  opacity:1!important;
+}
+
+.profile-post-card.controls-open .profile-tile-controls{
+  z-index:14!important;
+}
+
+.profile-post-card.controls-open .profile-tile-controls button{
+  box-shadow:0 7px 18px rgba(46,28,19,.24)!important;
+}
