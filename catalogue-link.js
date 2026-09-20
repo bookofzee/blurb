@@ -498,7 +498,7 @@ async function openBookFlip(book,coverEl){
   const back=modal.querySelector('#bookFlipBack');
   const rect=coverEl.getBoundingClientRect();
 
-  const maxWidth=Math.min(350,window.innerWidth-32);
+  const maxWidth=Math.min(400,window.innerWidth-24);
   const maxByHeight=Math.max(220,(window.innerHeight-56)*(2/3));
   const targetWidth=Math.min(maxWidth,maxByHeight);
   const targetHeight=targetWidth*1.5;
@@ -550,8 +550,8 @@ async function openBookFlip(book,coverEl){
         </div>
       </div>
 
-      <section class="book-flip-synopsis">
-        <button type="button" class="book-flip-section-head" data-book-synopsis-toggle aria-expanded="true">
+      <section class="book-flip-synopsis collapsed">
+        <button type="button" class="book-flip-section-head" data-book-synopsis-toggle aria-expanded="false">
           <span class="book-flip-section-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/></svg>
           </span>
