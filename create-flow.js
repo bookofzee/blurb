@@ -475,7 +475,7 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
 
   const stepper=document.createElement('div');
   stepper.className='create-stepper';
-  stepper.innerHTML='<span class="active" data-step-dot="1"><b>1</b><em>Post</em></span><i></i><span data-step-dot="2"><b>2</b><em>Edit</em></span><i></i><span data-step-dot="3"><b>3</b><em>Details</em></span><i></i><span data-step-dot="4"><b>4</b><em>Preview</em></span>';
+  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Edit</span><i></i><span data-step-dot="3">3 · Details</span><i></i><span data-step-dot="4">4 · Preview</span>';
   form.prepend(stepper);
 
   const step1=document.createElement('section');
@@ -488,7 +488,7 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   next1.type='button';
   next1.id='createNextButton';
   next1.className='primary-button create-next-button';
-  next1.innerHTML='Next <span aria-hidden="true">→</span>';
+  next1.textContent='Next';
   step1.appendChild(next1);
 
   const stepError=document.createElement('p');
