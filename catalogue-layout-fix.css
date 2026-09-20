@@ -1143,7 +1143,13 @@ body.book-flip-open{overflow:hidden}
 }
 
 
-/* Remove divider between spoiler and library sections */
+
+
+/* Correct book detail divider placement */
 .book-flip-library{
-  border-top:0!important;
+  border-top:1px solid rgba(111,77,61,.12)!important;
+}
+
+.book-spoiler-warning-setting{
+  border-bottom:0!important;
 }
