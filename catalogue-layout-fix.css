@@ -1074,3 +1074,70 @@ body.book-flip-open{overflow:hidden}
   .book-spoiler-warning-copy span,
   .book-flip-library-copy>span{font-size:8px!important}
 }
+
+
+/* Larger book detail card + exact icon centering */
+.book-flip-back{
+  padding:21px!important;
+}
+
+.book-flip-summary{
+  grid-template-columns:84px minmax(0,1fr)!important;
+  gap:19px!important;
+  padding-bottom:18px!important;
+}
+
+.book-flip-summary-cover{
+  width:84px!important;
+}
+
+.book-flip-section-icon,
+.book-detail-row-icon{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  line-height:0!important;
+}
+
+.book-flip-section-icon svg,
+.book-detail-row-icon svg{
+  display:block!important;
+  margin:0!important;
+  flex:none!important;
+}
+
+.book-flip-section-chevron{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  line-height:1!important;
+}
+
+.book-flip-cover-button,
+.book-flip-close{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+  line-height:1!important;
+}
+
+.book-spoiler-switch{
+  display:flex!important;
+  align-items:center!important;
+}
+
+@media(max-width:420px){
+  .book-flip-back{
+    padding:17px!important;
+  }
+  .book-flip-summary{
+    grid-template-columns:74px minmax(0,1fr)!important;
+    gap:15px!important;
+  }
+  .book-flip-summary-cover{
+    width:74px!important;
+  }
+}
