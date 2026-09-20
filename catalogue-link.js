@@ -363,6 +363,13 @@ function ensureBookFlipModal(){
       }
       return;
     }
+    const synopsisToggle=e.target.closest('[data-book-synopsis-toggle]');
+    if(synopsisToggle){
+      const section=synopsisToggle.closest('.book-flip-synopsis');
+      const collapsed=section?.classList.toggle('collapsed')||false;
+      synopsisToggle.setAttribute('aria-expanded',String(!collapsed));
+      return;
+    }
     const spoilerToggle=e.target.closest('[data-book-spoiler-warning-toggle]');
     if(spoilerToggle){
       const book=bySource.get(modal.dataset.bookId||'');
@@ -527,34 +534,67 @@ async function openBookFlip(book,coverEl){
         <button type="button" class="book-flip-close" data-book-flip-close aria-label="Close">×</button>
       </div>
     </div>
-    <div class="book-flip-book-copy">
-      <span class="book-flip-kicker">About the book</span>
-      <h3>${escapeHtml(book.title)}</h3>
-      <p class="book-flip-author">${escapeHtml(book.author)}</p>
-    </div>
-    <div class="book-flip-synopsis">
-      <span>Synopsis</span>
-      <p>${escapeHtml(bookSynopsis(book))}</p>
-    </div>
-    <div class="book-spoiler-warning-setting">
-      <div class="book-spoiler-warning-copy">
-        <strong>Hide spoilers in Home feed</strong>
-        <span>Cover spoiler-marked posts for this book until you choose to reveal them.</span>
-        <em class="book-spoiler-state" data-book-spoiler-state>Spoilers hidden</em>
+
+    <div class="book-flip-detail-scroll">
+      <div class="book-flip-summary">
+        <div class="book-flip-summary-cover">
+          ${book.cover_url
+            ? `<img src="${escapeHtml(book.cover_url)}" alt="${escapeHtml(book.title)} cover" />`
+            : `<span>${escapeHtml(book.title.slice(0,1)||'B')}</span>`}
+        </div>
+        <div class="book-flip-book-copy">
+          <span class="book-flip-kicker">About the book</span>
+          <h3>${escapeHtml(book.title)}</h3>
+          <p class="book-flip-author">${escapeHtml(book.author)}</p>
+          <i class="book-flip-title-rule" aria-hidden="true"></i>
+        </div>
       </div>
-      <button type="button" class="book-spoiler-switch is-on" data-book-spoiler-warning-toggle role="switch" aria-checked="true" aria-label="Hide spoilers for ${escapeHtml(book.title)} in Home feed">
-        <i></i>
-      </button>
-    </div>
-    <div class="book-flip-library">
-      <span id="bookFlipStatusNote">Choose where this belongs in your library.</span>
-      <div class="book-flip-status-grid">
-        <button type="button" data-book-status="tbr">TBR</button>
-        <button type="button" data-book-status="reading">Reading</button>
-        <button type="button" data-book-status="read">Read</button>
-        <button type="button" data-book-status="dnf">DNF</button>
-      </div>
-      <button type="button" class="book-flip-remove" data-book-remove hidden>Remove from library</button>
+
+      <section class="book-flip-synopsis">
+        <button type="button" class="book-flip-section-head" data-book-synopsis-toggle aria-expanded="true">
+          <span class="book-flip-section-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 11h6M9 15h6"/></svg>
+          </span>
+          <strong>Synopsis</strong>
+          <span class="book-flip-section-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="book-flip-synopsis-body">
+          <p>${escapeHtml(bookSynopsis(book))}</p>
+        </div>
+      </section>
+
+      <section class="book-detail-row book-spoiler-warning-setting">
+        <span class="book-detail-row-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 12s3.4-5 9-5 9 5 9 5-3.4 5-9 5-9-5-9-5Z"/><circle cx="12" cy="12" r="2.5"/><path d="M4 4l16 16"/></svg>
+        </span>
+        <div class="book-spoiler-warning-copy">
+          <strong>Home feed spoilers</strong>
+          <span>Cover spoiler-marked posts for this book until you choose to reveal them.</span>
+        </div>
+        <div class="book-spoiler-control">
+          <button type="button" class="book-spoiler-switch is-on" data-book-spoiler-warning-toggle role="switch" aria-checked="true" aria-label="Hide spoilers for ${escapeHtml(book.title)} in Home feed">
+            <i></i>
+          </button>
+          <em class="book-spoiler-state" data-book-spoiler-state>Spoilers hidden</em>
+        </div>
+      </section>
+
+      <section class="book-detail-row book-flip-library">
+        <span class="book-detail-row-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 5h5v15H4zM11 4h5v16h-5zM17 7l3-1 3 13-3 1z"/></svg>
+        </span>
+        <div class="book-flip-library-copy">
+          <strong>Add to your library</strong>
+          <span id="bookFlipStatusNote">Choose where this belongs in your library.</span>
+        </div>
+        <div class="book-flip-status-grid">
+          <button type="button" data-book-status="tbr">TBR</button>
+          <button type="button" data-book-status="reading">Reading</button>
+          <button type="button" data-book-status="read">Read</button>
+          <button type="button" data-book-status="dnf">DNF</button>
+        </div>
+        <button type="button" class="book-flip-remove" data-book-remove hidden>Remove from library</button>
+      </section>
     </div>`;
 
   modal.dataset.bookId=String(book.id);
