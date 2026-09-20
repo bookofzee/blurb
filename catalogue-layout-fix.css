@@ -1141,3 +1141,9 @@ body.book-flip-open{overflow:hidden}
     width:74px!important;
   }
 }
+
+
+/* Remove divider between spoiler and library sections */
+.book-flip-library{
+  border-top:0!important;
+}
