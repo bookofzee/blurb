@@ -388,7 +388,7 @@ function buildCreateUI(){
   coverWrap.className='profile-cover-field details-section-card';
   coverWrap.innerHTML=`
     <div class="details-section-heading">
-      <span><strong>Profile cover</strong><small>Choose how this Blurb appears on your profile grid.</small></span>
+      <span><strong>Profile cover</strong><small>Shown on your profile grid</small></span>
       <button type="button" class="profile-cover-clear" id="profileCoverClear" hidden>Remove</button>
     </div>
     <div class="profile-cover-compact">
@@ -397,11 +397,11 @@ function buildCreateUI(){
         <label class="profile-cover-action profile-cover-upload" for="profileCoverFile">
           <input id="profileCoverFile" type="file" accept="image/jpeg,image/png,image/webp" />
           <span class="profile-cover-action-icon">＋</span>
-          <span><strong>Upload image</strong><small>Choose your own profile cover</small></span>
+          <strong>Upload</strong>
         </label>
         <button type="button" class="profile-cover-action profile-cover-book-option" id="profileCoverUseBook" aria-pressed="false" disabled>
           <span class="profile-cover-book-thumb" id="profileCoverBookThumb"><span>Book</span></span>
-          <span><strong>Use book cover</strong><small>Use the selected book artwork</small></span>
+          <strong>Book cover</strong>
           <i>✓</i>
         </button>
       </div>
