@@ -1153,3 +1153,29 @@ body.book-flip-open{overflow:hidden}
 .book-spoiler-warning-setting{
   border-bottom:0!important;
 }
+
+
+/* Proper flip icon for book detail control */
+.book-flip-cover-button{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0!important;
+}
+
+.book-flip-icon{
+  width:20px;
+  height:20px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.book-flip-icon path:nth-child(2),
+.book-flip-icon path:nth-child(3){
+  fill:currentColor;
+  stroke:none;
+}
