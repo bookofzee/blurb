@@ -525,7 +525,13 @@ async function openBookFlip(book,coverEl){
 
   back.innerHTML=`
     <div class="book-flip-back-top">
-      <button type="button" class="book-flip-cover-button" data-book-flip-cover aria-label="Flip back to cover" title="Flip back to cover">⇄</button>
+      <button type="button" class="book-flip-cover-button" data-book-flip-cover aria-label="Flip back to cover" title="Flip back to cover">
+        <svg class="book-flip-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 4v16" />
+          <path d="M9 7 4 12l5 5V7Z" />
+          <path d="m15 7 5 5-5 5V7Z" />
+        </svg>
+      </button>
       <div class="book-flip-top-actions">
         ${admin?`
           <button type="button" class="book-flip-admin-alt" data-book-admin-alt title="Choose alternate artwork">Alt art</button>
