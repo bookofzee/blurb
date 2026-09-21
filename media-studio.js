@@ -68,43 +68,45 @@ export function createMediaStudio({
 
   mount.innerHTML=`
     <div class="studio-shell">
-      <header class="studio-header">
-        <span><strong>${type==='video'?'Video studio':'Photo studio'}</strong><small>Touch the post to edit it directly</small></span>
-        <button type="button" data-studio-change>Change</button>
-      </header>
+      <section class="studio-main-panel">
+        <header class="studio-header">
+          <span><strong>${type==='video'?'Video studio':'Photo studio'}</strong><small>Touch the post to edit it directly</small></span>
+          <button type="button" data-studio-change>Change</button>
+        </header>
 
-      <div class="studio-phone" data-studio-canvas style="aspect-ratio:${aspectRatio}">
-        ${type==='video'
-          ? '<video class="studio-media" data-studio-media playsinline loop autoplay></video>'
-          : '<img class="studio-media" data-studio-media alt="Post media preview" draggable="false" />'}
-        <div class="studio-dim" data-studio-dim></div>
-        <div class="studio-look-layer studio-warmth" data-studio-warmth></div>
-        <div class="studio-look-layer studio-glow" data-studio-glow></div>
-        <div class="studio-vignette" data-studio-vignette></div>
-        <div class="studio-look-layer studio-grain" data-studio-grain></div>
-        <div class="studio-overlay-layer" data-studio-overlays></div>
+        <div class="studio-phone" data-studio-canvas style="aspect-ratio:${aspectRatio}">
+          ${type==='video'
+            ? '<video class="studio-media" data-studio-media playsinline loop autoplay></video>'
+            : '<img class="studio-media" data-studio-media alt="Post media preview" draggable="false" />'}
+          <div class="studio-dim" data-studio-dim></div>
+          <div class="studio-look-layer studio-warmth" data-studio-warmth></div>
+          <div class="studio-look-layer studio-glow" data-studio-glow></div>
+          <div class="studio-vignette" data-studio-vignette></div>
+          <div class="studio-look-layer studio-grain" data-studio-grain></div>
+          <div class="studio-overlay-layer" data-studio-overlays></div>
 
-        <div class="studio-book-chip" data-studio-book>
-          <i data-studio-cover>B</i>
-          <span><strong data-studio-title>Choose a book</strong><small data-studio-author></small></span>
-          <em data-studio-rating></em>
+          <div class="studio-book-chip" data-studio-book>
+            <i data-studio-cover>B</i>
+            <span><strong data-studio-title>Choose a book</strong><small data-studio-author></small></span>
+            <em data-studio-rating></em>
+          </div>
+
+          <div class="studio-action-rail" data-studio-actions aria-hidden="true">
+            <span>♥</span><span>◌</span><span>＋</span><span>↗</span>
+          </div>
+
+          <div class="studio-gesture-hint">Drag · pinch to resize</div>
         </div>
 
-        <div class="studio-action-rail" data-studio-actions aria-hidden="true">
-          <span>♥</span><span>◌</span><span>＋</span><span>↗</span>
-        </div>
+        <nav class="studio-tabs" aria-label="Editor tools">
+          <button type="button" class="active" data-studio-tab="media"><span>⌘</span>Media</button>
+          <button type="button" data-studio-tab="text"><span>Aa</span>Text</button>
+          <button type="button" data-studio-tab="look"><span>✦</span>Look</button>
+          ${type==='video'?'<button type="button" data-studio-tab="video"><span>▶</span>Video</button>':''}
+        </nav>
+      </section>
 
-        <div class="studio-gesture-hint">Drag · pinch to resize</div>
-      </div>
-
-      <nav class="studio-tabs" aria-label="Editor tools">
-        <button type="button" class="active" data-studio-tab="media"><span>⌘</span>Media</button>
-        <button type="button" data-studio-tab="text"><span>Aa</span>Text</button>
-        <button type="button" data-studio-tab="look"><span>✦</span>Look</button>
-        ${type==='video'?'<button type="button" data-studio-tab="video"><span>▶</span>Video</button>':''}
-      </nav>
-
-      <div class="studio-tool-panel" data-studio-panel></div>
+      <section class="studio-tool-panel" data-studio-panel></section>
     </div>`;
 
   const canvas=mount.querySelector('[data-studio-canvas]');
@@ -202,13 +204,22 @@ export function createMediaStudio({
 
     if(activeTab==='media'){
       panel.innerHTML=`
-        <div class="studio-panel-copy"><strong>Move it directly</strong><small>Drag to position · pinch to resize and rotate · double tap to fit/fill.</small></div>
-        <div class="studio-quick-row">
-          <button type="button" data-media-fit="cover" class="${state.media.fit==='cover'?'active':''}">Fill</button>
-          <button type="button" data-media-fit="contain" class="${state.media.fit==='contain'?'active':''}">Fit</button>
-          <button type="button" data-media-reset>Reset</button>
-        </div>
-        <label class="studio-rotation-range"><span>Rotate</span><input type="range" min="-180" max="180" step="1" value="${normalizeDegrees(state.media.rotation)}" data-media-rotation /><b>${Math.round(normalizeDegrees(state.media.rotation))}°</b></label>`;
+        <div class="studio-media-panel">
+          <div class="studio-panel-copy"><strong>Move it directly</strong><small>Drag to position · pinch to resize and rotate · double tap to fit/fill.</small></div>
+          <div class="studio-media-actions">
+            <div class="studio-fit-segment" aria-label="Image fit">
+              <button type="button" data-media-fit="cover" class="${state.media.fit==='cover'?'active':''}">Fill</button>
+              <button type="button" data-media-fit="contain" class="${state.media.fit==='contain'?'active':''}">Fit</button>
+            </div>
+            <button type="button" class="studio-reset-button" data-media-reset>Reset</button>
+          </div>
+          <div class="studio-media-divider"></div>
+          <label class="studio-rotation-range">
+            <span class="studio-rotate-label"><i aria-hidden="true">↻</i>Rotate</span>
+            <input type="range" min="-180" max="180" step="1" value="${normalizeDegrees(state.media.rotation)}" data-media-rotation />
+            <b>${Math.round(normalizeDegrees(state.media.rotation))}°</b>
+          </label>
+        </div>`;
       return;
     }
 
