@@ -1720,3 +1720,14 @@
     height:47px!important;
   }
 }
+
+
+/* Remove studio panel shadows */
+.studio-main-panel,
+.studio-tool-panel,
+.studio-tabs,
+.studio-look-tool.active,
+.studio-fit-segment button.active{
+  box-shadow:none!important;
+  filter:none!important;
+}
