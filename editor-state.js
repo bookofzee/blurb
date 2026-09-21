@@ -1,6 +1,10 @@
 export function defaultEditorState(){
   return {
-    media:{scale:1,x:0,y:0,rotation:0,fit:'cover',dim:0,blur:0,vignette:false},
+    media:{
+      scale:1,x:0,y:0,rotation:0,fit:'cover',
+      dim:0,blur:0,brightness:1,contrast:1,warmth:0,saturation:1,
+      grain:0,vignette:0,glow:0,sharpen:0
+    },
     layout:{showBook:true,showRating:true,actions:'right'},
     overlays:[],
     video:{muted:true}
@@ -23,8 +27,15 @@ export function normalizeEditorState(value){
       rotation:((Number(media.rotation)||0)%360+360)%360,
       fit:media.fit==='contain'?'contain':'cover',
       dim:clamp(media.dim??0,0,.55),
-      blur:clamp(media.blur??0,0,5),
-      vignette:Boolean(media.vignette)
+      blur:clamp(media.blur??0,0,8),
+      brightness:clamp(media.brightness??1,.5,1.5),
+      contrast:clamp(media.contrast??1,.5,1.8),
+      warmth:clamp(media.warmth??0,-1,1),
+      saturation:clamp(media.saturation??1,0,2),
+      grain:clamp(media.grain??0,0,1),
+      vignette:typeof media.vignette==='boolean'?(media.vignette?.7:0):clamp(media.vignette??0,0,1),
+      glow:clamp(media.glow??0,0,1),
+      sharpen:clamp(media.sharpen??0,0,1)
     },
     layout:{
       showBook:layout.showBook!==false,
@@ -51,12 +62,14 @@ export function normalizeEditorState(value){
 export function editorMediaStyle(state){
   const s=normalizeEditorState(state);
   const m=s.media;
-  const brightness=Math.max(.35,1-m.dim);
+  const brightness=Math.max(.2,(1-m.dim)*m.brightness);
+  const contrast=m.contrast*(1+(m.sharpen*.22));
+  const saturation=m.saturation*(1+(m.sharpen*.08));
   return [
     `object-fit:${m.fit}`,
     `transform:translate3d(${m.x}%,${m.y}%,0) scale(${m.scale}) rotate(${m.rotation}deg)`,
     'transform-origin:center center',
-    `filter:brightness(${brightness}) blur(${m.blur}px)`
+    `filter:brightness(${brightness}) contrast(${contrast}) saturate(${saturation}) blur(${m.blur}px)`
   ].join(';');
 }
 
@@ -66,7 +79,7 @@ export function editorFeedClasses(state){
     s.layout.actions==='left'?'editor-actions-left':'editor-actions-right',
     s.layout.showBook?'':'editor-hide-book',
     s.layout.showRating?'':'editor-hide-rating',
-    s.media.vignette?'editor-vignette-on':''
+    s.media.vignette>0?'editor-vignette-on':''
   ].filter(Boolean).join(' ');
 }
 
@@ -90,5 +103,23 @@ export function editorOverlayMarkup(state,escapeHtml=(v=>' '+v)){
 
 export function editorLookMarkup(state){
   const s=normalizeEditorState(state);
-  return s.media.vignette?'<div class="feed-editor-vignette" aria-hidden="true"></div>':'';
+  const m=s.media;
+  const layers=[];
+
+  if(Math.abs(m.warmth)>.001){
+    const warm=m.warmth>0;
+    const opacity=Math.abs(m.warmth)*(warm?.34:.28);
+    const colour=warm?'255,145,72':'76,142,232';
+    layers.push(`<div class="feed-editor-warmth" aria-hidden="true" style="background:rgba(${colour},${opacity})"></div>`);
+  }
+  if(m.glow>.001){
+    layers.push(`<div class="feed-editor-glow" aria-hidden="true" style="opacity:${m.glow}"></div>`);
+  }
+  if(m.vignette>.001){
+    layers.push(`<div class="feed-editor-vignette" aria-hidden="true" style="opacity:${m.vignette}"></div>`);
+  }
+  if(m.grain>.001){
+    layers.push(`<div class="feed-editor-grain" aria-hidden="true" style="opacity:${m.grain*.42}"></div>`);
+  }
+  return layers.join('');
 }
