@@ -718,3 +718,47 @@
     gap:10px;
   }
 }
+
+
+/* Profile cover chooser lives on Preview */
+.create-step[data-create-step="3"] .preview-profile-cover{
+  width:min(100%,420px);
+  margin:14px auto 0!important;
+  padding:13px!important;
+  border:1px solid rgba(111,77,61,.13)!important;
+  border-radius:15px!important;
+  background:#fffaf3!important;
+  box-shadow:none!important;
+}
+
+.create-step[data-create-step="3"] .preview-profile-cover .details-section-heading{
+  margin-bottom:10px;
+}
+
+.create-step[data-create-step="3"] .preview-profile-cover .profile-cover-compact{
+  grid-template-columns:58px minmax(0,1fr);
+  gap:9px;
+}
+
+.create-step[data-create-step="3"] .preview-profile-cover .profile-cover-thumb{
+  width:58px!important;
+}
+
+.create-step[data-create-step="3"] .preview-profile-cover .profile-cover-action{
+  min-height:46px;
+  padding:6px 8px!important;
+}
+
+@media(max-width:420px){
+  .create-step[data-create-step="3"] .preview-profile-cover{
+    padding:11px!important;
+  }
+
+  .create-step[data-create-step="3"] .preview-profile-cover .profile-cover-compact{
+    grid-template-columns:52px minmax(0,1fr);
+  }
+
+  .create-step[data-create-step="3"] .preview-profile-cover .profile-cover-thumb{
+    width:52px!important;
+  }
+}
