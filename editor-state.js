@@ -108,7 +108,7 @@ export function editorLookMarkup(state){
 
   if(Math.abs(m.warmth)>.001){
     const warm=m.warmth>0;
-    const opacity=Math.abs(m.warmth)*(warm?.34:.28);
+    const opacity=Math.abs(m.warmth)*(warm ? .34:.28);
     const colour=warm?'255,145,72':'76,142,232';
     layers.push(`<div class="feed-editor-warmth" aria-hidden="true" style="background:rgba(${colour},${opacity})"></div>`);
   }
