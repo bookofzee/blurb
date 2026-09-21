@@ -351,7 +351,7 @@ function buildCreateUI(){
 
   const caption=$('#caption');
   const captionLabel=caption?.previousElementSibling;
-  if(captionLabel)captionLabel.innerHTML='Add caption <span class="optional">optional</span>';
+  if(captionLabel)captionLabel.textContent='Caption';
   if(caption){caption.maxLength=180;caption.classList.add('hook-field');caption.placeholder='Add a short caption to your Blurb…';}
   const captionCount=caption?.nextElementSibling;
   if(captionCount)captionCount.innerHTML='<span id="captionCount">0</span>/180';
@@ -384,23 +384,28 @@ function buildCreateUI(){
   if(uploadZone)uploadZone.before(reviewWrap);
   if(uploadZone){uploadZone.classList.add('create-media-panel');uploadZone.style.display='none';}
 
-  const coverWrap=document.createElement('div');
-  coverWrap.className='profile-cover-field';
+  const coverWrap=document.createElement('section');
+  coverWrap.className='profile-cover-field details-section-card';
   coverWrap.innerHTML=`
-    <label class="field-label" for="profileCoverFile">Profile cover <span class="optional">optional</span></label>
-    <div class="profile-cover-row">
-      <label class="profile-cover-upload" for="profileCoverFile">
-        <input id="profileCoverFile" type="file" accept="image/jpeg,image/png,image/webp" />
-        <span class="profile-cover-thumb" id="profileCoverPreview"><b>＋</b></span>
-        <span class="profile-cover-copy"><strong>Choose a cover image</strong><small>Used on your profile grid instead of the post itself.</small></span>
-      </label>
+    <div class="details-section-heading">
+      <span><strong>Profile cover</strong><small>Choose how this Blurb appears on your profile grid.</small></span>
       <button type="button" class="profile-cover-clear" id="profileCoverClear" hidden>Remove</button>
     </div>
-    <button type="button" class="profile-cover-book-option" id="profileCoverUseBook" aria-pressed="false" disabled>
-      <span class="profile-cover-book-thumb" id="profileCoverBookThumb"><span>Book</span></span>
-      <span><strong>Use the book cover</strong><small>Use the selected book’s cover on your profile grid.</small></span>
-      <i>✓</i>
-    </button>`;
+    <div class="profile-cover-compact">
+      <span class="profile-cover-thumb" id="profileCoverPreview"><b>＋</b></span>
+      <div class="profile-cover-actions">
+        <label class="profile-cover-action profile-cover-upload" for="profileCoverFile">
+          <input id="profileCoverFile" type="file" accept="image/jpeg,image/png,image/webp" />
+          <span class="profile-cover-action-icon">＋</span>
+          <span><strong>Upload image</strong><small>Choose your own profile cover</small></span>
+        </label>
+        <button type="button" class="profile-cover-action profile-cover-book-option" id="profileCoverUseBook" aria-pressed="false" disabled>
+          <span class="profile-cover-book-thumb" id="profileCoverBookThumb"><span>Book</span></span>
+          <span><strong>Use book cover</strong><small>Use the selected book artwork</small></span>
+          <i>✓</i>
+        </button>
+      </div>
+    </div>`;
   if(uploadZone)uploadZone.after(coverWrap);
 
   const tags=$('#tags');
@@ -413,21 +418,24 @@ function buildCreateUI(){
     tags.value='';
   }
 
-  const detailsExtras=document.createElement('div');
-  detailsExtras.className='create-details-extras';
+  const detailsExtras=document.createElement('section');
+  detailsExtras.className='create-details-extras details-section-card discovery-card';
   detailsExtras.innerHTML=`
+    <div class="details-section-heading">
+      <span><strong>Discovery</strong><small>Help people find this Blurb in Spotlight.</small></span>
+    </div>
     <div class="hashtag-block">
-      <label class="field-label" for="hashtagInput">Hashtags <span class="optional">optional · up to 5</span></label>
+      <div class="details-inline-label"><strong>Hashtags</strong><span>Up to 5</span></div>
       <div class="hashtag-entry">
         <span>#</span>
         <input id="hashtagInput" type="text" maxlength="40" placeholder="Add hashtag" autocomplete="off" />
         <b id="hashtagCount">0/5</b>
       </div>
       <div class="hashtag-chips" id="hashtagChips"></div>
-      <small class="spotlight-help">Hashtags help people find your Blurb in Spotlight search.</small>
     </div>
+    <div class="details-subdivider"></div>
     <div class="trope-block">
-      <label class="field-label">Tropes <span class="optional">optional · tap to add</span></label>
+      <div class="details-inline-label"><strong>Tropes</strong><span>Tap to add</span></div>
       <div class="trope-picker" id="tropePicker">
         ${quickTropes.map(t=>`<button type="button" class="trope-choice" data-trope="${t.replace(/"/g,'&quot;')}">${t}</button>`).join('')}
       </div>
@@ -518,7 +526,14 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   const step3=document.createElement('section');
   step3.className='create-step';
   step3.dataset.createStep='3';
-  [captionLabel,caption,captionCount,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step3.appendChild(node));
+
+  const captionSection=document.createElement('section');
+  captionSection.className='details-section-card details-caption-card';
+  [captionLabel,caption,captionCount].forEach(node=>node&&captionSection.appendChild(node));
+
+  if(spoiler)spoiler.classList.add('details-spoiler-card');
+
+  [captionSection,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step3.appendChild(node));
 
   const detailsActions=document.createElement('div');
   detailsActions.className='create-final-actions';
