@@ -1503,3 +1503,220 @@
   .studio-look-tool-icon{width:20px;height:20px;font-size:11px}
   .studio-look-tool small{font-size:6.4px}
 }
+
+
+/* Studio v8 — two-panel layout */
+.studio-shell{
+  display:grid!important;
+  gap:10px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+.studio-main-panel,
+.studio-tool-panel{
+  width:100%;
+  border:1px solid rgba(111,77,61,.13)!important;
+  border-radius:20px!important;
+  background:#fbf4ea!important;
+  box-shadow:0 10px 28px rgba(70,42,28,.055)!important;
+}
+
+.studio-main-panel{
+  display:grid;
+  gap:10px;
+  padding:14px 14px 12px;
+}
+
+.studio-tool-panel{
+  min-height:0!important;
+  padding:13px!important;
+  margin:0!important;
+  color:#4b342a!important;
+}
+
+.studio-header{
+  padding:0 1px 1px!important;
+}
+
+.studio-tabs{
+  width:100%!important;
+  margin:0!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+/* Look tools live inside one panel, not ten mini cards. */
+.studio-look-tray{
+  gap:2px!important;
+  padding:3px!important;
+  border-radius:14px;
+  background:#f0e4d9;
+}
+
+.studio-look-tool{
+  height:50px!important;
+  border:0!important;
+  border-radius:10px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+.studio-look-tool:hover,
+.studio-look-tool:focus-visible{
+  background:rgba(255,253,249,.7)!important;
+}
+
+.studio-look-tool.active{
+  background:#fffdf9!important;
+  border:0!important;
+  box-shadow:0 2px 8px rgba(73,42,28,.07)!important;
+}
+
+.studio-look-tool-icon{
+  background:transparent!important;
+}
+
+.studio-look-tool.active .studio-look-tool-icon{
+  background:#c96832!important;
+}
+
+.studio-look-drawer{
+  margin-top:2px;
+  padding:10px 4px 2px!important;
+  border:0!important;
+  border-top:1px solid rgba(111,77,61,.10)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+.studio-look-empty{
+  border-top:1px solid rgba(111,77,61,.10);
+  margin-top:2px;
+}
+
+/* Media tab polish */
+.studio-media-panel{
+  display:grid;
+  gap:11px;
+}
+
+.studio-media-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.studio-fit-segment{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  min-width:160px;
+  padding:3px;
+  border:1px solid rgba(111,77,61,.13);
+  border-radius:999px;
+  background:#f0e4d9;
+}
+
+.studio-fit-segment button{
+  min-height:34px;
+  border:0!important;
+  border-radius:999px!important;
+  background:transparent!important;
+  color:#755748!important;
+  font-size:8px;
+  font-weight:900;
+  padding:0 15px;
+  box-shadow:none!important;
+}
+
+.studio-fit-segment button.active{
+  background:#c96832!important;
+  color:#fff8ef!important;
+  box-shadow:0 3px 10px rgba(201,104,50,.18)!important;
+}
+
+.studio-reset-button{
+  min-height:40px;
+  padding:0 15px;
+  border:1px solid rgba(111,77,61,.13);
+  border-radius:999px;
+  background:#fffaf4;
+  color:#76584a;
+  font-size:8px;
+  font-weight:900;
+}
+
+.studio-media-divider{
+  height:1px;
+  background:rgba(111,77,61,.10);
+}
+
+.studio-rotation-range{
+  display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) 44px!important;
+  align-items:center!important;
+  gap:11px!important;
+  margin:0!important;
+}
+
+.studio-rotate-label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#64483b!important;
+  font-size:8px!important;
+  font-weight:900!important;
+}
+
+.studio-rotate-label i{
+  width:25px;
+  height:25px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#f0e4d9;
+  color:#8b6958;
+  font-size:15px;
+  font-style:normal;
+}
+
+.studio-rotation-range b{
+  min-width:44px;
+  padding:6px 8px;
+  border-radius:999px;
+  background:#f0e4d9;
+  color:#806052!important;
+  text-align:center!important;
+}
+
+@media(max-width:420px){
+  .studio-main-panel{
+    padding:12px 10px 10px;
+    border-radius:17px!important;
+  }
+  .studio-tool-panel{
+    padding:11px!important;
+    border-radius:17px!important;
+  }
+  .studio-media-actions{
+    gap:6px;
+  }
+  .studio-fit-segment{
+    min-width:0;
+    flex:1;
+  }
+  .studio-reset-button{
+    padding:0 13px;
+  }
+  .studio-rotation-range{
+    grid-template-columns:auto minmax(0,1fr) 40px!important;
+    gap:8px!important;
+  }
+  .studio-look-tool{
+    height:47px!important;
+  }
+}
