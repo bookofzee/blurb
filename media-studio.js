@@ -1,8 +1,31 @@
-import { defaultEditorState, normalizeEditorState } from './editor-state.js?v=2';
+import { defaultEditorState, normalizeEditorState } from './editor-state.js?v=3';
 
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const uid=()=>globalThis.crypto?.randomUUID?.()||('layer-'+Date.now()+'-'+Math.random().toString(36).slice(2));
 const escapeHtml=(value='')=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const LOOK_TOOLS={
+  dim:{label:'Dim',icon:'◐',min:0,max:.55,step:.01,default:0},
+  blur:{label:'Blur',icon:'◌',min:0,max:8,step:.1,default:0},
+  brightness:{label:'Bright',icon:'☀',min:.5,max:1.5,step:.01,default:1},
+  contrast:{label:'Contrast',icon:'◑',min:.5,max:1.8,step:.01,default:1},
+  warmth:{label:'Warmth',icon:'♨',min:-1,max:1,step:.01,default:0},
+  saturation:{label:'Colour',icon:'●',min:0,max:2,step:.01,default:1},
+  grain:{label:'Grain',icon:'⁙',min:0,max:1,step:.01,default:0},
+  vignette:{label:'Vignette',icon:'◎',min:0,max:1,step:.01,default:0},
+  glow:{label:'Glow',icon:'✦',min:0,max:1,step:.01,default:0},
+  sharpen:{label:'Sharpen',icon:'◇',min:0,max:1,step:.01,default:0}
+};
+
+function formatLookValue(key,value){
+  const v=Number(value)||0;
+  if(key==='blur')return v.toFixed(1)+'px';
+  if(key==='warmth')return (v>0?'+':'')+Math.round(v*100);
+  if(['brightness','contrast','saturation'].includes(key))return Math.round(v*100)+'%';
+  return Math.round(v*100)+'%';
+}
+
+
 
 function distance(a,b){
   return Math.hypot(b.x-a.x,b.y-a.y);
@@ -35,6 +58,7 @@ export function createMediaStudio({
   state.layout={showBook:true,showRating:true,actions:'right'};
   let activeTab='media';
   let activeTextTool='font';
+  let activeLookTool=null;
   let selectedOverlayId=null;
   let mediaUrl=URL.createObjectURL(file);
   const pointers=new Map();
@@ -54,7 +78,10 @@ export function createMediaStudio({
           ? '<video class="studio-media" data-studio-media playsinline loop autoplay></video>'
           : '<img class="studio-media" data-studio-media alt="Post media preview" draggable="false" />'}
         <div class="studio-dim" data-studio-dim></div>
+        <div class="studio-look-layer studio-warmth" data-studio-warmth></div>
+        <div class="studio-look-layer studio-glow" data-studio-glow></div>
         <div class="studio-vignette" data-studio-vignette></div>
+        <div class="studio-look-layer studio-grain" data-studio-grain></div>
         <div class="studio-overlay-layer" data-studio-overlays></div>
 
         <div class="studio-book-chip" data-studio-book>
@@ -128,10 +155,25 @@ export function createMediaStudio({
 
   function renderMedia(){
     const m=state.media;
+    const brightness=Math.max(.2,(1-m.dim)*m.brightness);
+    const contrast=m.contrast*(1+(m.sharpen*.22));
+    const saturation=m.saturation*(1+(m.sharpen*.08));
     media.style.objectFit=m.fit;
     media.style.transform=`translate3d(${m.x}%,${m.y}%,0) scale(${m.scale}) rotate(${m.rotation}deg)`;
-    media.style.filter=`brightness(${Math.max(.35,1-m.dim)}) blur(${m.blur}px)`;
-    mount.querySelector('[data-studio-vignette]')?.classList.toggle('active',m.vignette);
+    media.style.filter=`brightness(${brightness}) contrast(${contrast}) saturate(${saturation}) blur(${m.blur}px)`;
+
+    const warmth=mount.querySelector('[data-studio-warmth]');
+    if(warmth){
+      const warm=m.warmth>=0;
+      warmth.style.background=warm?'rgb(255 145 72)':'rgb(76 142 232)';
+      warmth.style.opacity=String(Math.abs(m.warmth)*(warm?.34:.28));
+    }
+    const glow=mount.querySelector('[data-studio-glow]');
+    if(glow)glow.style.opacity=String(m.glow);
+    const vignette=mount.querySelector('[data-studio-vignette]');
+    if(vignette)vignette.style.opacity=String(m.vignette);
+    const grain=mount.querySelector('[data-studio-grain]');
+    if(grain)grain.style.opacity=String(m.grain*.42);
 
     const book=mount.querySelector('[data-studio-book]');
     if(book)book.hidden=!state.layout.showBook;
@@ -256,10 +298,37 @@ export function createMediaStudio({
     }
 
     if(activeTab==='look'){
+      const selectedLook=activeLookTool&&LOOK_TOOLS[activeLookTool]?LOOK_TOOLS[activeLookTool]:null;
+      const toolButtons=Object.entries(LOOK_TOOLS).map(([key,tool])=>{
+        const value=Number(state.media[key]);
+        const adjusted=Math.abs(value-tool.default)>.001;
+        return `<button type="button" class="studio-look-tool ${activeLookTool===key?'active':''} ${adjusted?'adjusted':''}" data-look-tool="${key}" aria-pressed="${activeLookTool===key}">
+          <span class="studio-look-tool-icon">${tool.icon}</span>
+          <small>${tool.label}</small>
+        </button>`;
+      }).join('');
+
       panel.innerHTML=`
-        <label class="studio-range"><span>Dim</span><input type="range" min="0" max="0.55" step="0.01" value="${state.media.dim}" data-look-dim /></label>
-        <label class="studio-range"><span>Blur</span><input type="range" min="0" max="5" step="0.1" value="${state.media.blur}" data-look-blur /></label>
-        <button type="button" class="studio-vignette-toggle ${state.media.vignette?'active':''}" data-look-vignette>Vignette</button>`;
+        <div class="studio-look-studio">
+          <div class="studio-look-tray" aria-label="Look tools">${toolButtons}</div>
+          ${selectedLook?`
+            <div class="studio-look-drawer">
+              <div class="studio-look-drawer-head">
+                <strong>${selectedLook.label}</strong>
+                <span data-look-value>${formatLookValue(activeLookTool,state.media[activeLookTool])}</span>
+                <button type="button" data-look-reset>Reset</button>
+              </div>
+              <input type="range"
+                min="${selectedLook.min}"
+                max="${selectedLook.max}"
+                step="${selectedLook.step}"
+                value="${state.media[activeLookTool]}"
+                data-look-range
+                data-look-key="${activeLookTool}"
+                aria-label="${selectedLook.label}" />
+            </div>`
+          :'<div class="studio-look-empty">Choose a tool to adjust the image.</div>'}
+        </div>`;
       return;
     }
 
@@ -339,6 +408,20 @@ export function createMediaStudio({
       renderPanel();
       return;
     }
+    const lookTool=e.target.closest('[data-look-tool]');
+    if(lookTool){
+      const key=lookTool.dataset.lookTool;
+      activeLookTool=activeLookTool===key?null:key;
+      renderPanel();
+      return;
+    }
+    if(e.target.closest('[data-look-reset]')&&activeLookTool&&LOOK_TOOLS[activeLookTool]){
+      state.media[activeLookTool]=LOOK_TOOLS[activeLookTool].default;
+      renderMedia();
+      renderPanel();
+      emit();
+      return;
+    }
     if(e.target.closest('[data-studio-change]')){
       onChangeMedia?.();
       return;
@@ -364,9 +447,6 @@ export function createMediaStudio({
       const fresh=defaultEditorState();
       state.media=fresh.media;
       updateAll();emit();return;
-    }
-    if(e.target.closest('[data-look-vignette]')){
-      state.media.vignette=!state.media.vignette;updateAll();emit();return;
     }
     const font=e.target.closest('[data-layer-font]');
     if(font){changeSelected(layer=>layer.font=font.dataset.layerFont);return;}
@@ -425,11 +505,18 @@ export function createMediaStudio({
       if(readout)readout.textContent=Math.round(state.media.rotation)+'°';
       renderMedia();emit();return;
     }
-    if(e.target.matches('[data-look-dim]')){
-      state.media.dim=clamp(Number(e.target.value)||0,0,.55);renderMedia();emit();return;
-    }
-    if(e.target.matches('[data-look-blur]')){
-      state.media.blur=clamp(Number(e.target.value)||0,0,5);renderMedia();emit();return;
+    if(e.target.matches('[data-look-range]')){
+      const key=e.target.dataset.lookKey;
+      const tool=LOOK_TOOLS[key];
+      if(!tool)return;
+      state.media[key]=clamp(Number(e.target.value),tool.min,tool.max);
+      renderMedia();
+      const readout=panel.querySelector('[data-look-value]');
+      if(readout)readout.textContent=formatLookValue(key,state.media[key]);
+      const button=panel.querySelector('[data-look-tool="'+CSS.escape(key)+'"]');
+      if(button)button.classList.toggle('adjusted',Math.abs(state.media[key]-tool.default)>.001);
+      emit();
+      return;
     }
     if(e.target.matches('[data-video-scrub]')&&type==='video'){
       media.currentTime=clamp(Number(e.target.value)||0,0,media.duration||0);return;
