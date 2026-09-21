@@ -166,7 +166,7 @@ export function createMediaStudio({
     if(warmth){
       const warm=m.warmth>=0;
       warmth.style.background=warm?'rgb(255 145 72)':'rgb(76 142 232)';
-      warmth.style.opacity=String(Math.abs(m.warmth)*(warm?.34:.28));
+      warmth.style.opacity=String(Math.abs(m.warmth)*(warm ? .34:.28));
     }
     const glow=mount.querySelector('[data-studio-glow]');
     if(glow)glow.style.opacity=String(m.glow);
