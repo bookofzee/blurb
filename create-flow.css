@@ -785,3 +785,9 @@
   justify-self:stretch;
   margin:0;
 }
+
+
+/* Discovery heading removed */
+.discovery-card .hashtag-block{
+  margin-top:0!important;
+}
