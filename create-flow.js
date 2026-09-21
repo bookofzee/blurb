@@ -483,14 +483,22 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
 
   const stepper=document.createElement('div');
   stepper.className='create-stepper';
-  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Edit</span><i></i><span data-step-dot="3">3 · Details</span><i></i><span data-step-dot="4">4 · Preview</span>';
+  stepper.innerHTML='<span class="active" data-step-dot="1">1 · Post</span><i></i><span data-step-dot="2">2 · Edit</span><i></i><span data-step-dot="3">3 · Preview</span>';
   form.prepend(stepper);
 
   const step1=document.createElement('section');
-  step1.className='create-step active';
+  step1.className='create-step active create-post-step';
   step1.dataset.createStep='1';
+
   [bookLabel,bookButton,bookId,ratingLabel,ratingPicker,ratingValue,styleLabel,stylePicker].forEach(node=>node&&step1.appendChild(node));
   if(uploadZone)step1.appendChild(uploadZone);
+
+  const captionSection=document.createElement('section');
+  captionSection.className='details-section-card details-caption-card';
+  [captionLabel,caption,captionCount].forEach(node=>node&&captionSection.appendChild(node));
+
+  if(spoiler)spoiler.classList.add('details-spoiler-card');
+  [captionSection,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step1.appendChild(node));
 
   const next1=document.createElement('button');
   next1.type='button';
@@ -516,7 +524,7 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
 
   const editorActions=document.createElement('div');
   editorActions.className='create-final-actions editor-step-actions';
-  editorActions.innerHTML='<button type="button" class="secondary-button" id="editorBackButton">Back</button><button type="button" class="primary-button" id="editorNextButton">Next</button>';
+  editorActions.innerHTML='<button type="button" class="secondary-button" id="editorBackButton">Back</button><button type="button" class="primary-button" id="editorNextButton">Preview</button>';
   step2.appendChild(editorActions);
   const editorStatus=document.createElement('p');
   editorStatus.id='editorStepStatus';
@@ -526,24 +534,7 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   const step3=document.createElement('section');
   step3.className='create-step';
   step3.dataset.createStep='3';
-
-  const captionSection=document.createElement('section');
-  captionSection.className='details-section-card details-caption-card';
-  [captionLabel,caption,captionCount].forEach(node=>node&&captionSection.appendChild(node));
-
-  if(spoiler)spoiler.classList.add('details-spoiler-card');
-
-  [captionSection,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step3.appendChild(node));
-
-  const detailsActions=document.createElement('div');
-  detailsActions.className='create-final-actions';
-  detailsActions.innerHTML='<button type="button" class="secondary-button" id="createBackButton">Back</button><button type="button" class="primary-button" id="createReviewButton">Next</button>';
-  step3.appendChild(detailsActions);
-
-  const step4=document.createElement('section');
-  step4.className='create-step';
-  step4.dataset.createStep='4';
-  step4.innerHTML=`
+  step3.innerHTML=`
     <div class="review-step-heading">
       <span>Ready to post?</span>
       <h2>Preview your Blurb</h2>
@@ -562,11 +553,11 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
     publish.textContent='Post to Blurb';
     finalActions.appendChild(publish);
   }
-  step4.appendChild(finalActions);
-  if(status)step4.appendChild(status);
+  step3.appendChild(finalActions);
+  if(status)step3.appendChild(status);
 
   reviewWrap.remove();
-  form.append(step1,step2,step3,step4);
+  form.append(step1,step2,step3);
 }
 
 function setStepStatus(message='',error=false){
@@ -900,35 +891,31 @@ function bindCreateUI(){
   renderHashtags();
 
   $('#createNextButton')?.addEventListener('click',()=>{
+    const pending=$('#hashtagInput')?.value?.trim();
+    if(pending)addHashtags(pending);
     const problem=validateCreateStepOne();
     if(problem){setStepStatus(problem,true);return;}
     showCreateStep(2);
     renderActiveEditor();
   });
   $('#editorBackButton')?.addEventListener('click',()=>showCreateStep(1));
-  $('#editorNextButton')?.addEventListener('click',()=>{
+  $('#editorNextButton')?.addEventListener('click',async()=>{
     const problem=validateEditorStep();
     if(problem){setEditorStepStatus(problem,true);return;}
     if(studioController)editorState=studioController.getState();
-    showCreateStep(3);
-  });
-  $('#createBackButton')?.addEventListener('click',()=>{
-    showCreateStep(2);
-    renderActiveEditor();
-  });
-  $('#createReviewButton')?.addEventListener('click',async()=>{
-    const pending=$('#hashtagInput')?.value?.trim();
-    if(pending)addHashtags(pending);
-    const button=$('#createReviewButton');
+    const button=$('#editorNextButton');
     if(button)button.disabled=true;
     try{
       await buildFinalReviewPreview();
-      showCreateStep(4);
+      showCreateStep(3);
     }finally{
       if(button)button.disabled=false;
     }
   });
-  $('#reviewBackButton')?.addEventListener('click',()=>showCreateStep(3));
+  $('#reviewBackButton')?.addEventListener('click',()=>{
+    showCreateStep(2);
+    renderActiveEditor();
+  });
 
   $('#createForm')?.addEventListener('submit',publishNewFlow,true);
 }
