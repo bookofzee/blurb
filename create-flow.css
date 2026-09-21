@@ -402,3 +402,300 @@
 #createView .create-stepper i{
   opacity:.72;
 }
+
+
+/* Step 3 details reorganisation */
+.create-step[data-create-step="3"]{
+  display:none;
+}
+.create-step[data-create-step="3"].active{
+  display:grid;
+  gap:12px;
+}
+
+.create-step[data-create-step="3"] .details-section-card{
+  margin:0!important;
+  padding:14px;
+  border:1px solid rgba(111,77,61,.13);
+  border-radius:16px;
+  background:#fffaf3;
+  box-shadow:none;
+}
+
+.details-section-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:11px;
+}
+
+.details-section-heading>span{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.details-section-heading strong{
+  color:#52392e;
+  font-size:11px;
+  font-weight:900;
+}
+
+.details-section-heading small{
+  color:#9a7e6d;
+  font-size:8px;
+  line-height:1.35;
+}
+
+.details-caption-card .field-label{
+  margin:0 0 8px!important;
+  color:#52392e!important;
+  font-size:11px!important;
+  font-weight:900!important;
+}
+
+.details-caption-card .hook-field{
+  height:88px!important;
+  min-height:88px!important;
+  border-radius:12px!important;
+  background:#fffdf9!important;
+}
+
+.details-caption-card .char-count{
+  margin:5px 2px 0!important;
+  text-align:right;
+  font-size:8px;
+  color:#9a7e6d;
+}
+
+/* One compact profile-cover control */
+.profile-cover-field{
+  margin:0!important;
+}
+
+.profile-cover-compact{
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr);
+  gap:11px;
+  align-items:stretch;
+}
+
+.profile-cover-thumb{
+  width:64px!important;
+  height:auto!important;
+  aspect-ratio:3/4;
+  border-radius:10px!important;
+  margin:0!important;
+}
+
+.profile-cover-actions{
+  min-width:0;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:7px;
+}
+
+.profile-cover-action{
+  width:100%;
+  min-height:52px;
+  margin:0!important;
+  padding:7px 9px!important;
+  display:grid!important;
+  grid-template-columns:28px minmax(0,1fr) 18px;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(111,77,61,.13)!important;
+  border-radius:11px!important;
+  background:#fffdf9!important;
+  color:#5f4639!important;
+  text-align:left;
+  box-shadow:none!important;
+  cursor:pointer;
+}
+
+.profile-cover-upload{
+  flex:none!important;
+}
+
+.profile-cover-upload input{
+  display:none;
+}
+
+.profile-cover-action-icon{
+  width:28px;
+  height:28px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#f3e5d9;
+  color:#a6532b;
+  font-size:17px;
+  line-height:1;
+}
+
+.profile-cover-action>span:nth-child(2),
+.profile-cover-book-option>span:nth-child(2){
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.profile-cover-action strong{
+  font-size:9px!important;
+  color:#5d4336!important;
+}
+
+.profile-cover-action small{
+  font-size:7px!important;
+  line-height:1.25!important;
+  color:#9a7e6d!important;
+}
+
+.profile-cover-book-thumb{
+  width:28px!important;
+  height:34px!important;
+  border-radius:4px!important;
+  font-size:6px!important;
+}
+
+.profile-cover-book-option i{
+  width:18px!important;
+  height:18px!important;
+  font-size:9px!important;
+}
+
+.profile-cover-clear{
+  padding:3px 0!important;
+  color:#a64932!important;
+  font-size:8px!important;
+  font-weight:850!important;
+}
+
+/* Discovery combines hashtags and tropes */
+.create-details-extras{
+  margin:0!important;
+  display:block!important;
+}
+
+.discovery-card .details-section-heading{
+  margin-bottom:12px;
+}
+
+.details-inline-label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:7px;
+}
+
+.details-inline-label strong{
+  color:#5a4034;
+  font-size:9px;
+  font-weight:900;
+}
+
+.details-inline-label span{
+  color:#a48778;
+  font-size:7px;
+  font-weight:750;
+}
+
+.hashtag-entry{
+  height:43px!important;
+  border-radius:11px!important;
+  box-shadow:none!important;
+}
+
+.hashtag-entry input{
+  font-size:10px!important;
+}
+
+.hashtag-entry>span{
+  font-size:17px!important;
+}
+
+.hashtag-entry b{
+  font-size:8px!important;
+}
+
+.hashtag-chips{
+  margin-top:7px!important;
+  gap:5px!important;
+}
+
+.hashtag-chip{
+  padding:6px 8px!important;
+  font-size:8px!important;
+}
+
+.spotlight-help{
+  display:none!important;
+}
+
+.details-subdivider{
+  height:1px;
+  margin:12px 0;
+  background:rgba(111,77,61,.10);
+}
+
+.trope-picker{
+  gap:6px!important;
+}
+
+.trope-choice{
+  padding:7px 10px!important;
+  font-size:8px!important;
+  box-shadow:none!important;
+}
+
+/* Spoiler is the final compact decision */
+.spoiler-question.details-spoiler-card{
+  margin:0!important;
+  padding:13px 14px!important;
+  border:1px solid rgba(201,104,50,.18)!important;
+  border-radius:15px!important;
+  background:#f9eadf!important;
+  box-shadow:none!important;
+}
+
+.spoiler-question.details-spoiler-card>span:first-child strong{
+  font-size:11px!important;
+}
+
+.spoiler-question.details-spoiler-card>span:first-child small{
+  margin-top:3px!important;
+  font-size:8px!important;
+}
+
+.create-step[data-create-step="3"] .create-final-actions{
+  margin-top:2px!important;
+}
+
+@media(max-width:420px){
+  .create-step[data-create-step="3"] .details-section-card{
+    padding:12px;
+    border-radius:14px;
+  }
+
+  .profile-cover-compact{
+    grid-template-columns:58px minmax(0,1fr);
+    gap:9px;
+  }
+
+  .profile-cover-thumb{
+    width:58px!important;
+  }
+
+  .profile-cover-action{
+    min-height:48px;
+    padding:6px 8px!important;
+  }
+
+  .trope-choice{
+    padding:7px 9px!important;
+  }
+}
