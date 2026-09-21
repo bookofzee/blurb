@@ -100,7 +100,7 @@
   .trope-choice{padding:8px 10px}
 }
 
-/* Step 3 uses the real feed-card layout, scaled down as one mini screen. */
+/* Preview step uses the real feed-card layout, scaled down as one mini screen. */
 .mini-feed-preview-shell{
   position:relative;
   width:min(100%,300px);
@@ -404,16 +404,13 @@
 }
 
 
-/* Step 3 details reorganisation */
-.create-step[data-create-step="3"]{
-  display:none;
-}
-.create-step[data-create-step="3"].active{
+/* Post step details layout */
+.create-post-step.active{
   display:grid;
   gap:12px;
 }
 
-.create-step[data-create-step="3"] .details-section-card{
+.create-post-step .details-section-card{
   margin:0!important;
   padding:14px;
   border:1px solid rgba(111,77,61,.13);
@@ -676,7 +673,7 @@
 }
 
 @media(max-width:420px){
-  .create-step[data-create-step="3"] .details-section-card{
+  .create-post-step .details-section-card{
     padding:12px;
     border-radius:14px;
   }
@@ -697,5 +694,27 @@
 
   .trope-choice{
     padding:7px 9px!important;
+  }
+}
+
+
+/* Three-step flow: Details moved into Post */
+.create-post-step > .details-section-card,
+.create-post-step > .details-spoiler-card{
+  width:100%;
+}
+
+.create-post-step .create-next-button{
+  width:100%;
+  margin-top:2px!important;
+}
+
+.create-post-step #createStepStatus{
+  margin-top:-4px;
+}
+
+@media(max-width:420px){
+  .create-post-step.active{
+    gap:10px;
   }
 }
