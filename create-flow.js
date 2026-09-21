@@ -498,7 +498,7 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
   [captionLabel,caption,captionCount].forEach(node=>node&&captionSection.appendChild(node));
 
   if(spoiler)spoiler.classList.add('details-spoiler-card');
-  [captionSection,coverWrap,detailsExtras,spoiler,tags].forEach(node=>node&&step1.appendChild(node));
+  [captionSection,detailsExtras,spoiler,tags].forEach(node=>node&&step1.appendChild(node));
 
   const next1=document.createElement('button');
   next1.type='button';
@@ -543,8 +543,12 @@ function buildCreateSteps(form,reviewWrap,uploadZone,coverWrap,detailsExtras){
     <div class="mini-feed-preview-shell" id="miniFeedPreviewShell">
       <div class="mini-feed-preview-stage" id="miniFeedPreviewStage"></div>
     </div>
-    <div class="review-spoiler-note" id="reviewSpoilerNote" hidden>⚠ This post will be covered by the spoiler reveal screen when it goes live.</div>
-    <div class="review-profile-cover" id="reviewProfileCover" hidden></div>`;
+    <div class="review-spoiler-note" id="reviewSpoilerNote" hidden>⚠ This post will be covered by the spoiler reveal screen when it goes live.</div>`;
+
+  if(coverWrap){
+    coverWrap.classList.add('preview-profile-cover');
+    step3.appendChild(coverWrap);
+  }
 
   const finalActions=document.createElement('div');
   finalActions.className='create-final-actions';
@@ -770,21 +774,7 @@ async function buildFinalReviewPreview(){
   const spoilerNote=$('#reviewSpoilerNote');
   if(spoilerNote)spoilerNote.hidden=!spoiler;
 
-  const coverFile=$('#profileCoverFile')?.files?.[0];
-  const bookProfileCover=profileCoverMode==='book'?selectedBookCoverUrl():'';
-  const coverNote=$('#reviewProfileCover');
-  if(coverNote){
-    if(coverFile&&profileCoverMode==='custom'){
-      coverNote.hidden=false;
-      coverNote.innerHTML='<span>Profile grid cover</span><img src="'+URL.createObjectURL(coverFile)+'" alt="" /><strong>Custom cover selected</strong>';
-    }else if(bookProfileCover){
-      coverNote.hidden=false;
-      coverNote.innerHTML='<span>Profile grid cover</span><img src="'+bookProfileCover.replace(/"/g,'&quot;')+'" alt="" /><strong>Using book cover</strong>';
-    }else{
-      coverNote.hidden=true;
-      coverNote.innerHTML='';
-    }
-  }
+
 }
 
 function bindCreateUI(){
