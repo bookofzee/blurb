@@ -1,0 +1,501 @@
+/* Blurb V2 visual system — editorial, flatter, more cohesive */
+:root{
+  --bg:#f3ede5;
+  --panel:#fbf7f1;
+  --panel-2:#eee6dd;
+  --text:#2a211d;
+  --muted:#8a776b;
+  --line:rgba(72,49,38,.12);
+  --cream:#fbf7f1;
+  --gold:#b45b30;
+  --wine:#b85d32;
+  --rose:#c66f43;
+  --danger:#ad4c39;
+}
+
+html,body{background:var(--cream);color:var(--text)}
+.app-shell{background:var(--bg)}
+.view{background:var(--bg)}
+
+.page-scroll{padding-left:18px;padding-right:18px}
+.page-header{padding-top:30px}
+.page-header h1{
+  margin-top:4px;
+  margin-bottom:16px;
+  font-size:36px;
+  font-weight:500;
+  letter-spacing:-1.1px;
+}
+.eyebrow{
+  color:var(--wine);
+  font-size:9px;
+  letter-spacing:1.65px;
+}
+
+.search-wrap{
+  height:44px;
+  border-radius:10px;
+  background:rgba(251,247,241,.88);
+  border-color:var(--line);
+  box-shadow:none;
+}
+
+.section-title-row h2{font-size:18px}
+.pill{
+  padding:7px 10px;
+  border-radius:9px;
+  background:transparent;
+}
+.pill.active{
+  background:var(--wine);
+  border-color:var(--wine);
+}
+
+/* Buttons: one family, flatter, smaller radii */
+.primary-button{
+  height:46px;
+  border-radius:9px;
+  background:var(--wine);
+  box-shadow:none;
+}
+.secondary-button,
+.create-final-actions .secondary-button{
+  border-radius:9px!important;
+  background:transparent!important;
+  border:1px solid var(--line)!important;
+  box-shadow:none!important;
+}
+.picker-button,.text-input,textarea{
+  border-radius:9px;
+  background:rgba(251,247,241,.92);
+  box-shadow:none;
+}
+
+/* Bottom navigation: flat app chrome, not decorative furniture */
+.bottom-nav{
+  background:#fbf7f1;
+  border-top:1px solid rgba(72,49,38,.10);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+.nav-item{
+  position:relative;
+}
+.nav-png{
+  width:27px;
+  height:27px;
+  opacity:.64;
+  filter:saturate(.55) contrast(.94);
+  transition:opacity .14s ease,filter .14s ease;
+}
+.nav-png-create{
+  width:31px;
+  height:31px;
+}
+.nav-item.active .nav-png{
+  opacity:1;
+  transform:none;
+  filter:saturate(.92) contrast(1.02);
+}
+.nav-item.active:after{
+  content:"";
+  position:absolute;
+  bottom:1px;
+  left:50%;
+  width:4px;
+  height:4px;
+  margin-left:-2px;
+  border-radius:50%;
+  background:var(--wine);
+}
+
+/* Feed remains immersive, but supporting UI is quieter */
+.feed-tab{
+  font-size:14px;
+  font-weight:750;
+}
+.feed-tab.active:after{
+  left:36%;
+  right:36%;
+  height:1.5px;
+}
+.book-chip{
+  border-radius:8px!important;
+  border-color:rgba(255,255,255,.58)!important;
+  box-shadow:none!important;
+  background:rgba(251,247,241,.96)!important;
+}
+.feed-profile-avatar .avatar{
+  box-shadow:none!important;
+}
+.add-status-option{
+  background:var(--wine)!important;
+  border-color:rgba(255,255,255,.45)!important;
+  box-shadow:none!important;
+}
+.feed-card.add-menu-active:after{
+  background:rgba(26,20,17,.64);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+}
+
+/* Discover / library */
+.book-cover{
+  border-radius:3px;
+  box-shadow:0 5px 14px rgba(40,29,23,.16);
+}
+.library-row{
+  border-radius:9px;
+  background:rgba(251,247,241,.9);
+}
+.segmented{
+  border-radius:9px;
+  padding:2px;
+  background:var(--panel-2);
+}
+.segmented button{
+  border-radius:7px;
+}
+.segmented button.active{
+  background:var(--wine);
+}
+
+/* Profile: editorial, flatter, less social-template */
+#profileView .page-scroll,
+.profile-shell,
+.profile-panel{
+  background:#f7f1e8!important;
+}
+.profile-panel{
+  border-radius:0!important;
+}
+.profile-avatar{
+  border-width:3px;
+  border-color:#f7f1e8;
+  box-shadow:none;
+}
+.profile-edit-main,
+.profile-settings-button{
+  background:transparent;
+  border-color:rgba(72,49,38,.15);
+  box-shadow:none;
+}
+.profile-edit-main{border-radius:8px}
+.profile-settings-button{border-radius:8px}
+.profile-copy h1{
+  font-size:32px;
+  letter-spacing:-.7px;
+}
+.profile-bio{
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:12px;
+  line-height:1.55;
+}
+.profile-stats{
+  padding:10px 0;
+}
+.profile-stat strong{
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:17px;
+  font-weight:800;
+}
+.profile-tabs button{
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:11px;
+  font-weight:800;
+  color:#7e6a5f;
+}
+.profile-tabs button.active{color:var(--wine)}
+.profile-tabs button.active:after{
+  left:18%;
+  right:18%;
+  height:2px;
+}
+.profile-grid{
+  gap:8px!important;
+}
+.profile-grid .profile-post-card{
+  border-radius:8px!important;
+  border-color:rgba(72,49,38,.08)!important;
+  box-shadow:none!important;
+  background:#fbf7f1!important;
+}
+.profile-card-copy{
+  background:#fbf7f1!important;
+  padding:9px 10px 30px!important;
+}
+.profile-card-heading strong{
+  font-size:14px!important;
+  font-weight:600!important;
+}
+.profile-card-author,
+.profile-card-meta{
+  color:#927c6e!important;
+}
+.profile-card-menu-toggle{
+  color:#8b7568!important;
+}
+.profile-post-card .profile-tile-controls{
+  border-radius:10px!important;
+  box-shadow:none!important;
+  border-color:rgba(72,49,38,.10)!important;
+}
+
+/* Create: remove the giant AI-card feeling */
+#createView .editor-card.create-flow{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+#createView .create-stepper{
+  margin:0 0 18px!important;
+}
+#createView .create-stepper span{
+  font-size:8px!important;
+  letter-spacing:1px!important;
+}
+#createView .book-picker-card,
+#createView .rating-drag-wrap,
+#createView .post-style-option{
+  border-radius:10px!important;
+  background:#fbf7f1!important;
+  border-color:rgba(72,49,38,.11)!important;
+}
+#createView .post-style-option.active{
+  background:#f3e3d8!important;
+  border-color:var(--wine)!important;
+  box-shadow:none!important;
+}
+.create-post-step.active{
+  gap:0!important;
+}
+.create-post-step .details-section-card{
+  padding:16px 0!important;
+  background:transparent!important;
+  border:0!important;
+  border-top:1px solid rgba(72,49,38,.10)!important;
+  border-radius:0!important;
+}
+.create-post-step .details-caption-card{
+  margin-top:18px!important;
+}
+.create-post-step .details-caption-card .hook-field{
+  background:#fbf7f1!important;
+}
+.create-post-step .discovery-card{
+  margin-top:0!important;
+}
+.spoiler-question.details-spoiler-card{
+  margin-top:0!important;
+  border:0!important;
+  border-top:1px solid rgba(72,49,38,.10)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  padding:16px 0!important;
+}
+.hashtag-entry{
+  background:#fbf7f1!important;
+  border-radius:9px!important;
+}
+.trope-choice{
+  border-radius:8px!important;
+  background:transparent!important;
+}
+.trope-choice.active{
+  background:var(--wine)!important;
+  border-color:var(--wine)!important;
+  box-shadow:none!important;
+}
+.create-post-step .create-next-button{
+  margin-top:14px!important;
+}
+
+/* Preview/profile cover */
+.create-step[data-create-step="3"] .preview-profile-cover{
+  border-radius:10px!important;
+  background:transparent!important;
+  border:1px solid rgba(72,49,38,.10)!important;
+}
+.profile-cover-action{
+  border-radius:8px!important;
+  background:#fbf7f1!important;
+}
+.profile-cover-thumb{
+  border-radius:7px!important;
+}
+
+/* Studio: preserve the requested two-panel structure, but calmer */
+.studio-main-panel,
+.studio-tool-panel{
+  border-radius:12px!important;
+  background:#f8f2e9!important;
+  border-color:rgba(72,49,38,.10)!important;
+  box-shadow:none!important;
+}
+.studio-phone{
+  border-radius:14px!important;
+  box-shadow:none!important;
+}
+.studio-header button{
+  border-radius:8px!important;
+  background:transparent!important;
+}
+.studio-tabs{
+  border-radius:9px!important;
+  background:#eae1d8!important;
+  padding:3px!important;
+}
+.studio-tabs button{
+  border-radius:7px!important;
+}
+.studio-tabs button.active{
+  background:#fbf7f1!important;
+  color:var(--wine)!important;
+  box-shadow:none!important;
+}
+.studio-look-tray{
+  border-radius:9px!important;
+  background:#ebe2d9!important;
+}
+.studio-look-tool{
+  border-radius:7px!important;
+}
+.studio-look-tool.active{
+  border-radius:7px!important;
+  box-shadow:none!important;
+}
+.studio-fit-segment{
+  border-radius:8px!important;
+}
+.studio-fit-segment button{
+  border-radius:6px!important;
+}
+.studio-fit-segment button.active{
+  background:var(--wine)!important;
+  box-shadow:none!important;
+}
+.studio-reset-button{
+  border-radius:8px!important;
+  background:transparent!important;
+}
+
+/* Book details: cleaner controls, less bubble-heavy */
+.book-flip-face{
+  border-radius:14px!important;
+}
+.book-flip-back{
+  background:#fbf7f1!important;
+  border-color:rgba(72,49,38,.10)!important;
+}
+.book-flip-cover-button,
+.book-flip-close{
+  width:34px!important;
+  height:34px!important;
+  border-radius:8px!important;
+  background:transparent!important;
+}
+.book-flip-admin-alt,
+.book-flip-admin-delete{
+  min-height:34px!important;
+  border-radius:8px!important;
+  box-shadow:none!important;
+}
+.book-flip-admin-alt{
+  background:transparent!important;
+  border:1px solid rgba(72,49,38,.12)!important;
+}
+.book-flip-admin-delete{
+  background:#f6e8e3!important;
+  border:1px solid rgba(173,76,57,.18)!important;
+  color:var(--danger)!important;
+}
+.book-flip-summary-cover{
+  border-radius:6px!important;
+  box-shadow:none!important;
+}
+.book-flip-title-rule{
+  height:2px!important;
+  background:var(--wine)!important;
+}
+.book-flip-synopsis{
+  border-radius:9px!important;
+  background:transparent!important;
+  border-color:rgba(72,49,38,.10)!important;
+}
+.book-flip-section-head{
+  min-height:44px!important;
+}
+.book-flip-section-icon,
+.book-detail-row-icon{
+  width:29px!important;
+  height:29px!important;
+  background:#f0dfd4!important;
+}
+.book-flip-section-chevron{
+  width:25px!important;
+  height:25px!important;
+  border-radius:7px!important;
+  background:transparent!important;
+}
+.book-detail-row{
+  padding-top:13px!important;
+}
+.book-spoiler-state{
+  background:transparent!important;
+  padding:0!important;
+  color:var(--wine)!important;
+}
+.book-flip-status-grid{
+  gap:6px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.book-flip-status-grid button{
+  min-height:38px!important;
+  border-radius:8px!important;
+  background:transparent!important;
+  border-color:rgba(72,49,38,.14)!important;
+}
+.book-flip-status-grid button.active{
+  background:#f2e1d6!important;
+  color:#9e4d27!important;
+  border-color:var(--wine)!important;
+  box-shadow:none!important;
+}
+
+/* Sheets / modals */
+.sheet{
+  background:#fbf7f1;
+}
+.sheet-close{
+  box-shadow:none!important;
+}
+.profile-post-edit-card,
+.profile-details-card,
+.book-alt-art-modal{
+  border-radius:14px!important;
+  box-shadow:none!important;
+}
+
+/* Reduce shadows everywhere they don't add hierarchy */
+.book-picker-card,
+.rating-drag-wrap,
+.post-style-option,
+.profile-grid .profile-post-card,
+.studio-main-panel,
+.studio-tool-panel,
+.book-flip-admin-alt,
+.book-flip-admin-delete,
+.profile-edit-main,
+.profile-settings-button{
+  box-shadow:none!important;
+}
+
+@media(max-width:390px){
+  .page-header h1{font-size:34px}
+  .nav-png{width:26px;height:26px}
+  .nav-png-create{width:30px;height:30px}
+}
