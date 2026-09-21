@@ -421,9 +421,6 @@ function buildCreateUI(){
   const detailsExtras=document.createElement('section');
   detailsExtras.className='create-details-extras details-section-card discovery-card';
   detailsExtras.innerHTML=`
-    <div class="details-section-heading">
-      <span><strong>Discovery</strong><small>Help people find this Blurb in Spotlight.</small></span>
-    </div>
     <div class="hashtag-block">
       <div class="details-inline-label"><strong>Hashtags</strong><span>Up to 5</span></div>
       <div class="hashtag-entry">
