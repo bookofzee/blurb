@@ -1,5 +1,5 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
-import { normalizeEditorState, editorMediaStyle, editorOverlayMarkup, editorFeedClasses, editorLookMarkup } from './editor-state.js?v=2';
+import { normalizeEditorState, editorMediaStyle, editorOverlayMarkup, editorFeedClasses, editorLookMarkup } from './editor-state.js?v=3';
 
 const SUPABASE_URL = 'https://ndinulaqwixbmgjhrhdo.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__zMSwgf2znc_n8927aheRw_PiWY5BL1';
