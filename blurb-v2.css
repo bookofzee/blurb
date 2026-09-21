@@ -639,3 +639,100 @@ html,body{background:var(--cream);color:var(--text)}
     min-height:72px!important;
   }
 }
+
+
+/* Make spoiler choice unmistakable */
+.spoiler-question.details-spoiler-card{
+  position:relative!important;
+  margin:14px 0 0!important;
+  padding:14px 15px!important;
+  border:1.5px solid rgba(184,93,50,.34)!important;
+  border-radius:10px!important;
+  background:#f7e8dc!important;
+  gap:12px!important;
+}
+
+.spoiler-question.details-spoiler-card>span:first-child{
+  position:relative;
+  padding-left:38px;
+  min-height:34px;
+  justify-content:center;
+}
+
+.spoiler-question.details-spoiler-card>span:first-child:before{
+  content:"!";
+  position:absolute;
+  left:0;
+  top:50%;
+  width:28px;
+  height:28px;
+  transform:translateY(-50%);
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:#b85d32;
+  color:#fffaf4;
+  font-size:15px;
+  font-weight:900;
+}
+
+.spoiler-question.details-spoiler-card>span:first-child strong{
+  color:#3b2922!important;
+  font-size:12px!important;
+  font-weight:900!important;
+}
+
+.spoiler-question.details-spoiler-card>span:first-child small{
+  color:#83695b!important;
+  font-size:8.5px!important;
+  line-height:1.35!important;
+}
+
+.spoiler-question.details-spoiler-card:after{
+  content:"OFF";
+  flex:0 0 auto;
+  margin-left:auto;
+  color:#92776a;
+  font-size:7px;
+  font-weight:950;
+  letter-spacing:.7px;
+}
+
+.spoiler-question.details-spoiler-card:has(input:checked):after{
+  content:"ON";
+  color:#a64f2a;
+}
+
+.spoiler-question.details-spoiler-card input+i{
+  width:46px!important;
+  height:26px!important;
+  background:#d8c0b0!important;
+  box-shadow:none!important;
+}
+
+.spoiler-question.details-spoiler-card input+i:after{
+  width:20px!important;
+  height:20px!important;
+}
+
+.spoiler-question.details-spoiler-card input:checked+i{
+  background:#b85d32!important;
+}
+
+.spoiler-question.details-spoiler-card input:checked+i:after{
+  transform:translateX(20px)!important;
+}
+
+.spoiler-question.details-spoiler-card:has(input:checked){
+  border-color:#b85d32!important;
+  background:#f3ded0!important;
+}
+
+@media(max-width:420px){
+  .spoiler-question.details-spoiler-card{
+    padding:13px!important;
+  }
+  .spoiler-question.details-spoiler-card>span:first-child{
+    padding-left:35px;
+  }
+}
